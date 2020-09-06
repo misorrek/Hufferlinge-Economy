@@ -4,15 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import huff.economy.listener.JoinListener;
 import huff.lib.manager.DatabaseManager;
 
 public class EconomyInterface
 {
-	EconomyInterface(@NotNull JavaPlugin plugin, @NotNull DatabaseManager databaseManager)
+	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull DatabaseManager databaseManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin-instance cannot be null.");
 		Validate.notNull((Object) databaseManager, "The database-manager cannot be null.");
@@ -39,12 +42,13 @@ public class EconomyInterface
 		pluginEconomyCommand.setExecutor(economyCommand);
 		pluginEconomyCommand.setTabCompleter(economyCommand);
 		pluginEconomyCommand.setAliases(economyCommandAliases);
+		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
 	}
 	
 	public void registerListener()
 	{
-		//TODO
+		PluginManager pluginManager = Bukkit.getPluginManager();
+		
+		pluginManager.registerEvents(new JoinListener(economyTable), plugin);
 	}
-	
-	
 }

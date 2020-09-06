@@ -16,7 +16,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/freak/Dropbox/Development/Java/Api/1.16/spigot-1.16.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/freak/Dropbox/Development/Java/Api/1.16/HufferlingeLib.jar"/>
+	<classpathentry kind="lib" path="C:/Users/freak/Dropbox/Development/Java/Api/1.16/spigot-1.16.2.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Hufferlinge-Lib"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

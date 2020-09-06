@@ -23,15 +23,16 @@ public class EconomyConfig implements DatabaseProperties
 	private static final String CFG_USERNAME = CFG_DATABASE + "username";
 	private static final String CFG_PASSWORD = CFG_DATABASE + "password";
 	
-	private static final String CFG_VALUENAME = CFG_ROOT + "valuename";
-	private static final String CFG_VALUEMATERIAL = CFG_ROOT + "valuematerial";
+	private static final String CFG_VALUENAME = CFG_ROOT + "value_name";
+	private static final String CFG_VALUEMATERIAL = CFG_ROOT + "value_material";
+	private static final String CFG_STARTBALANCE = CFG_ROOT + "start_balance";
 	private static final String CFG_TRANSACTION_FEEDBACK = CFG_ROOT + "transaction_feedback";
 	
 	public EconomyConfig(@NotNull String pluginFolderPath)
 	{
 		Validate.notNull((Object) pluginFolderPath, "The plugin-folder-path cannot be null.");
 		
-		this.config = FileHelper.loadYamlConfigurationFromFile(Paths.get(pluginFolderPath, "Economy", "config.yml").toString(), "# Hufferlinge Economy Config File", createDefaults());
+		this.config = FileHelper.loadYamlConfigurationFromFile(Paths.get(pluginFolderPath, "Economy", "config.yml").toString(), "Hufferlinge Economy Config File", createDefaults());
 		
 		loadValues();
 	}
@@ -46,6 +47,7 @@ public class EconomyConfig implements DatabaseProperties
 	
 	private String valueName;
 	private Material valueMaterial;
+	private double startBalance;
 	private boolean transactionFeedback;
 
 	public void loadValues()
@@ -56,7 +58,8 @@ public class EconomyConfig implements DatabaseProperties
 		username = (String) FileHelper.readConfigValue(config, CFG_USERNAME);
 		password = (String) FileHelper.readConfigValue(config, CFG_PASSWORD);
 		valueName = (String) FileHelper.readConfigValue(config, CFG_VALUENAME);
-		valueMaterial = (Material) FileHelper.readConfigValue(config, CFG_VALUEMATERIAL);
+		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_VALUEMATERIAL));
+		startBalance = (double) FileHelper.readConfigValue(config, CFG_STARTBALANCE);
 		transactionFeedback = (boolean) FileHelper.readConfigValue(config, CFG_TRANSACTION_FEEDBACK);
 	}
 	
@@ -97,12 +100,17 @@ public class EconomyConfig implements DatabaseProperties
 	
 	public @NotNull String getValueFormatted(double value)
 	{
-		return Double.toString(value) + " " + getValueName();
+		return String.format("%.0f %s", value, getValueName());
 	}
 	
 	public @NotNull Material getValueMaterial()
 	{
 		return valueMaterial;
+	}
+	
+	public @NotNull double getStartBalance()
+	{
+		return startBalance;
 	}
 	
 	public @NotNull boolean hasTransactionFeedback()
@@ -115,15 +123,15 @@ public class EconomyConfig implements DatabaseProperties
 		Map<String, Object> defaults = new HashMap<>();
 		
 		defaults.put(CFG_HOST, "localhost");
-		defaults.put(CFG_HOST, "3306");
-		defaults.put(CFG_HOST, "huffeconomy");
-		defaults.put(CFG_HOST, "huffuser");
-		defaults.put(CFG_HOST, "0000");
+		defaults.put(CFG_PORT, "3306");
+		defaults.put(CFG_DATABASENAME, "huffeconomy");
+		defaults.put(CFG_USERNAME, "huffuser");
+		defaults.put(CFG_PASSWORD, "0000");
 		defaults.put(CFG_VALUENAME, "Goldlinge");
-		defaults.put(CFG_VALUEMATERIAL, Material.GOLD_NUGGET);
+		defaults.put(CFG_VALUEMATERIAL, Material.GOLD_NUGGET.toString());
+		defaults.put(CFG_STARTBALANCE, 10);
 		defaults.put(CFG_TRANSACTION_FEEDBACK, true);
 		
 		return defaults;
 	}
-
 }

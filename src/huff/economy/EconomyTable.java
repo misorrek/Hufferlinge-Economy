@@ -39,11 +39,11 @@ public class EconomyTable
 	
 	private DatabaseManager databaseManager;
 	
-	private void checkTable()
+	private void checkTable() //Umstieg auf Redice?
 	{
 		try 
 		{
-			PreparedStatement ps = databaseManager.prepareStatement("CREATE TABLE IF NOT EXISTS %s(%s NVARCHAR(100), %s DOUBLE, %s DOUBLE, PRIMARY KEY(%s))", 
+			PreparedStatement ps = databaseManager.prepareStatement("CREATE TABLE IF NOT EXISTS %1$s(%2$s NVARCHAR(100), %3$s DOUBLE, %4$s DOUBLE, PRIMARY KEY(%2$s))", 
 					                                                TABLE, FIELD_UUID, FIELD_BALANCE, FIELD_WALLET);
 			ps.executeUpdate();
 		} 
@@ -61,9 +61,11 @@ public class EconomyTable
 		{
 			PreparedStatement ps = databaseManager.prepareStatement("SELECT * FROM %s WHERE %s = ?", TABLE, FIELD_UUID);
 			ps.setString(1, uuid.toString());
-			ResultSet rs = ps.executeQuery();
-
-			return rs.next();
+			
+			try (ResultSet rs = ps.executeQuery())
+			{
+				return rs.next();
+			}
 		} 
 		catch (SQLException exception) 
 		{
@@ -101,11 +103,13 @@ public class EconomyTable
 			{
 				PreparedStatement ps = databaseManager.prepareStatement("SELECT %s FROM %s WHERE %s = ?", FIELD_BALANCE, TABLE, FIELD_UUID);
 				ps.setString(1, uuid.toString());
-				ResultSet rs = ps.executeQuery();
-
-				while (rs.next()) 
+				
+				try (ResultSet rs = ps.executeQuery())
 				{
-					return rs.getDouble(FIELD_BALANCE);
+					while (rs.next()) 
+					{
+						return rs.getDouble(FIELD_BALANCE);
+					}
 				}
 			}
 			catch (SQLException exception) 
@@ -131,14 +135,14 @@ public class EconomyTable
 		}
 	}
 	
-	public boolean setBalance(@NotNull UUID uuid, double value)
+	public int setBalance(@NotNull UUID uuid, double value)
 	{
 		if (userExist(uuid))
 		{
 			updateBalance(uuid, value);
-			return true;
+			return CODE_SUCCESS;
 		}
-		return false;
+		return CODE_USERNOTEXIST;
 	}
 	
 	public int updateBalance(@NotNull UUID uuid, double value, boolean remove, boolean withWallet)
@@ -170,11 +174,13 @@ public class EconomyTable
 			{
 				PreparedStatement ps = databaseManager.prepareStatement("SELECT %s FROM %s WHERE %s = ?", FIELD_BALANCE, TABLE, FIELD_UUID);
 				ps.setString(1, uuid.toString());
-				ResultSet rs = ps.executeQuery();
-
-				while (rs.next()) 
+							
+				try (ResultSet rs = ps.executeQuery())
 				{
-					return rs.getDouble(FIELD_BALANCE);
+					while (rs.next()) 
+					{
+						return rs.getDouble(FIELD_BALANCE);
+					}
 				}
 			}
 			catch (SQLException exception) 
@@ -200,14 +206,14 @@ public class EconomyTable
 		}
 	}
 	
-	public boolean setWallet(@NotNull UUID uuid, double value)
+	public int setWallet(@NotNull UUID uuid, double value)
 	{
 		if (userExist(uuid))
 		{
 			updateWallet(uuid, value);
-			return true;
+			return CODE_SUCCESS;
 		}
-		return false;
+		return CODE_USERNOTEXIST;
 	}
 	
 	public int updateWallet(@NotNull UUID uuid, double value, boolean remove)
@@ -234,22 +240,25 @@ public class EconomyTable
 		try
 		{
 			PreparedStatement ps = databaseManager.prepareStatement("SELECT %1$s,%2$s,%3$s,(%2$s + %3$s) AS %4$s FROM %5$s ORDER BY %4$s DESC", FIELD_UUID, FIELD_BALANCE, FIELD_WALLET, FIELD_SUM, TABLE);			
-			ResultSet rs = ps.executeQuery();
 			
-			while (rs.next()) 
-			{
-				Player player = Bukkit.getPlayer(UUID.fromString(rs.getString(FIELD_UUID)));
+			try (ResultSet rs = ps.executeQuery())
+			{		
 				int position = 1;
 				
-				
-				if (player != null)
+				while (rs.next()) 
 				{
-					double balance = rs.getDouble(FIELD_BALANCE);
-					double wallet = rs.getDouble(FIELD_WALLET);
-					double sum = rs.getDouble(FIELD_SUM);
+					Player player = Bukkit.getPlayer(UUID.fromString(rs.getString(FIELD_UUID)));
 					
-					economyOverview.add(String.format("§8☰ §a%d §8- §9%s §8☷ §7Gesamt: §9%d §8× §7Konto: §9%d §8× §7Geldbeutel: §9%d", position, player.getName(), sum, balance, wallet));
-					position++;
+					if (player != null)
+					{
+						double balance = rs.getDouble(FIELD_BALANCE);
+						double wallet = rs.getDouble(FIELD_WALLET);
+						double sum = rs.getDouble(FIELD_SUM);
+						
+						economyOverview.add(String.format("§8☰ §a%d §8- §9%s\n" +
+								                          "§8☷ §7Gesamt: §9%.0f §8× §7Konto: §9%.0f §8× §7Geldbeutel: §9%.0f", position, player.getName(), sum, balance, wallet));
+						position++;
+					}
 				}
 			}
 		}

@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
+import huff.lib.helper.StringHelper;
 import huff.lib.various.AlphanumericComparator;
 
 public class EconomyCommand implements CommandExecutor, TabCompleter
@@ -29,7 +30,6 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		this.economyTable = economyTable;
 		this.economyConfig = economyConfig;
 	}
-	
 	private final EconomyTable economyTable;
 	private final EconomyConfig economyConfig;
 	
@@ -43,215 +43,182 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			return false;
 		}
 		
-		if (args.length >= 1)
+		if (args.length == 1)
 		{
 			if (args[0].equalsIgnoreCase("list"))
 			{
-				return executeList(sender);
+				executeList(sender);
+				return true;
 			}
-			else if (args[0].equalsIgnoreCase("balance"))
+		}
+		else if (args.length >= 2)
+		{
+			if (args[0].equalsIgnoreCase("balance"))
 			{
-				if (args.length >= 2)
-				{
-					executeValueAction(sender, args, true);
-				}
+				return executeValueAction(sender, args, true);
 			}
 			else if (args[0].equalsIgnoreCase("wallet"))
 			{
-				if (args.length >= 2)
-				{
-					executeValueAction(sender, args, false);
-				}
+				return executeValueAction(sender, args, false);
 			}
 		}		
-		sender.sendMessage(MessageHelper.getWrongInput("/"+ cmd.getName() + " [list|balance [show|set|add|remove] <value> (<player>)|wallet [show|set|add|remove] <value> (<player>)"));
+		sender.sendMessage(MessageHelper.getWrongInput("/" + cmd.getName() + "\n" +
+				                                       "§8☰ list\n" + 
+				                                       "§8☰ balance [show|set|add|remove] <value> (<player>)\n" + 
+				                                       "§8☰ wallet [show|set|add|remove] <value> (<player>)"));
 		return false;
 	}
 	
-	private boolean executeList(CommandSender sender)
+	private void executeList(CommandSender sender)
 	{
-		sender.sendMessage("§8☰ §7Übersicht über die Kontostände aller Spieler");
-		sender.sendMessage("");
+		List<String> economyOverview = economyTable.getEconomyOverview();
 		
-		for (String economyEntry : economyTable.getEconomyOverview())
+		if (!economyOverview.isEmpty())
 		{
-			sender.sendMessage(economyEntry);
-		}	
-		return true;
+			sender.sendMessage("§8☰ §7Übersicht über die Kontostände aller Spieler");
+			sender.sendMessage("");
+			
+			for (String economyEntry : economyOverview)
+			{
+				sender.sendMessage(economyEntry);
+			}	
+		}
+		else
+		{
+			sender.sendMessage("§8☰ §7Keine Spieler zur Übersicht vorhanden");
+		}
 	}
 	
 	private boolean executeValueAction(CommandSender sender, String[] args, boolean isBalance)
 	{
-		final String action = args[1];
-		
-		if (action.equalsIgnoreCase("show"))
+		switch (args[1].toLowerCase())
 		{
-			return executeShow(sender, args, isBalance);
+		case "show":
+			executeShow(sender, args, isBalance);	
+			return true;
+		case "set":
+			executeSet(sender, args, isBalance);
+			return true;
+		case "add":
+			executeAdd(sender, args, isBalance);
+			return true;
+		case "remove":
+			executeRemove(sender, args, isBalance);
+			return true;
+		default:
+			return false;
 		}
-		else if (action.equalsIgnoreCase("set"))
-		{
-			return executeSet(sender, args, isBalance);
-		}
-		else if (action.equalsIgnoreCase("add"))
-		{
-			return executeAdd(sender, args, isBalance);
-		}
-		else if (action.equalsIgnoreCase("remove"))
-		{
-			return executeRemove(sender, args, isBalance);
-		}
-		return false;
 	}
 	
-	private boolean executeShow(CommandSender sender, String[] args, boolean isBalance)
+	private void executeShow(CommandSender sender, String[] args, boolean isBalance)
 	{
 		if (args.length >= 3)
 		{			
-			final String targetPlayerName = args[3]; 
-			Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+			final String targetPlayerName = args[2]; 
+			final Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
 			
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				return;
 			}
-			double value = isBalance ? economyTable.getBalance(((Player) sender).getUniqueId()) : economyTable.getWallet(((Player) sender).getUniqueId());
+			double value = isBalance ? economyTable.getBalance(targetPlayer.getUniqueId()) : economyTable.getWallet(targetPlayer.getUniqueId());
+			int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_USERNOTEXIST;
 			
-			if (value == EconomyTable.CODE_USERNOTEXIST)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der Spieler" + MessageHelper.getQuoted(targetPlayerName) + "ist nicht in der Economy-Datenbank vorhanden.");
-			}	
-			else
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der Spieler" + MessageHelper.getQuoted(targetPlayerName) + "hat" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + 
-						           (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, targetPlayerName, null));
 		}
 		else if (sender instanceof Player)
 		{
 			double value = isBalance ? economyTable.getBalance(((Player) sender).getUniqueId()) : economyTable.getWallet(((Player) sender).getUniqueId());
+			int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_USERNOTEXIST;
 			
-			if (value == EconomyTable.CODE_USERNOTEXIST)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du bist nicht in der Economy-Datenbank vorhanden.");
-			}	
-			else
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, null, null));
 		}
-		sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
-		return false;
+		else
+		{
+			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+		}
 	}
 	
-	private boolean executeSet(CommandSender sender, String[] args, boolean isBalance)
+	private void executeSet(CommandSender sender, String[] args, boolean isBalance)
 	{
 		final double value = parseDoubleInput(sender, args[2]);			
 		
 		if (value == -1)
 		{
-			return false;
+			return;
 		}	
 		
 		if (args.length >= 4)
 		{			
 			final String targetPlayerName = args[3]; 
-			Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+			final Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
 			
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				return;
 			}
+			int feedbackCode = isBalance ? economyTable.setBalance(targetPlayer.getUniqueId(), value) : economyTable.setWallet(targetPlayer.getUniqueId(), value);
 			
-			if (isBalance ? economyTable.setBalance(((Player) sender).getUniqueId(), value) : economyTable.setWallet(((Player) sender).getUniqueId(), value))
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der Spieler" + MessageHelper.getQuoted(targetPlayerName) + "hat nun" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + 
-				           (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
-			else
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der Spieler" + MessageHelper.getQuoted(targetPlayerName) + "ist nicht in der Economy-Datenbank vorhanden.");
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, targetPlayerName, null));
 		}
 		else if (sender instanceof Player)
 		{
-			if (isBalance ? economyTable.setBalance(((Player) sender).getUniqueId(), value) : economyTable.setWallet(((Player) sender).getUniqueId(), value))
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast nun" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + 
-				           (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
-			else
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du bist nicht in der Economy-Datenbank vorhanden.");
-			}
+			int feedbackCode = isBalance ? economyTable.setBalance(((Player) sender).getUniqueId(), value) : economyTable.setWallet(((Player) sender).getUniqueId(), value);
+			
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, null, null));
 		}
-		sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
-		return false;
+		else
+		{
+			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+		}
 	}
 	
-	private boolean executeAdd(CommandSender sender, String[] args, boolean isBalance) //Redice
+	private void executeAdd(CommandSender sender, String[] args, boolean isBalance) //Redice
 	{
 		final double value = parseDoubleInput(sender, args[2]);			
 		
 		if (value == -1)
 		{
-			return false;
+			return;
 		}	
 		
 		if (args.length >= 4)
 		{			
 			final String targetPlayerName = args[3]; 
-			Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+			final Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
 			
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				return;
 			}
 			final UUID uuid = targetPlayer.getUniqueId();
 			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, false, false) : economyTable.updateWallet(uuid, value, false));
 			
-			if (feedbackCode == EconomyTable.CODE_USERNOTEXIST)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der Spieler" + MessageHelper.getQuoted(targetPlayerName) + "ist nicht in der Economy-Datenbank vorhanden.");
-			}
-			else
-			{
-				double updatedValue = economyTable.getBalance(((Player) sender).getUniqueId());
-				
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast dem Spieler" + MessageHelper.getQuoted(targetPlayerName) + 
-						           MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + "hinzugefügt.");
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Er hat nun" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(updatedValue)) + 
-				                   (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, targetPlayerName, uuid));
 		}
 		else if (sender instanceof Player)
 		{
 			final UUID uuid = ((Player) sender).getUniqueId();
 			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, false, false) : economyTable.updateWallet(uuid, value, false));
 			
-			if (feedbackCode == EconomyTable.CODE_USERNOTEXIST)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du bist nicht in der Economy-Datenbank vorhanden.");
-			}
-			else
-			{
-				double updatedValue = economyTable.getBalance(((Player) sender).getUniqueId());
-				
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast dir" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + "hinzugefügt.");
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast nun" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(updatedValue)) + 
-				                   (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, null, uuid));
 		}
-		sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
-		return false;
+		else
+		{
+			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+		}
 	}
 	
-	private boolean executeRemove(CommandSender sender, String[] args, boolean isBalance) //Redice
+	private void executeRemove(CommandSender sender, String[] args, boolean isBalance) 
 	{
 		final double value = parseDoubleInput(sender, args[2]);			
 		
 		if (value == -1)
 		{
-			return false;
+			return;
 		}	
 		
 		if (args.length >= 4)
@@ -262,52 +229,24 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				return;
 			}
 			final UUID uuid = targetPlayer.getUniqueId();
 			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, true, false) : economyTable.updateWallet(uuid, value, true));
 			
-			if (feedbackCode == EconomyTable.CODE_USERNOTEXIST)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der Spieler" + MessageHelper.getQuoted(targetPlayerName) + "ist nicht in der Economy-Datenbank vorhanden.");
-			}
-			if (feedbackCode == EconomyTable.CODE_NOTENOUGHVALUE)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast dazu nicht genug " + (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
-			else
-			{
-				double updatedValue = economyTable.getBalance(((Player) sender).getUniqueId());
-				
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast dem Spieler" + MessageHelper.getQuoted(targetPlayerName) + 
-						           MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + "entfernt.");
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Er hat nun" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(updatedValue)) + 
-				                   (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, true, targetPlayerName, uuid));
 		}
 		else if (sender instanceof Player)
 		{
 			final UUID uuid = ((Player) sender).getUniqueId();
 			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, true, false) : economyTable.updateWallet(uuid, value, true));
 			
-			if (feedbackCode == EconomyTable.CODE_USERNOTEXIST)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du bist nicht in der Economy-Datenbank vorhanden.");
-			}
-			if (feedbackCode == EconomyTable.CODE_NOTENOUGHVALUE)
-			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast dazu nicht genug " + (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
-			else
-			{
-				double updatedValue = economyTable.getBalance(((Player) sender).getUniqueId());
-				
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast dir" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(value)) + "entfernt.");
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast nun" + MessageHelper.getHighlighted(economyConfig.getValueFormatted(updatedValue)) + 
-				                   (isBalance ? "auf der Bank." : "im Geldbeutel"));
-			}
+			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, true, null, uuid));
 		}
-		sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
-		return false;
+		else
+		{
+			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+		}
 	}
 	
 	private double parseDoubleInput(CommandSender sender, String input)
@@ -321,6 +260,56 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der eingegebene Wert ist ungültig.");
 		}
 		return -1;
+	}
+	
+	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, String playerName, UUID playerUUID)
+	{
+		StringBuilder messageBuilder = new StringBuilder();
+		boolean selfPerform = StringHelper.isNullOrEmpty(playerName);
+		boolean updatedPerform = playerUUID != null;
+		
+		messageBuilder.append(MessageHelper.PREFIX_HUFF);
+		
+		if (selfPerform)
+		{
+			messageBuilder.append("Du ");
+		}
+		else
+		{
+			messageBuilder.append("Der Spieler");
+			messageBuilder.append(MessageHelper.getHighlighted(playerName));
+		}
+		
+		switch (code)
+		{
+		case EconomyTable.CODE_USERNOTEXIST:
+			messageBuilder.append(selfPerform ? "bist " : "ist ");
+			messageBuilder.append("nicht in der Economy-Datenbank vorhanden.");
+			break;
+		case EconomyTable.CODE_NOTENOUGHVALUE:
+			messageBuilder.append(selfPerform ? "hast " : "hat ");
+			messageBuilder.append("dazu nicht genug ");
+			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
+			break;
+		case EconomyTable.CODE_SUCCESS:
+			messageBuilder.append(selfPerform ? "hast " : "hat ");
+			messageBuilder.append(updatedPerform ? "nun " : "");
+			messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(value), false, true));
+			if (updatedPerform) messageBuilder.append(withRemove ? "weniger " : "mehr ");
+			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
+			if (updatedPerform)
+			{
+				messageBuilder.append("\n");
+				messageBuilder.append(MessageHelper.PREFIX_HUFF);
+				messageBuilder.append("Der neue Stand beträgt");
+				messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(economyTable.getBalance(playerUUID)), true, false));
+				messageBuilder.append(".");
+			}
+			break;
+		default:
+			return MessageHelper.PREFIX_HUFF + "Ungültiger Datenbank-Rückgabecode" + MessageHelper.getQuoted(Integer.toString(code), true, false) + ".";
+		}		
+		return messageBuilder.toString();
 	}
 
 	// T A B C O M P L E T E
@@ -340,37 +329,26 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			paramSuggestions.add("list");
 			paramSuggestions.add("balance");
 			paramSuggestions.add("wallet");
-		}
-		else if (args.length == 2)
+		}        
+		else if (StringHelper.isIn(true, args[0], "balance", "wallet"))
 		{
-			if (args[0] == "list")
-			{
-				fillParamSuggestionsWithPlayers(paramSuggestions);			
-			}
-			else if (args[0] == "balance" || args[0] == "wallet")
+			if (args.length == 2)
 			{
 				paramSuggestions.add("show");
 				paramSuggestions.add("set");
 				paramSuggestions.add("add");
 				paramSuggestions.add("remove");
 			}
-		}
-		else if (args.length == 4)
-		{
-			if (args[0] == "balance" || args[0] == "wallet")
+			else if ((args.length == 3 && args[1].equalsIgnoreCase("show")) ||
+					 (args.length == 4 && StringHelper.isIn(true, args[1], "set", "add", "remove")))
 			{
-				fillParamSuggestionsWithPlayers(paramSuggestions);
+				for (Player publicPlayer : Bukkit.getOnlinePlayers())
+				{
+					paramSuggestions.add(publicPlayer.getName());
+				}
+				paramSuggestions.sort(new AlphanumericComparator());
 			}
 		}
 		return paramSuggestions;
-	}
-	
-	private void fillParamSuggestionsWithPlayers(List<String> paramSuggestions)
-	{
-		for (Player publicPlayer : Bukkit.getOnlinePlayers())
-		{
-			paramSuggestions.add(publicPlayer.getName());
-		}
-		paramSuggestions.sort(new AlphanumericComparator());
 	}
 }
