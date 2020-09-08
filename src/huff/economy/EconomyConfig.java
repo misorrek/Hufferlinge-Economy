@@ -18,7 +18,7 @@ public class EconomyConfig
 	private static final String CFG_VALUENAME = CFG_ROOT + "value_name";
 	private static final String CFG_VALUEMATERIAL = CFG_ROOT + "value_material";
 	private static final String CFG_WALLETNAME = CFG_ROOT + "wallet_name";
-	private static final String CFG_WALLETMATERIAL = CFG_ROOT + "wallet_name";
+	private static final String CFG_WALLETMATERIAL = CFG_ROOT + "wallet_material";
 	private static final String CFG_STARTBALANCE = CFG_ROOT + "start_balance";
 	private static final String CFG_TRANSACTION_FEEDBACK = CFG_ROOT + "transaction_feedback";
 	
@@ -45,8 +45,8 @@ public class EconomyConfig
 		valueName = (String) FileHelper.readConfigValue(config, CFG_VALUENAME);
 		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_VALUEMATERIAL));
 		walletName = (String) FileHelper.readConfigValue(config, CFG_WALLETNAME);
-		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_VALUEMATERIAL));
-		startBalance = (double) FileHelper.readConfigValue(config, CFG_STARTBALANCE);
+		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_WALLETMATERIAL));
+		startBalance = (int) FileHelper.readConfigValue(config, CFG_STARTBALANCE);
 		transactionFeedback = (boolean) FileHelper.readConfigValue(config, CFG_TRANSACTION_FEEDBACK);
 	}
 	

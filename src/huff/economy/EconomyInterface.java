@@ -11,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.listener.JoinListener;
+import huff.economy.listener.WalletListener;
 import huff.lib.manager.DatabaseManager;
 
 public class EconomyInterface
@@ -50,5 +51,6 @@ public class EconomyInterface
 		PluginManager pluginManager = Bukkit.getPluginManager();
 		
 		pluginManager.registerEvents(new JoinListener(economyConfig, economyTable), plugin);
+		pluginManager.registerEvents(new WalletListener(economyConfig, economyTable), plugin);
 	}
 }

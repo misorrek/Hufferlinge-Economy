@@ -253,7 +253,14 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	{
 		try 
 		{
-			return Double.parseDouble(input);
+			double parsedValue =  Double.parseDouble(input);
+			
+			if (parsedValue < 0)
+			{
+				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der eingegebene Wert darf nicht negativ sein.");
+				return -1;
+			}		
+			return parsedValue;
 		}
 		catch (NumberFormatException execption)
 		{
@@ -302,7 +309,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				messageBuilder.append("\n");
 				messageBuilder.append(MessageHelper.PREFIX_HUFF);
 				messageBuilder.append("Der neue Stand beträgt");
-				messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(economyTable.getBalance(playerUUID)), true, false));
+				messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(isBalance ? economyTable.getBalance(playerUUID) : economyTable.getWallet(playerUUID)), true, false));
 				messageBuilder.append(".");
 			}
 			break;

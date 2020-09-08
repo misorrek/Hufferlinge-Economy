@@ -1,6 +1,8 @@
 package huff.economy.listener;
 
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -8,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,20 +41,14 @@ public class WalletUtil
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 		
-		ItemStack valueItem = new ItemStack(economyConfig.getValueMaterial());
-		valueItem.getItemMeta().setDisplayName("§e§l" + economyConfig.getValueName());
-		
-		return valueItem;
+		return InventoryHelper.getItemWithMeta(economyConfig.getValueMaterial(), "§e§l" + economyConfig.getValueName());
 	}
 	
-	public static@NotNull  ItemStack getWalletItem(@NotNull EconomyConfig economyConfig)
+	public static@NotNull ItemStack getWalletItem(@NotNull EconomyConfig economyConfig)
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 		
-		ItemStack walletItem = new ItemStack(economyConfig.getWalletMaterial());
-		walletItem.getItemMeta().setDisplayName("§6§l" + economyConfig.getWalletName());
-		
-		return walletItem;
+		return InventoryHelper.getItemWithMeta(economyConfig.getWalletMaterial(), "§6§l" + economyConfig.getWalletName());
 	}
 	
 	public static @NotNull String getWalletInventoryName(@NotNull String walletName)
@@ -73,18 +70,10 @@ public class WalletUtil
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 	
 		Inventory walletInventory = Bukkit.createInventory(null, 27, getWalletInventoryName(economyConfig.getWalletName()));
-		
+		ItemStack borderItem = InventoryHelper.getBorderItem();
+		ItemStack fillItem = InventoryHelper.getFillItem();
 		String valueName = economyConfig.getValueName();
 		
-		ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-		ItemStack fillItem = new ItemStack(Material.WHITE_STAINED_GLASS_PANE);
-		
-		ItemStack valueItem = new ItemStack(economyConfig.getValueMaterial());
-		valueItem.getItemMeta().setDisplayName(getValueAmountName(valueName, currentWallet));
-		
-		ItemStack payItem = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
-		valueItem.getItemMeta().setDisplayName(getPayInventoryName(valueName));
-			
 		//FIRST
 		walletInventory.setItem(0, borderItem);
 		walletInventory.setItem(1, borderItem);
@@ -97,13 +86,13 @@ public class WalletUtil
 		walletInventory.setItem(8, borderItem);
 		//SECOND
 		walletInventory.setItem(9, borderItem);
-		walletInventory.setItem(10, valueItem);
+		walletInventory.setItem(10, InventoryHelper.getItemWithMeta(economyConfig.getValueMaterial(), getValueAmountName(valueName, currentWallet)));
 		walletInventory.setItem(11, borderItem);
 		walletInventory.setItem(12, fillItem);
 		walletInventory.setItem(13, fillItem);
 		walletInventory.setItem(14, fillItem);
 		walletInventory.setItem(15, borderItem);
-		walletInventory.setItem(16, payItem);
+		walletInventory.setItem(16, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayInventoryName(valueName)));
 		walletInventory.setItem(17, borderItem);
 		//THIRD
 		walletInventory.setItem(18, borderItem);
@@ -124,34 +113,8 @@ public class WalletUtil
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 	
 		Inventory walletInventory = Bukkit.createInventory(null, 27, getPayInventoryName(economyConfig.getValueName()));
-		
+		ItemStack borderItem = InventoryHelper.getBorderItem();	
 		String valueName = economyConfig.getValueName();
-		
-		ItemStack borderItem = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-		
-		ItemStack valueItem = new ItemStack(economyConfig.getValueMaterial());
-		valueItem.getItemMeta().setDisplayName(getValueAmountName(valueName, 0));
-		
-		ItemStack performPayItem = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
-		valueItem.getItemMeta().setDisplayName(ITEM_PERFORMPAY);
-		
-		ItemStack payAddItem1 = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
-		payAddItem1.getItemMeta().setDisplayName(ITEM_PAY_ADD_1);
-		
-		ItemStack payAddItem2 = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
-		payAddItem1.getItemMeta().setDisplayName(ITEM_PAY_ADD_2);
-		
-		ItemStack payAddItem3 = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
-		payAddItem1.getItemMeta().setDisplayName(ITEM_PAY_ADD_3);
-		
-		ItemStack payRemoveItem1 = new ItemStack(Material.RED_STAINED_GLASS_PANE);
-		payAddItem1.getItemMeta().setDisplayName(ITEM_PAY_REMOVE_1);
-		
-		ItemStack payRemoveItem2 = new ItemStack(Material.RED_STAINED_GLASS_PANE);
-		payAddItem1.getItemMeta().setDisplayName(ITEM_PAY_REMOVE_2);
-		
-		ItemStack payRemoveItem3 = new ItemStack(Material.RED_STAINED_GLASS_PANE);
-		payAddItem1.getItemMeta().setDisplayName(ITEM_PAY_REMOVE_3);
 			
 		//FIRST
 		walletInventory.setItem(0, borderItem);
@@ -160,9 +123,7 @@ public class WalletUtil
 		walletInventory.setItem(3, borderItem);
 		if (StringHelper.isNotNullOrEmpty(playerName))
 		{
-			ItemStack targetItem = new ItemStack(Material.BLUE_STAINED_GLASS_PANE);
-			targetItem.getItemMeta().setDisplayName("§7Ziel: §9" + playerName);
-			walletInventory.setItem(4, targetItem);
+			walletInventory.setItem(4, InventoryHelper.getItemWithMeta(Material.BLUE_STAINED_GLASS_PANE, "§7Ziel: §9" + playerName));
 		}
 		else
 		{
@@ -174,16 +135,16 @@ public class WalletUtil
 		walletInventory.setItem(8, borderItem);
 		//SECOND
 		walletInventory.setItem(9, borderItem);
-		walletInventory.setItem(10, payAddItem1);
-		walletInventory.setItem(11, payAddItem2);
-		walletInventory.setItem(12, payAddItem3);
-		walletInventory.setItem(13, valueItem);
-		walletInventory.setItem(14, payRemoveItem1);
-		walletInventory.setItem(15, payRemoveItem2);
-		walletInventory.setItem(16, payRemoveItem3);
+		walletInventory.setItem(10, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PAY_ADD_3));
+		walletInventory.setItem(11, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PAY_ADD_2));
+		walletInventory.setItem(12, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PAY_ADD_1));
+		walletInventory.setItem(13, InventoryHelper.getItemWithMeta(economyConfig.getValueMaterial(), getValueAmountName(valueName, 0)));
+		walletInventory.setItem(14, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, ITEM_PAY_REMOVE_1));
+		walletInventory.setItem(15, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, ITEM_PAY_REMOVE_2));
+		walletInventory.setItem(16, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, ITEM_PAY_REMOVE_3));
 		walletInventory.setItem(17, borderItem);
 		//THIRD
-		walletInventory.setItem(18, performPayItem);
+		walletInventory.setItem(18, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PERFORMPAY));
 		walletInventory.setItem(19, borderItem);
 		walletInventory.setItem(20, borderItem);
 		walletInventory.setItem(21, borderItem);
@@ -226,15 +187,19 @@ public class WalletUtil
 		
 		if (targetItem != null)
 		{
-			String valueAmountName = targetItem.getItemMeta().getDisplayName();
 			try
 			{
-				double valueAmount = Double.parseDouble(valueAmountName.substring(2, valueAmountName.length()-1));
-				return valueAmount;
+				Pattern valuePattern = Pattern.compile("§.([0-9.]*).*");
+				Matcher matcher = valuePattern.matcher(targetItem.getItemMeta().getDisplayName());
+				
+				while (matcher.find())
+				{
+					return Double.parseDouble(matcher.group(1));
+				}
 			}
 			catch (NumberFormatException exception)
 			{
-				Bukkit.getLogger().log(Level.WARNING, "Der pay-value-amount ist ungültig.", exception);
+				Bukkit.getLogger().log(Level.WARNING, "The pay-value-amount is invalid.", exception);
 			}
 		}
 		return 0;
@@ -244,6 +209,9 @@ public class WalletUtil
 	{
 		Validate.notNull((Object) payInventory, "The pay-inventory cannot be null.");
 		
-		payInventory.getItem(13).getItemMeta().setDisplayName(getValueAmountName(valueName, updatedValue));;
+		ItemStack valueAmountItem = payInventory.getItem(13);
+		ItemMeta valueAmountMeta = valueAmountItem.getItemMeta();
+		valueAmountMeta.setDisplayName(getValueAmountName(valueName, updatedValue));
+		valueAmountItem.setItemMeta(valueAmountMeta);	
 	}
 }

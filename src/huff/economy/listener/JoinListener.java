@@ -21,7 +21,7 @@ public class JoinListener implements Listener
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event)
 	{
-		event.getPlayer().getInventory().setItem(8, WalletUtil.getWalletItem(economyConfig));
+		event.getPlayer().getInventory().setItem(8, WalletUtil.getWalletItem(economyConfig)); //TODO Hat er schon einen?
 		
 		if (!economyTable.userExist(event.getPlayer().getUniqueId()))
 		{

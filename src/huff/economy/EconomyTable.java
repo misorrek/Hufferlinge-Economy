@@ -172,14 +172,14 @@ public class EconomyTable
 		{
 			try
 			{
-				PreparedStatement ps = databaseManager.prepareStatement("SELECT %s FROM %s WHERE %s = ?", FIELD_BALANCE, TABLE, FIELD_UUID);
+				PreparedStatement ps = databaseManager.prepareStatement("SELECT %s FROM %s WHERE %s = ?", FIELD_WALLET, TABLE, FIELD_UUID);
 				ps.setString(1, uuid.toString());
 							
 				try (ResultSet rs = ps.executeQuery())
 				{
 					while (rs.next()) 
 					{
-						return rs.getDouble(FIELD_BALANCE);
+						return rs.getDouble(FIELD_WALLET);
 					}
 				}
 			}
@@ -228,7 +228,7 @@ public class EconomyTable
 		{
 			return CODE_NOTENOUGHVALUE;
 		}
-		updateWallet(uuid, currentWallet - (remove ? value * -1 : value));	
+		updateWallet(uuid, currentWallet + (remove ? value * -1 : value));	
 		return CODE_SUCCESS;
 	}
 	
