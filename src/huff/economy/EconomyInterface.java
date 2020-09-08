@@ -49,6 +49,6 @@ public class EconomyInterface
 	{
 		PluginManager pluginManager = Bukkit.getPluginManager();
 		
-		pluginManager.registerEvents(new JoinListener(economyTable), plugin);
+		pluginManager.registerEvents(new JoinListener(economyConfig, economyTable), plugin);
 	}
 }
