@@ -1,5 +1,6 @@
 package huff.economy.listener;
 
+import java.util.List;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,10 +24,12 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyConfig;
+import huff.economy.EconomySignature;
 import huff.economy.EconomyTable;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
@@ -41,9 +44,11 @@ public class WalletListener implements Listener
 		
 		this.economyConfig = economyConfig;
 		this.economyTable = economyTable;
+		this.economySignature = new EconomySignature();
 	}
 	private final EconomyConfig economyConfig;
 	private final EconomyTable economyTable;
+	private final EconomySignature economySignature;
 	
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onBlockPlace(BlockPlaceEvent event)
@@ -74,6 +79,7 @@ public class WalletListener implements Listener
 			equalsWalletItem(player.getInventory().getItemInMainHand()))
 		{
 			player.openInventory(WalletUtil.getWalletInventory(economyConfig, economyTable.getWallet(player.getUniqueId())));
+			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}
 	}
@@ -87,7 +93,7 @@ public class WalletListener implements Listener
 		    (equalsWalletItem(event.getPlayer().getInventory().getItemInMainHand()) ||
 			 equalsWalletItem(event.getPlayer().getInventory().getItemInOffHand())))
 		{
-			player.openInventory(WalletUtil.getPayInventory(economyConfig, ((Player) event.getRightClicked()).getName()));
+			player.openInventory(WalletUtil.getPayInventory(economyConfig, ((Player) event.getRightClicked()).getName()));		
 			event.setCancelled(true);
 		}
 	}
@@ -108,25 +114,40 @@ public class WalletListener implements Listener
 			else if (equalsValueItem(cursorItem))
 			{
 				if (inventoryType == InventoryType.PLAYER) 
-				{
-					final HumanEntity human = event.getWhoClicked();
-					
-					if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
-					{
-						human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst in deinem Spielmodus nicht in den ", economyConfig.getWalletName(), " einlagern."));
-						return;
-					}				
+				{								
 					final ItemStack slotItem = event.getView().getItem(event.getRawSlot());
 					
 					if (slotItem != null && equalsWalletItem(slotItem))
 					{
-						final int feedbackCode = economyTable.updateWallet(human.getUniqueId(), cursorItem.getAmount(), false);
+						final HumanEntity human = event.getWhoClicked();
 						
-						if (feedbackCode == EconomyTable.CODE_SUCCESS)
-						{						
-							event.getView().setCursor(null);
-							((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 1);						
+						if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
+						{
+							human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst in deinem Spielmodus nicht in den ", economyConfig.getWalletName(), " einlagern."));
+							return;
 						}	
+					    int wantedValueAmount = cursorItem.getAmount();
+						final int signatureValueAmount = economySignature.getSignatureValueAmount(cursorItem.getItemMeta().getLore(), wantedValueAmount);
+						
+						if (signatureValueAmount == -1)
+						{
+							event.getView().setCursor(null);
+							((Player) human).playSound(human.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 1, 2);	
+						} 
+						else
+						{
+							if (wantedValueAmount > signatureValueAmount)
+							{
+								wantedValueAmount = signatureValueAmount;
+							}							
+							final int feedbackCode = economyTable.updateWallet(human.getUniqueId(), wantedValueAmount, false);
+							
+							if (feedbackCode == EconomyTable.CODE_SUCCESS)
+							{						
+								event.getView().setCursor(null);
+								((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);						
+							}	
+						}
 						event.setCancelled(true);
 					}				
 				}
@@ -217,11 +238,13 @@ public class WalletListener implements Listener
 							if ((int) valueAmount >= maxStackSize)
 							{
 								valueItem.setAmount(maxStackSize);
+								applyLore(valueItem, economySignature.createSignatureLore(maxStackSize));
 								valueAmount -= maxStackSize;
 							}
 							else
 							{
 								valueItem.setAmount((int) valueAmount);
+								applyLore(valueItem, economySignature.createSignatureLore((int) valueAmount));
 								valueAmount = 0;
 							}						
 							human.getInventory().addItem(valueItem);
@@ -284,6 +307,13 @@ public class WalletListener implements Listener
 				}
 			}
 		}
+	}
+	
+	private void applyLore(@NotNull ItemStack loreItem, @NotNull List<String> lore)
+	{
+		ItemMeta loreMeta = loreItem.getItemMeta();
+		loreMeta.setLore(lore);
+		loreItem.setItemMeta(loreMeta);
 	}
 	
 	private void handleWalletInventoryActions(@NotNull HumanEntity player, @NotNull InventoryView view, @Nullable ItemStack currentItem)

@@ -214,7 +214,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = (isBalance ? economyTable.updateBalance(targetUUID, value, true, false) : economyTable.updateWallet(targetUUID, value, true));
+		final int feedbackCode = (isBalance ? economyTable.updateBalance(targetUUID, value, isRemove, false) : economyTable.updateWallet(targetUUID, value, isRemove));
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, targetName, targetUUID);
 	}
