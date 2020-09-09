@@ -48,7 +48,7 @@ public class WalletListener implements Listener
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onBlockPlace(BlockPlaceEvent event)
 	{
-		ItemStack placedItem = event.getItemInHand();
+		final ItemStack placedItem = event.getItemInHand();
 		
 		if (equalsWalletItem(placedItem) || equalsValueItem(placedItem))
 		{
@@ -68,7 +68,7 @@ public class WalletListener implements Listener
 	@EventHandler
 	public void onInteract(PlayerInteractEvent event)
 	{
-		Player player = event.getPlayer();
+		final Player player = event.getPlayer();
 		
 		if ((event.getAction().equals(Action.LEFT_CLICK_AIR) || event.getAction().equals(Action.LEFT_CLICK_BLOCK)) &&
 			equalsWalletItem(player.getInventory().getItemInMainHand()))
@@ -81,7 +81,7 @@ public class WalletListener implements Listener
 	@EventHandler
 	public void onInteractAtEntity(PlayerInteractAtEntityEvent event)
 	{
-		Player player = event.getPlayer();
+		final Player player = event.getPlayer();
 		
 		if (event.getRightClicked() instanceof Player && 
 		    (equalsWalletItem(event.getPlayer().getInventory().getItemInMainHand()) ||
@@ -97,8 +97,8 @@ public class WalletListener implements Listener
 	{	
 		if (event.getClickedInventory() != null && event.getCursor() != null)
 		{
-		    InventoryType inventoryType = event.getClickedInventory().getType();
-			ItemStack cursorItem = event.getCursor();
+		    final InventoryType inventoryType = event.getClickedInventory().getType();
+			final ItemStack cursorItem = event.getCursor();
 			
 			if (equalsWalletItem(cursorItem) && (inventoryType != InventoryType.PLAYER ||
 			                                     event.getAction().equals(InventoryAction.MOVE_TO_OTHER_INVENTORY)))
@@ -113,7 +113,7 @@ public class WalletListener implements Listener
 					
 					if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
 					{
-						human.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst in deinem Spielmodus nicht in den " + economyConfig.getWalletName() + " einlagern.");
+						human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst in deinem Spielmodus nicht in den ", economyConfig.getWalletName(), " einlagern."));
 						return;
 					}				
 					final ItemStack slotItem = event.getView().getItem(event.getRawSlot());
@@ -137,7 +137,7 @@ public class WalletListener implements Listener
 				else if (isContainerInventory(inventoryType))
 				{
 					event.setCancelled(true);
-				}				
+				}	
 			}
 		}
 	}
@@ -152,9 +152,9 @@ public class WalletListener implements Listener
 	@EventHandler
 	public void onWalletInventoryClick(InventoryClickEvent event)
 	{
-		HumanEntity human = event.getWhoClicked();
-		InventoryView view = event.getView();
-		String viewTitle = view.getTitle();
+		final HumanEntity human = event.getWhoClicked();
+		final InventoryView view = event.getView();
+		final String viewTitle = view.getTitle();
 		
 		if (viewTitle.equals(WalletUtil.getWalletInventoryName(economyConfig.getWalletName())))
 		{
@@ -166,7 +166,7 @@ public class WalletListener implements Listener
 		{		
 			event.setCancelled(true);
 			
-			ItemStack currentItem = event.getCurrentItem();
+			final ItemStack currentItem = event.getCurrentItem();
 			
 			if (currentItem == null)
 			{
@@ -181,23 +181,23 @@ public class WalletListener implements Listener
 			}
 			else if (currentItemName.equals(WalletUtil.ITEM_PERFORMPAY))
 			{
-				Player targetPlayer = WalletUtil.getPayTargetPlayer(event.getInventory());
+				final Player targetPlayer = WalletUtil.getPayTargetPlayer(event.getInventory());
 				
 				if (targetPlayer != null)
 				{
 					if (targetPlayer.isOnline())
 					{
-						double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
-						String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
+						final double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
+						final String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
 						
 						if (economyTable.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyTable.CODE_SUCCESS &&
 							economyTable.updateWallet(targetPlayer.getUniqueId(), valueAmount, false) == EconomyTable.CODE_SUCCESS)
 						{
 							human.closeInventory();
-							human.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast" + formattedValueAmount + "an" +
-					                                          MessageHelper.getHighlighted(targetPlayer.getName() + "übergeben."));
-							targetPlayer.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast" + formattedValueAmount + "von" +
-					                                 MessageHelper.getHighlighted(human.getName()) + "erhalten.");
+							human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
+					                                             MessageHelper.getHighlighted(targetPlayer.getName()), "übergeben."));
+							targetPlayer.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
+					                                                    MessageHelper.getHighlighted(human.getName()), "erhalten."));
 							return;
 						}						
 					}
@@ -205,8 +205,8 @@ public class WalletListener implements Listener
 				else
 				{
 					double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
-					String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
-					ItemStack valueItem = WalletUtil.getValueItem(economyConfig);
+					final String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
+					final ItemStack valueItem = WalletUtil.getValueItem(economyConfig);
 					
 					if (economyTable.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyTable.CODE_SUCCESS)
 					{
@@ -227,24 +227,20 @@ public class WalletListener implements Listener
 							human.getInventory().addItem(valueItem);
 						}
 						human.closeInventory();
-						human.sendMessage(MessageHelper.PREFIX_HUFF + "Du hast" + formattedValueAmount + "aus deinem " + economyConfig.getWalletName() + " herausgenommen.");
+						human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "aus deinem ",
+								                             economyConfig.getWalletName(), " herausgenommen."));
 						return;
 					}		
 				}
 				human.closeInventory();
 				human.sendMessage(MessageHelper.PREFIX_HUFF + "Das Herausnehmen des Geldes konnte nicht abgeschlossen werden.");		
 			}
-			else if (StringHelper.isIn(false, currentItemName, WalletUtil.ITEM_PAY_ADD_1,
-															   WalletUtil.ITEM_PAY_ADD_2,
-															   WalletUtil.ITEM_PAY_ADD_3,
-															   WalletUtil.ITEM_PAY_REMOVE_1,
-															   WalletUtil.ITEM_PAY_REMOVE_2,
-															   WalletUtil.ITEM_PAY_REMOVE_3))
+			else if (StringHelper.contains(false, currentItemName, "+", "-"))
 			{
 				try
 				{
-					Pattern valuePattern = Pattern.compile("§.([+-]) ([0-9]*)");
-					Matcher matcher = valuePattern.matcher(currentItemName);				
+					final Pattern valuePattern = Pattern.compile("§.([+-]) ([0-9]*)");
+					final Matcher matcher = valuePattern.matcher(currentItemName);				
 					
 					while (matcher.find())
 					{					
@@ -296,7 +292,7 @@ public class WalletListener implements Listener
 		{
 			return;
 		}
-		String currentItemName = currentItem.getItemMeta().getDisplayName();
+		final String currentItemName = currentItem.getItemMeta().getDisplayName();
 		
 		if (currentItemName.equals(InventoryHelper.ITEM_CLOSE))
 		{

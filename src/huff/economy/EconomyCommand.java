@@ -12,6 +12,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
@@ -62,16 +63,16 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				return executeValueAction(sender, args, false);
 			}
 		}		
-		sender.sendMessage(MessageHelper.getWrongInput("/" + cmd.getName() + "\n" +
-				                                       "§8☰ list\n" + 
-				                                       "§8☰ balance [show|set|add|remove] <value> (<player>)\n" + 
-				                                       "§8☰ wallet [show|set|add|remove] <value> (<player>)"));
+		sender.sendMessage(MessageHelper.getWrongInput(StringHelper.build("/", cmd.getName(), "\n",
+				                                       "§8☰ list\n",
+				                                       "§8☰ balance [show|set|add|remove] <value> (<player>)\n", 
+				                                       "§8☰ wallet [show|set|add|remove] <value> (<player>)")));
 		return false;
 	}
 	
 	private void executeList(CommandSender sender)
 	{
-		List<String> economyOverview = economyTable.getEconomyOverview();
+		final List<String> economyOverview = economyTable.getEconomyOverview();
 		
 		if (!economyOverview.isEmpty())
 		{
@@ -100,10 +101,10 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			executeSet(sender, args, isBalance);
 			return true;
 		case "add":
-			executeAdd(sender, args, isBalance);
+			executeUpdate(sender, args, isBalance, false);
 			return true;
 		case "remove":
-			executeRemove(sender, args, isBalance);
+			executeUpdate(sender, args, isBalance, true);
 			return true;
 		default:
 			return false;
@@ -122,22 +123,24 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
 				return;
 			}
-			double value = isBalance ? economyTable.getBalance(targetPlayer.getUniqueId()) : economyTable.getWallet(targetPlayer.getUniqueId());
-			int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_USERNOTEXIST;
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, targetPlayerName, null));
+			sender.sendMessage(processGetValue(isBalance, targetPlayer.getUniqueId(), targetPlayerName));
 		}
 		else if (sender instanceof Player)
 		{
-			double value = isBalance ? economyTable.getBalance(((Player) sender).getUniqueId()) : economyTable.getWallet(((Player) sender).getUniqueId());
-			int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_USERNOTEXIST;
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, null, null));
+			sender.sendMessage(processGetValue(isBalance, ((Player) sender).getUniqueId(), null));
 		}
 		else
 		{
-			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+			sender.sendMessage(getInvalidSenderMessage());
 		}
+	}
+	
+	private @NotNull String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
+	{
+		final double value = isBalance ? economyTable.getBalance(targetUUID) : economyTable.getWallet(targetUUID);
+		final int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_USERNOTEXIST;
+		
+		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
 	}
 	
 	private void executeSet(CommandSender sender, String[] args, boolean isBalance)
@@ -159,23 +162,26 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
 				return;
 			}
-			int feedbackCode = isBalance ? economyTable.setBalance(targetPlayer.getUniqueId(), value) : economyTable.setWallet(targetPlayer.getUniqueId(), value);
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, targetPlayerName, null));
+			sender.sendMessage(procesSetValue(isBalance, value, targetPlayer.getUniqueId(), targetPlayerName));
 		}
 		else if (sender instanceof Player)
 		{
-			int feedbackCode = isBalance ? economyTable.setBalance(((Player) sender).getUniqueId(), value) : economyTable.setWallet(((Player) sender).getUniqueId(), value);
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, null, null));
+			sender.sendMessage(procesSetValue(isBalance, value, ((Player) sender).getUniqueId(), null));
 		}
 		else
 		{
-			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+			sender.sendMessage(getInvalidSenderMessage());
 		}
 	}
 	
-	private void executeAdd(CommandSender sender, String[] args, boolean isBalance) //Redice
+	private @NotNull String procesSetValue(boolean isBalance, double value, @NotNull UUID targetUUID, @Nullable String targetName)
+	{
+		final int feedbackCode = isBalance ? economyTable.setBalance(targetUUID, value) : economyTable.setWallet(targetUUID, value);
+		
+		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null); 
+	}
+	
+	private void executeUpdate(CommandSender sender, String[] args, boolean isBalance, boolean isRemove) 
 	{
 		final double value = parseDoubleInput(sender, args[2]);			
 		
@@ -194,86 +200,50 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
 				return;
 			}
-			final UUID uuid = targetPlayer.getUniqueId();
-			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, false, false) : economyTable.updateWallet(uuid, value, false));
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, targetPlayerName, uuid));
+			sender.sendMessage(processUpdateValue(isBalance, isRemove, value, targetPlayer.getUniqueId(), targetPlayerName));
 		}
 		else if (sender instanceof Player)
 		{
-			final UUID uuid = ((Player) sender).getUniqueId();
-			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, false, false) : economyTable.updateWallet(uuid, value, false));
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, false, null, uuid));
+			sender.sendMessage(processUpdateValue(isBalance, isRemove, value, ((Player) sender).getUniqueId(), null));
 		}
 		else
 		{
-			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+			sender.sendMessage(getInvalidSenderMessage());
 		}
 	}
 	
-	private void executeRemove(CommandSender sender, String[] args, boolean isBalance) 
+	private @NotNull String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final double value = parseDoubleInput(sender, args[2]);			
+		final int feedbackCode = (isBalance ? economyTable.updateBalance(targetUUID, value, true, false) : economyTable.updateWallet(targetUUID, value, true));
 		
-		if (value == -1)
-		{
-			return;
-		}	
-		
-		if (args.length >= 4)
-		{			
-			final String targetPlayerName = args[3]; 
-			Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
-			
-			if (targetPlayer == null)
-			{
-				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
-				return;
-			}
-			final UUID uuid = targetPlayer.getUniqueId();
-			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, true, false) : economyTable.updateWallet(uuid, value, true));
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, true, targetPlayerName, uuid));
-		}
-		else if (sender instanceof Player)
-		{
-			final UUID uuid = ((Player) sender).getUniqueId();
-			final int feedbackCode = (isBalance ? economyTable.updateBalance(uuid, value, true, false) : economyTable.updateWallet(uuid, value, true));
-			
-			sender.sendMessage(processFeedbackCode(feedbackCode, value, isBalance, true, null, uuid));
-		}
-		else
-		{
-			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
-		}
+		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, targetName, targetUUID);
 	}
 	
 	private double parseDoubleInput(CommandSender sender, String input)
 	{
 		try 
 		{
-			double parsedValue =  Double.parseDouble(input);
+			final double parsedValue =  Double.parseDouble(input);
 			
 			if (parsedValue < 0)
 			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der eingegebene Wert darf nicht negativ sein.");
+				sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Der eingegebene Wert darf nicht negativ sein."));
 				return -1;
 			}		
 			return parsedValue;
 		}
 		catch (NumberFormatException execption)
 		{
-			sender.sendMessage(MessageHelper.PREFIX_HUFF + "Der eingegebene Wert ist ungültig.");
+			sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Der eingegebene Wert ist ungültig."));
 		}
 		return -1;
 	}
 	
 	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, String playerName, UUID playerUUID)
 	{
-		StringBuilder messageBuilder = new StringBuilder();
-		boolean selfPerform = StringHelper.isNullOrEmpty(playerName);
-		boolean updatedPerform = playerUUID != null;
+		final StringBuilder messageBuilder = new StringBuilder();
+		final boolean selfPerform = StringHelper.isNullOrEmpty(playerName);
+		final boolean updatedPerform = playerUUID != null;
 		
 		messageBuilder.append(MessageHelper.PREFIX_HUFF);
 		
@@ -319,12 +289,17 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		return messageBuilder.toString();
 	}
 
+	private @NotNull String getInvalidSenderMessage()
+	{
+		return StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+	}
+	
 	// T A B C O M P L E T E
 	
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args)
 	{
-		List<String> paramSuggestions = new ArrayList<>();
+		final List<String> paramSuggestions = new ArrayList<>();
 		
 		if (!(sender instanceof Player) || !PermissionHelper.hasPlayerPermission((Player) sender, PERM_ECONOMY)) 
 		{

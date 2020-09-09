@@ -20,22 +20,20 @@ import huff.lib.helper.StringHelper;
 
 public class WalletUtil
 {
-	public static final int PAY_ADD_1 = 1;
-	public static final int PAY_ADD_2 = 10;
-	public static final int PAY_ADD_3 = 100;
-	public static final int PAY_REMOVE_1 = 1;
-	public static final int PAY_REMOVE_2 = 10;
-	public static final int PAY_REMOVE_3 = 100;
+	public static final int PAY_1 = 1;
+	public static final int PAY_2 = 5;
+	public static final int PAY_3 = 10;
+	public static final int PAY_4 = 100;
+	public static final int PAY_5 = 1000;
 	
-	public static final String ITEM_PAY_ADD_1 = "§a+ " + PAY_ADD_1;
-	public static final String ITEM_PAY_ADD_2 = "§a+ " + PAY_ADD_2;
-	public static final String ITEM_PAY_ADD_3 = "§a+ " + PAY_ADD_3;
-	public static final String ITEM_PAY_REMOVE_1 = "§c- " + PAY_REMOVE_1;
-	public static final String ITEM_PAY_REMOVE_2 = "§c- " + PAY_REMOVE_2;
-	public static final String ITEM_PAY_REMOVE_3 = "§c- " + PAY_REMOVE_3;
 	public static final String ITEM_PERFORMPAY = "§7» §aHerausnehmen";
 	
 	private WalletUtil() { }
+	
+	public static @NotNull String getPayItemName(int payValue, boolean negativeValue)
+	{
+		return negativeValue ? "§c- " + payValue : "§a+ " + payValue;
+	}
 	
 	public static @NotNull ItemStack getValueItem(@NotNull EconomyConfig economyConfig)
 	{
@@ -69,10 +67,10 @@ public class WalletUtil
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 	
-		Inventory walletInventory = Bukkit.createInventory(null, 27, getWalletInventoryName(economyConfig.getWalletName()));
-		ItemStack borderItem = InventoryHelper.getBorderItem();
-		ItemStack fillItem = InventoryHelper.getFillItem();
-		String valueName = economyConfig.getValueName();
+		final Inventory walletInventory = Bukkit.createInventory(null, 27, getWalletInventoryName(economyConfig.getWalletName()));
+		final ItemStack borderItem = InventoryHelper.getBorderItem();
+		final ItemStack fillItem = InventoryHelper.getFillItem();
+		final String valueName = economyConfig.getValueName();
 		
 		//FIRST
 		walletInventory.setItem(0, borderItem);
@@ -112,47 +110,57 @@ public class WalletUtil
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 	
-		Inventory walletInventory = Bukkit.createInventory(null, 27, getPayInventoryName(economyConfig.getValueName()));
-		ItemStack borderItem = InventoryHelper.getBorderItem();	
-		String valueName = economyConfig.getValueName();
+		final Inventory walletInventory = Bukkit.createInventory(null, 36, getPayInventoryName(economyConfig.getValueName()));
+		final ItemStack borderItem = InventoryHelper.getBorderItem();	
+		final String valueName = economyConfig.getValueName();
 			
 		//FIRST
 		walletInventory.setItem(0, borderItem);
 		walletInventory.setItem(1, borderItem);
 		walletInventory.setItem(2, borderItem);
 		walletInventory.setItem(3, borderItem);
-		if (StringHelper.isNotNullOrEmpty(playerName))
-		{
-			walletInventory.setItem(4, InventoryHelper.getItemWithMeta(Material.BLUE_STAINED_GLASS_PANE, "§7Ziel: §9" + playerName));
-		}
-		else
-		{
-			walletInventory.setItem(4, borderItem);
-		}
+		walletInventory.setItem(4, borderItem);
 		walletInventory.setItem(5, borderItem);
 		walletInventory.setItem(6, borderItem);
 		walletInventory.setItem(7, borderItem);
 		walletInventory.setItem(8, borderItem);
 		//SECOND
 		walletInventory.setItem(9, borderItem);
-		walletInventory.setItem(10, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PAY_ADD_3));
-		walletInventory.setItem(11, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PAY_ADD_2));
-		walletInventory.setItem(12, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PAY_ADD_1));
+		walletInventory.setItem(10, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_5, false)));
+		walletInventory.setItem(11, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_4, false)));
+		walletInventory.setItem(12, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_3, false)));
 		walletInventory.setItem(13, InventoryHelper.getItemWithMeta(economyConfig.getValueMaterial(), getValueAmountName(valueName, 0)));
-		walletInventory.setItem(14, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, ITEM_PAY_REMOVE_1));
-		walletInventory.setItem(15, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, ITEM_PAY_REMOVE_2));
-		walletInventory.setItem(16, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, ITEM_PAY_REMOVE_3));
+		walletInventory.setItem(14, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getPayItemName(PAY_3, true)));
+		walletInventory.setItem(15, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getPayItemName(PAY_4, true)));
+		walletInventory.setItem(16, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getPayItemName(PAY_5, true)));
 		walletInventory.setItem(17, borderItem);
 		//THIRD
-		walletInventory.setItem(18, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PERFORMPAY));
+		walletInventory.setItem(18, borderItem);
 		walletInventory.setItem(19, borderItem);
-		walletInventory.setItem(20, borderItem);
-		walletInventory.setItem(21, borderItem);
-		walletInventory.setItem(22, borderItem);
-		walletInventory.setItem(23, borderItem);
-		walletInventory.setItem(24, borderItem);
+		walletInventory.setItem(20, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_2, false)));
+		walletInventory.setItem(21, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_1, false)));
+		if (StringHelper.isNotNullOrEmpty(playerName))
+		{
+			walletInventory.setItem(22, InventoryHelper.getItemWithMeta(Material.BLUE_STAINED_GLASS_PANE, "§7Empfänger: §9" + playerName));
+		}
+		else
+		{
+			walletInventory.setItem(22, borderItem);
+		}
+		walletInventory.setItem(23, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_1, true)));
+		walletInventory.setItem(24, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPayItemName(PAY_2, true)));
 		walletInventory.setItem(25, borderItem);
-		walletInventory.setItem(26, InventoryHelper.getAbortItem());
+		walletInventory.setItem(26, borderItem);
+		//FOURTH
+		walletInventory.setItem(27, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, ITEM_PERFORMPAY));
+		walletInventory.setItem(28, borderItem);
+		walletInventory.setItem(29, borderItem);
+		walletInventory.setItem(30, borderItem);
+		walletInventory.setItem(31, borderItem);
+		walletInventory.setItem(32, borderItem);
+		walletInventory.setItem(33, borderItem);
+		walletInventory.setItem(34, borderItem);
+		walletInventory.setItem(35, InventoryHelper.getAbortItem());		
 		
 		return walletInventory;
 	}
@@ -168,29 +176,34 @@ public class WalletUtil
 	{
 		Validate.notNull((Object) payInventory, "The pay-inventory cannot be null.");
 		
-		ItemStack targetItem = payInventory.getItem(4);
+		final ItemStack targetItem = payInventory.getItem(22);
 		
 		if (targetItem == null)
 		{
 			return null;
 		}	
-		Player targetPlayer = Bukkit.getPlayer(targetItem.getItemMeta().getDisplayName());
+		final Pattern valuePattern = Pattern.compile("§.*: §.(.*)");
+		final Matcher matcher = valuePattern.matcher(targetItem.getItemMeta().getDisplayName());
 		
-		return (targetPlayer != null) ? targetPlayer : null;
+		while (matcher.find())
+		{
+			return Bukkit.getPlayer(matcher.group(1));
+		}
+		return null;
 	}
 	
 	public static @Nullable double getPayValueAmount(@NotNull Inventory payInventory)
 	{
 		Validate.notNull((Object) payInventory, "The pay-inventory cannot be null.");
 		
-		ItemStack targetItem = payInventory.getItem(13);
+		final ItemStack targetItem = payInventory.getItem(13);
 		
 		if (targetItem != null)
 		{
 			try
 			{
-				Pattern valuePattern = Pattern.compile("§.([0-9.]*).*");
-				Matcher matcher = valuePattern.matcher(targetItem.getItemMeta().getDisplayName());
+				final Pattern valuePattern = Pattern.compile("§.([0-9.]*).*");
+				final Matcher matcher = valuePattern.matcher(targetItem.getItemMeta().getDisplayName());
 				
 				while (matcher.find())
 				{
@@ -209,8 +222,9 @@ public class WalletUtil
 	{
 		Validate.notNull((Object) payInventory, "The pay-inventory cannot be null.");
 		
-		ItemStack valueAmountItem = payInventory.getItem(13);
-		ItemMeta valueAmountMeta = valueAmountItem.getItemMeta();
+		final ItemStack valueAmountItem = payInventory.getItem(13);
+		final ItemMeta valueAmountMeta = valueAmountItem.getItemMeta();
+		
 		valueAmountMeta.setDisplayName(getValueAmountName(valueName, updatedValue));
 		valueAmountItem.setItemMeta(valueAmountMeta);	
 	}
