@@ -6,26 +6,26 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyConfig;
-import huff.economy.EconomyTable;
+import huff.economy.EconomyStorage;
 
 public class JoinListener implements Listener
 {
-	public JoinListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyTable economyTable)
+	public JoinListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage)
 	{
 		this.economyConfig = economyConfig;
-		this.economyTable = economyTable;
+		this.economyStorage = economyStorage;
 	}
 	private EconomyConfig economyConfig;
-	private EconomyTable economyTable;
+	private EconomyStorage economyStorage;
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event)
 	{
 		event.getPlayer().getInventory().setItem(8, WalletUtil.getWalletItem(economyConfig)); //TODO Hat er schon einen?
 		
-		if (!economyTable.userExist(event.getPlayer().getUniqueId()))
+		if (!economyStorage.existUser(event.getPlayer().getUniqueId()))
 		{
-			economyTable.addUser(event.getPlayer().getUniqueId(), 100);
+			economyStorage.addUser(event.getPlayer().getUniqueId(), 100);
 		}
 	}
 }

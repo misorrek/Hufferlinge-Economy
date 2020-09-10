@@ -30,24 +30,24 @@ import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyConfig;
 import huff.economy.EconomySignature;
-import huff.economy.EconomyTable;
+import huff.economy.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
 
 public class WalletListener implements Listener
 {
-	public WalletListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyTable economyTable)
+	public WalletListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature)
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
-		Validate.notNull((Object) economyTable, "The economy-table cannot be null.");
+		Validate.notNull((Object) economyStorage, "The economy-table cannot be null.");
 		
 		this.economyConfig = economyConfig;
-		this.economyTable = economyTable;
-		this.economySignature = new EconomySignature();
+		this.economyStorage = economyStorage;
+		this.economySignature = economySignature;
 	}
 	private final EconomyConfig economyConfig;
-	private final EconomyTable economyTable;
+	private final EconomyStorage economyStorage;
 	private final EconomySignature economySignature;
 	
 	@EventHandler (priority = EventPriority.HIGH)
@@ -78,7 +78,7 @@ public class WalletListener implements Listener
 		if ((event.getAction().equals(Action.LEFT_CLICK_AIR) || event.getAction().equals(Action.LEFT_CLICK_BLOCK)) &&
 			equalsWalletItem(player.getInventory().getItemInMainHand()))
 		{
-			player.openInventory(WalletUtil.getWalletInventory(economyConfig, economyTable.getWallet(player.getUniqueId())));
+			player.openInventory(WalletUtil.getWalletInventory(economyConfig, economyStorage.getWallet(player.getUniqueId())));
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}
@@ -140,9 +140,9 @@ public class WalletListener implements Listener
 							{
 								wantedValueAmount = signatureValueAmount;
 							}							
-							final int feedbackCode = economyTable.updateWallet(human.getUniqueId(), wantedValueAmount, false);
+							final int feedbackCode = economyStorage.updateWallet(human.getUniqueId(), wantedValueAmount, false);
 							
-							if (feedbackCode == EconomyTable.CODE_SUCCESS)
+							if (feedbackCode == EconomyStorage.CODE_SUCCESS)
 							{						
 								event.getView().setCursor(null);
 								((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);						
@@ -198,7 +198,7 @@ public class WalletListener implements Listener
 			if (currentItemName.equals(InventoryHelper.ITEM_ABORT))
 			{
 				human.closeInventory();
-				human.openInventory(WalletUtil.getWalletInventory(economyConfig, economyTable.getWallet(human.getUniqueId())));
+				human.openInventory(WalletUtil.getWalletInventory(economyConfig, economyStorage.getWallet(human.getUniqueId())));
 			}
 			else if (currentItemName.equals(WalletUtil.ITEM_PERFORMPAY))
 			{
@@ -211,8 +211,8 @@ public class WalletListener implements Listener
 						final double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
 						final String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
 						
-						if (economyTable.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyTable.CODE_SUCCESS &&
-							economyTable.updateWallet(targetPlayer.getUniqueId(), valueAmount, false) == EconomyTable.CODE_SUCCESS)
+						if (economyStorage.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyStorage.CODE_SUCCESS &&
+							economyStorage.updateWallet(targetPlayer.getUniqueId(), valueAmount, false) == EconomyStorage.CODE_SUCCESS)
 						{
 							human.closeInventory();
 							human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
@@ -229,7 +229,7 @@ public class WalletListener implements Listener
 					final String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
 					final ItemStack valueItem = WalletUtil.getValueItem(economyConfig);
 					
-					if (economyTable.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyTable.CODE_SUCCESS)
+					if (economyStorage.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyStorage.CODE_SUCCESS)
 					{
 						int maxStackSize = valueItem.getMaxStackSize();
 						
@@ -271,7 +271,7 @@ public class WalletListener implements Listener
 						double valueChange = Double.parseDouble(matcher.group(2));
 						double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
 						double valueSum = valueAmount + (negativeChange ?  valueChange * -1 : valueChange);
-						double currentWallet = economyTable.getWallet(human.getUniqueId());
+						double currentWallet = economyStorage.getWallet(human.getUniqueId());
 						
 						if (valueSum < 0)
 						{

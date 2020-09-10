@@ -18,7 +18,7 @@ import huff.lib.manager.DatabaseManager;
 public class EconomyTable
 {
 	public static final int CODE_SUCCESS = 0;
-	public static final int CODE_USERNOTEXIST = -1;
+	public static final int CODE_NOUSER = -1;
 	public static final int CODE_NOTENOUGHVALUE = -2;
 	
 	private static final String TABLE = "HuffEconomy";
@@ -117,7 +117,7 @@ public class EconomyTable
 				Bukkit.getLogger().log(Level.SEVERE	, "Statement cannot be executed.", exception);
 			}
 		}
-		return CODE_USERNOTEXIST;
+		return CODE_NOUSER;
 	}
 	
 	private void updateBalance(@NotNull UUID uuid, double value)
@@ -142,16 +142,16 @@ public class EconomyTable
 			updateBalance(uuid, value);
 			return CODE_SUCCESS;
 		}
-		return CODE_USERNOTEXIST;
+		return CODE_NOUSER;
 	}
 	
 	public int updateBalance(@NotNull UUID uuid, double value, boolean remove, boolean withWallet)
 	{
 		double currentBalance = getBalance(uuid);
 		
-		if (currentBalance == CODE_USERNOTEXIST)
+		if (currentBalance == CODE_NOUSER)
 		{
-			return CODE_USERNOTEXIST;
+			return CODE_NOUSER;
 		}
 		if (remove && currentBalance < value)
 		{
@@ -213,7 +213,7 @@ public class EconomyTable
 			updateWallet(uuid, value);
 			return CODE_SUCCESS;
 		}
-		return CODE_USERNOTEXIST;
+		return CODE_NOUSER;
 	}
 	
 	public int updateWallet(@NotNull UUID uuid, double value, boolean remove)
@@ -222,7 +222,7 @@ public class EconomyTable
 		
 		if (currentWallet == -1)
 		{
-			return CODE_USERNOTEXIST;
+			return CODE_NOUSER;
 		}
 		if (remove && currentWallet < value)
 		{

@@ -2,45 +2,34 @@ package huff.economy;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.apache.commons.lang.RandomStringUtils;
-import org.bukkit.Bukkit;
+import org.apache.commons.lang.Validate;
 import org.jetbrains.annotations.NotNull;
 
 import huff.lib.helper.StringHelper;
-import redis.clients.jedis.Jedis;
+import huff.lib.manager.RedisManager;
 
 public class EconomySignature
 {
 	private static final String OFFLINE_SIGNATURE = "#0000#";
 	
-	public EconomySignature()
+	private static final String PATTERN_USER = "signature:";
+	
+	public EconomySignature(@NotNull RedisManager redisManager)
 	{
-		try
-		{
-			this.jedis = new Jedis("127.0.0.1", 6379);
-		}
-		catch (Exception exception)
-		{
-			Bukkit.getLogger().log(Level.SEVERE, "Cant init jedis.", exception);
-		}
-		Bukkit.getConsoleSender().sendMessage(jedis.ping());
-		Bukkit.getConsoleSender().sendMessage(Boolean.toString(isConnected()));
+		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");	
+		
+		this.redisManager = redisManager;
 	}
 	
-	private Jedis jedis;
-	
-	private boolean isConnected()
-	{
-		return jedis != null && jedis.isConnected();
-	}
+	private RedisManager redisManager;
 	
 	private @NotNull String createSignature(int valueAmount)
 	{
 		final String signatureId = RandomStringUtils.random(12, "0123456789ABCDEF");
 		
-		jedis.set(signatureId, Integer.toString(valueAmount));
+		redisManager.getJedis().set(getPatternKey(signatureId), Integer.toString(valueAmount));
 		
 		return signatureId;
 	}
@@ -48,7 +37,7 @@ public class EconomySignature
 	public @NotNull List<String> createSignatureLore(int valueAmount)
 	{
 		final List<String> signatureLore = new ArrayList<>();
-		final String signature = isConnected() ? createSignature(valueAmount) : OFFLINE_SIGNATURE;
+		final String signature = redisManager.isConnected() ? createSignature(valueAmount) : OFFLINE_SIGNATURE;
 		
 		signatureLore.add("§8Prägung");
 		signatureLore.add("§8" + signature);
@@ -68,7 +57,8 @@ public class EconomySignature
 		{
 			return wantedValueAmount;
 		}
-		final String storedValue = jedis.get(loreSignature);
+		final String patternKey = getPatternKey(loreSignature);
+		final String storedValue = redisManager.getJedis().get(patternKey);
 		
 		if (StringHelper.isNullOrEmpty(storedValue))
 		{
@@ -78,12 +68,17 @@ public class EconomySignature
 		
 		if (signatureValueAmount <= wantedValueAmount)
 		{
-			jedis.del(loreSignature);
+			 redisManager.getJedis().del(patternKey);
 		}	
 		else
 		{
-			jedis.set(loreSignature, Integer.toString(signatureValueAmount - wantedValueAmount));
+			 redisManager.getJedis().set(patternKey, Integer.toString(signatureValueAmount - wantedValueAmount));
 		}
 		return signatureValueAmount;
+	}
+	
+	private @NotNull String getPatternKey(@NotNull String key)
+	{
+		return PATTERN_USER + key;
 	}
 }

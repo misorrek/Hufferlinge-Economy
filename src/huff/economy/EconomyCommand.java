@@ -23,15 +23,15 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 {
 	private static final String PERM_ECONOMY = PermissionHelper.PERM_ROOT_HUFF + "economy";
 	
-	public EconomyCommand(@NotNull EconomyTable economyTable, @NotNull EconomyConfig economyConfig)
+	public EconomyCommand(@NotNull EconomyStorage economyStorage, @NotNull EconomyConfig economyConfig)
 	{
-		Validate.notNull((Object) economyTable, "The economy-table cannot be null.");
+		Validate.notNull((Object) economyStorage, "The economy-table cannot be null.");
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 		
-		this.economyTable = economyTable;
+		this.economyStorage = economyStorage;
 		this.economyConfig = economyConfig;
 	}
-	private final EconomyTable economyTable;
+	private final EconomyStorage economyStorage;
 	private final EconomyConfig economyConfig;
 	
 	// C O M M A N D
@@ -72,7 +72,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private void executeList(CommandSender sender)
 	{
-		final List<String> economyOverview = economyTable.getEconomyOverview();
+		final List<String> economyOverview = economyStorage.getEconomyOverview();
 		
 		if (!economyOverview.isEmpty())
 		{
@@ -137,8 +137,8 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final double value = isBalance ? economyTable.getBalance(targetUUID) : economyTable.getWallet(targetUUID);
-		final int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_USERNOTEXIST;
+		final double value = isBalance ? economyStorage.getBalance(targetUUID) : economyStorage.getWallet(targetUUID);
+		final int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_NOUSER;
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
 	}
@@ -176,7 +176,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String procesSetValue(boolean isBalance, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = isBalance ? economyTable.setBalance(targetUUID, value) : economyTable.setWallet(targetUUID, value);
+		final int feedbackCode = isBalance ? economyStorage.setBalance(targetUUID, value) : economyStorage.setWallet(targetUUID, value);
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null); 
 	}
@@ -214,7 +214,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = (isBalance ? economyTable.updateBalance(targetUUID, value, isRemove, false) : economyTable.updateWallet(targetUUID, value, isRemove));
+		final int feedbackCode = (isBalance ? economyStorage.updateBalance(targetUUID, value, isRemove, false) : economyStorage.updateWallet(targetUUID, value, isRemove));
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, targetName, targetUUID);
 	}
@@ -259,7 +259,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		
 		switch (code)
 		{
-		case EconomyTable.CODE_USERNOTEXIST:
+		case EconomyTable.CODE_NOUSER:
 			messageBuilder.append(selfPerform ? "bist " : "ist ");
 			messageBuilder.append("nicht in der Economy-Datenbank vorhanden.");
 			break;
@@ -279,7 +279,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				messageBuilder.append("\n");
 				messageBuilder.append(MessageHelper.PREFIX_HUFF);
 				messageBuilder.append("Der neue Stand beträgt");
-				messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(isBalance ? economyTable.getBalance(playerUUID) : economyTable.getWallet(playerUUID)), true, false));
+				messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(isBalance ? economyStorage.getBalance(playerUUID) : economyStorage.getWallet(playerUUID)), true, false));
 				messageBuilder.append(".");
 			}
 			break;
