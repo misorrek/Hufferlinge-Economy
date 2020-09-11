@@ -138,7 +138,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	private @NotNull String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
 		final double value = isBalance ? economyStorage.getBalance(targetUUID) : economyStorage.getWallet(targetUUID);
-		final int feedbackCode = value >= 0 ? EconomyTable.CODE_SUCCESS : EconomyTable.CODE_NOUSER;
+		final int feedbackCode = value >= 0 ? EconomyStorage.CODE_SUCCESS : EconomyStorage.CODE_NOUSER;
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
 	}
@@ -259,16 +259,16 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		
 		switch (code)
 		{
-		case EconomyTable.CODE_NOUSER:
+		case EconomyStorage.CODE_NOUSER:
 			messageBuilder.append(selfPerform ? "bist " : "ist ");
 			messageBuilder.append("nicht in der Economy-Datenbank vorhanden.");
 			break;
-		case EconomyTable.CODE_NOTENOUGHVALUE:
+		case EconomyStorage.CODE_NOTENOUGHVALUE:
 			messageBuilder.append(selfPerform ? "hast " : "hat ");
 			messageBuilder.append("dazu nicht genug ");
 			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
 			break;
-		case EconomyTable.CODE_SUCCESS:
+		case EconomyStorage.CODE_SUCCESS:
 			messageBuilder.append(selfPerform ? "hast " : "hat ");
 			messageBuilder.append(updatedPerform ? "nun " : "");
 			messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(value), false, true));

@@ -22,14 +22,12 @@ public class EconomyInterface
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
 		
 		this.plugin = plugin;
-		//this.economyTable = new EconomyTable(redisManager);
 		this.economyStorage = new EconomyStorage(redisManager);
 		this.economySignature = new EconomySignature(redisManager);
 		this.economyConfig = new EconomyConfig(plugin.getDataFolder().getAbsolutePath());
 	}
 	
 	private final JavaPlugin plugin;
-	//private final EconomyTable economyTable;
 	private final EconomyStorage economyStorage;
 	private final EconomySignature economySignature;
 	private final EconomyConfig economyConfig;
