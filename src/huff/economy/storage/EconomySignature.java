@@ -1,4 +1,4 @@
-package huff.economy;
+package huff.economy.storage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +12,8 @@ import huff.lib.manager.RedisManager;
 
 public class EconomySignature
 {
-	private static final String OFFLINE_SIGNATURE = "#0000#";
-	
 	private static final String PATTERN_USER = "signature:";
+	private static final String OFFLINE_SIGNATURE = "#0000#";	
 	
 	public EconomySignature(@NotNull RedisManager redisManager)
 	{
@@ -24,15 +23,6 @@ public class EconomySignature
 	}
 	
 	private RedisManager redisManager;
-	
-	private @NotNull String createSignature(int valueAmount)
-	{
-		final String signatureId = RandomStringUtils.random(12, "0123456789ABCDEF");
-		
-		redisManager.getJedis().set(getPatternKey(signatureId), Integer.toString(valueAmount));
-		
-		return signatureId;
-	}
 	
 	public @NotNull List<String> createSignatureLore(int valueAmount)
 	{
@@ -80,5 +70,14 @@ public class EconomySignature
 	private @NotNull String getPatternKey(@NotNull String key)
 	{
 		return PATTERN_USER + key;
+	}
+	
+	private @NotNull String createSignature(int valueAmount)
+	{
+		final String signatureId = RandomStringUtils.random(12, "0123456789ABCDEF");
+		
+		redisManager.getJedis().set(getPatternKey(signatureId), Integer.toString(valueAmount));
+		
+		return signatureId;
 	}
 }

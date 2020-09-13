@@ -1,6 +1,7 @@
 package huff.economy.listener;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -9,13 +10,16 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -29,8 +33,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyConfig;
-import huff.economy.EconomySignature;
-import huff.economy.EconomyStorage;
+import huff.economy.EconomyUtil;
+import huff.economy.TransactionKind;
+import huff.economy.storage.EconomySignature;
+import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
@@ -78,7 +84,7 @@ public class WalletListener implements Listener
 		if ((event.getAction().equals(Action.LEFT_CLICK_AIR) || event.getAction().equals(Action.LEFT_CLICK_BLOCK)) &&
 			equalsWalletItem(player.getInventory().getItemInMainHand()))
 		{
-			player.openInventory(WalletUtil.getWalletInventory(economyConfig, economyStorage.getWallet(player.getUniqueId())));
+			player.openInventory(EconomyUtil.getWalletInventory(economyConfig, economyStorage.getWallet(player.getUniqueId())));
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}
@@ -86,19 +92,42 @@ public class WalletListener implements Listener
 	
 	@EventHandler
 	public void onInteractAtEntity(PlayerInteractAtEntityEvent event)
-	{
-		final Player player = event.getPlayer();
-		
-		if (event.getRightClicked() instanceof Player && 
-		    (equalsWalletItem(event.getPlayer().getInventory().getItemInMainHand()) ||
-			 equalsWalletItem(event.getPlayer().getInventory().getItemInOffHand())))
-		{
-			player.openInventory(WalletUtil.getPayInventory(economyConfig, ((Player) event.getRightClicked()).getName()));		
-			event.setCancelled(true);
-		}
+	{		
+		event.setCancelled(handleEntityInteract(event.getPlayer(), event.getRightClicked()));
 	}
 	
 	@EventHandler
+	public void onHitAtEntity(EntityDamageByEntityEvent event)
+	{
+		if (event.getDamager() instanceof Player)
+		{
+			event.setCancelled(handleEntityInteract((Player) event.getDamager(), event.getEntity()));
+		}
+	}
+	
+	private boolean handleEntityInteract(@NotNull Player player, @NotNull Entity entity)
+	{
+		if (entity instanceof Player && 
+		    (equalsWalletItem(player.getInventory().getItemInMainHand()) ||
+			 equalsWalletItem(player.getInventory().getItemInOffHand())))
+		{
+			player.closeInventory(); // TODO Test with Player
+			player.openInventory(EconomyUtil.getTransactionInventory(economyConfig, TransactionKind.WALLET_OUT,  economyStorage.getWallet(player.getUniqueId()), ((Player) entity).getName()));		
+			return true;
+		}
+		
+		if (entity instanceof Villager &&
+			entity.getCustomName().equals(economyConfig.getBankEntityName()))
+		{
+			final UUID playerUUID = player.getUniqueId();
+			
+			player.openInventory(EconomyUtil.getBankInventory(economyConfig, economyStorage.getBalance(playerUUID), economyStorage.getWallet(playerUUID)));
+			return true;
+		}	
+		return false;
+	}
+	
+	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onHumanInverntoryClick(InventoryClickEvent event) //TODO Handle full inventory
 	{	
 		if (event.getClickedInventory() != null && event.getCursor() != null)
@@ -177,13 +206,13 @@ public class WalletListener implements Listener
 		final InventoryView view = event.getView();
 		final String viewTitle = view.getTitle();
 		
-		if (viewTitle.equals(WalletUtil.getWalletInventoryName(economyConfig.getWalletName())))
+		if (viewTitle.equals(economyConfig.getWalletInventoryName()))
 		{
 			event.setCancelled(true);
 			
 			handleWalletInventoryActions(human, view, event.getCurrentItem());
 		}
-		else if (viewTitle.equals(WalletUtil.getPayInventoryName(economyConfig.getValueName())))
+		else if (viewTitle.equals(economyConfig.getTransactionInventoryName(TransactionKind.WALLET_OUT)))
 		{		
 			event.setCancelled(true);
 			
@@ -198,17 +227,17 @@ public class WalletListener implements Listener
 			if (currentItemName.equals(InventoryHelper.ITEM_ABORT))
 			{
 				human.closeInventory();
-				human.openInventory(WalletUtil.getWalletInventory(economyConfig, economyStorage.getWallet(human.getUniqueId())));
+				human.openInventory(EconomyUtil.getWalletInventory(economyConfig, economyStorage.getWallet(human.getUniqueId())));
 			}
-			else if (currentItemName.equals(WalletUtil.ITEM_PERFORMPAY))
+			else if (currentItemName.equals(EconomyUtil.getPerformItemName(TransactionKind.WALLET_OUT)))
 			{
-				final Player targetPlayer = WalletUtil.getPayTargetPlayer(event.getInventory());
+				final Player targetPlayer = EconomyUtil.getPayTargetPlayer(event.getInventory());
 				
 				if (targetPlayer != null)
 				{
 					if (targetPlayer.isOnline())
 					{
-						final double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
+						final double valueAmount = EconomyUtil.getPayValueAmount(event.getInventory());
 						final String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
 						
 						if (economyStorage.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyStorage.CODE_SUCCESS &&
@@ -225,9 +254,9 @@ public class WalletListener implements Listener
 				}
 				else
 				{
-					double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
+					double valueAmount = EconomyUtil.getPayValueAmount(event.getInventory());
 					final String formattedValueAmount = MessageHelper.getHighlighted(economyConfig.getValueFormatted(valueAmount));
-					final ItemStack valueItem = WalletUtil.getValueItem(economyConfig);
+					final ItemStack valueItem = economyConfig.getValueItem();
 					
 					if (economyStorage.updateWallet(human.getUniqueId(), valueAmount, true) == EconomyStorage.CODE_SUCCESS)
 					{
@@ -269,7 +298,7 @@ public class WalletListener implements Listener
 					{					
 						boolean negativeChange = matcher.group(1).equals("-");
 						double valueChange = Double.parseDouble(matcher.group(2));
-						double valueAmount = WalletUtil.getPayValueAmount(event.getInventory());
+						double valueAmount = EconomyUtil.getPayValueAmount(event.getInventory());
 						double valueSum = valueAmount + (negativeChange ?  valueChange * -1 : valueChange);
 						double currentWallet = economyStorage.getWallet(human.getUniqueId());
 						
@@ -297,7 +326,7 @@ public class WalletListener implements Listener
 								return;
 							}
 						}
-						WalletUtil.setPayValueAmount(event.getInventory(), economyConfig.getValueName(), valueSum); 
+						EconomyUtil.setPayValueAmount(event.getInventory(), economyConfig.getValueFormatted(valueSum)); 
 						((Player) human).playSound(human.getLocation(), (negativeChange ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
 					}
 				}
@@ -328,10 +357,10 @@ public class WalletListener implements Listener
 		{
 			view.close();
 		}
-		else if (currentItemName.equals(WalletUtil.getPayInventoryName(economyConfig.getValueName())))
+		else if (currentItemName.equals(economyConfig.getTransactionInventoryName(TransactionKind.WALLET_OUT)))
 		{
 			player.closeInventory();
-			player.openInventory(WalletUtil.getPayInventory(economyConfig, null));
+			player.openInventory(EconomyUtil.getTransactionInventory(economyConfig, TransactionKind.WALLET_OUT, economyStorage.getWallet(player.getUniqueId()), null));
 		}
 	}
 

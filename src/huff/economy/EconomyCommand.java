@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,6 +16,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import huff.economy.storage.EconomyBank;
+import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
@@ -23,15 +27,18 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 {
 	private static final String PERM_ECONOMY = PermissionHelper.PERM_ROOT_HUFF + "economy";
 	
-	public EconomyCommand(@NotNull EconomyStorage economyStorage, @NotNull EconomyConfig economyConfig)
+	public EconomyCommand(@NotNull EconomyStorage economyStorage, @NotNull EconomyBank economyBank, @NotNull EconomyConfig economyConfig)
 	{
 		Validate.notNull((Object) economyStorage, "The economy-table cannot be null.");
+		Validate.notNull((Object) economyBank, "The economy-bank cannot be null.");
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 		
 		this.economyStorage = economyStorage;
+		this.economyBank = economyBank;
 		this.economyConfig = economyConfig;
 	}
 	private final EconomyStorage economyStorage;
+	private final EconomyBank economyBank;
 	private final EconomyConfig economyConfig;
 	
 	// C O M M A N D
@@ -43,10 +50,11 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		{
 			return false;
 		}
+		final String firstArgument = args[0];
 		
 		if (args.length == 1)
 		{
-			if (args[0].equalsIgnoreCase("list"))
+			if (firstArgument.equalsIgnoreCase("list"))
 			{
 				executeList(sender);
 				return true;
@@ -54,13 +62,17 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		}
 		else if (args.length >= 2)
 		{
-			if (args[0].equalsIgnoreCase("balance"))
+			if (firstArgument.equalsIgnoreCase("balance"))
 			{
 				return executeValueAction(sender, args, true);
 			}
-			else if (args[0].equalsIgnoreCase("wallet"))
+			else if (firstArgument.equalsIgnoreCase("wallet"))
 			{
 				return executeValueAction(sender, args, false);
+			}
+			else if (firstArgument.equalsIgnoreCase("bank"))
+			{
+				return executeBankAction(sender, args);
 			}
 		}		
 		sender.sendMessage(MessageHelper.getWrongInput(StringHelper.build("/", cmd.getName(), "\n",
@@ -69,6 +81,8 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				                                       "§8☰ wallet [show|set|add|remove] <value> (<player>)")));
 		return false;
 	}
+	
+	// L I S T
 	
 	private void executeList(CommandSender sender)
 	{
@@ -90,28 +104,30 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		}
 	}
 	
+	// V A L U E
+	
 	private boolean executeValueAction(CommandSender sender, String[] args, boolean isBalance)
 	{
 		switch (args[1].toLowerCase())
 		{
 		case "show":
-			executeShow(sender, args, isBalance);	
+			executeValueShow(sender, args, isBalance);	
 			return true;
 		case "set":
-			executeSet(sender, args, isBalance);
+			executeValueSet(sender, args, isBalance);
 			return true;
 		case "add":
-			executeUpdate(sender, args, isBalance, false);
+			executeValueUpdate(sender, args, isBalance, false);
 			return true;
 		case "remove":
-			executeUpdate(sender, args, isBalance, true);
+			executeValueUpdate(sender, args, isBalance, true);
 			return true;
 		default:
 			return false;
 		}
 	}
 	
-	private void executeShow(CommandSender sender, String[] args, boolean isBalance)
+	private void executeValueShow(CommandSender sender, String[] args, boolean isBalance)
 	{
 		if (args.length >= 3)
 		{			
@@ -143,7 +159,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
 	}
 	
-	private void executeSet(CommandSender sender, String[] args, boolean isBalance)
+	private void executeValueSet(CommandSender sender, String[] args, boolean isBalance)
 	{
 		final double value = parseDoubleInput(sender, args[2]);			
 		
@@ -181,7 +197,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null); 
 	}
 	
-	private void executeUpdate(CommandSender sender, String[] args, boolean isBalance, boolean isRemove) 
+	private void executeValueUpdate(CommandSender sender, String[] args, boolean isBalance, boolean isRemove) 
 	{
 		final double value = parseDoubleInput(sender, args[2]);			
 		
@@ -294,6 +310,103 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		return StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
 	}
 	
+	// B A N K
+	
+	private boolean executeBankAction(CommandSender sender, String[] args)
+	{
+		switch (args[1].toLowerCase())
+		{
+		case "show":
+			executeBankShow(sender);	
+			return true;
+		case "add":
+			executeBankAdd(sender);
+			return true;
+		case "remove":
+			executeBankRemove(sender);
+			return true;
+		default:
+			return false;
+		}
+	}
+	
+	private void executeBankShow(CommandSender sender)
+	{
+		final List<Location> bankLocations = economyBank.getBankLocations();
+		
+		if (!bankLocations.isEmpty())
+		{
+			sender.sendMessage("§8☰ §7Übersicht aller Bänker");
+			sender.sendMessage("");
+			
+			int position = 1;
+			
+			for (Location bankLocation : bankLocations)
+			{
+				final World bankLocationWorld = bankLocation.getWorld();
+				
+				if (bankLocationWorld == null)
+				{
+					continue;
+				}
+				final boolean sameWorld = sender instanceof Player && ((Player) sender).getWorld().equals(bankLocationWorld);
+				
+				sender.sendMessage(String.format("§8☰  §a%d §8- §7Welt: §9%s\n" + 
+			                                     "§8☷ §7Koordinaten: §9%.0f %.0f %.0f §8× §7Distanz: §9%.2f", 
+			                                     position, bankLocationWorld, bankLocation.getX(), 
+			                                     bankLocation.getY(), bankLocation.getZ(),
+			                                     sameWorld ? ((Player) sender).getLocation().distance(bankLocation) : "-"));
+				position++;
+			}	
+		}
+		else
+		{
+			sender.sendMessage("§8☰ §7Keine Bänker zur Übersicht vorhanden");
+		}	
+	}
+	
+	private void executeBankAdd(CommandSender sender)
+	{
+		if (!(sender instanceof Player))
+		{
+			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
+			return;
+		}
+		final Player player = (Player) sender;
+		final Location playerLocation = player.getLocation();
+		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5);
+		
+		if (economyBank.addBank(bankLocation) == EconomyBank.CODE_SUCCESS)
+		{
+			bankLocation.subtract(0, 1, 0).getBlock().setType(economyConfig.getBankMaterial());
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " platziert.\n",
+					                              MessageHelper.PREFIX_HUFF, "Denke an die Öffnungszeiten von Sonnenaufgang bis Sonnenuntergang."));
+		}
+		else
+		{
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economyConfig.getBankName(), "."));
+		}	
+	}
+	
+	private void executeBankRemove(CommandSender sender)
+	{
+		if (!(sender instanceof Player))
+		{
+			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
+			return;
+		}
+		final Player player = (Player) sender;
+		
+		if (economyBank.removeBank(player.getLocation()) == EconomyBank.CODE_SUCCESS)
+		{
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " entfernt."));
+		}
+		else
+		{
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist nicht in der Nähe von einem ", economyConfig.getBankName(), "."));
+		}	
+	}
+
 	// T A B C O M P L E T E
 	
 	@Override
@@ -311,6 +424,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			paramSuggestions.add("list");
 			paramSuggestions.add("balance");
 			paramSuggestions.add("wallet");
+			paramSuggestions.add("bank");
 		}        
 		else if (StringHelper.isIn(true, args[0], "balance", "wallet"))
 		{
@@ -329,6 +443,14 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 					paramSuggestions.add(publicPlayer.getName());
 				}
 				paramSuggestions.sort(new AlphanumericComparator());
+			}
+		}
+		else if (args[0].equalsIgnoreCase("bank"))
+		{
+			if (args.length == 2)
+			{
+				paramSuggestions.add("add");
+				paramSuggestions.add("remove");
 			}
 		}
 		return paramSuggestions;

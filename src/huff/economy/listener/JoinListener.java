@@ -1,12 +1,15 @@
 package huff.economy.listener;
 
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyConfig;
-import huff.economy.EconomyStorage;
+import huff.economy.storage.EconomyStorage;
 
 public class JoinListener implements Listener
 {
@@ -21,11 +24,18 @@ public class JoinListener implements Listener
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event)
 	{
-		event.getPlayer().getInventory().setItem(8, WalletUtil.getWalletItem(economyConfig)); //TODO Hat er schon einen?
+		final Player player = event.getPlayer();
+		final Inventory playerInventory = player.getInventory();
+		final ItemStack walletItem = economyConfig.getWalletItem();
 		
-		if (!economyStorage.existUser(event.getPlayer().getUniqueId()))
+		if (!playerInventory.contains(walletItem))
 		{
-			economyStorage.addUser(event.getPlayer().getUniqueId(), 100);
+			playerInventory.setItem(8, walletItem);
+		}
+		
+		if (!economyStorage.existUser(player.getUniqueId()))
+		{
+			economyStorage.addUser(player.getUniqueId(), economyConfig.getStartBalance());
 		}
 	}
 }

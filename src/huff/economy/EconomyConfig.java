@@ -1,26 +1,38 @@
 package huff.economy;
 
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.lib.helper.FileHelper;
+import huff.lib.helper.InventoryHelper;
+import huff.lib.helper.StringHelper;
 
 public class EconomyConfig
 {
 	private static final String CFG_ROOT = "huffeconomy.";
+	private static final String CFG_VALUE = CFG_ROOT + "value.";
+	private static final String CFG_WALLET = CFG_ROOT + "wallet.";
+	private static final String CFG_BANK = CFG_ROOT + "bank.";
 	
-	private static final String CFG_VALUENAME = CFG_ROOT + "value_name";
-	private static final String CFG_VALUEMATERIAL = CFG_ROOT + "value_material";
-	private static final String CFG_WALLETNAME = CFG_ROOT + "wallet_name";
-	private static final String CFG_WALLETMATERIAL = CFG_ROOT + "wallet_material";
 	private static final String CFG_STARTBALANCE = CFG_ROOT + "start_balance";
 	private static final String CFG_TRANSACTION_FEEDBACK = CFG_ROOT + "transaction_feedback";
+	private static final String CFG_VALUE_NAME = CFG_VALUE + "name";
+	private static final String CFG_VALUE_MATERIAL = CFG_VALUE + "material";
+	private static final String CFG_WALLET_NAME = CFG_WALLET + "name";
+	private static final String CFG_WALLET_MATERIAL = CFG_WALLET + "material";
+	private static final String CFG_BANK_NAME = CFG_BANK + "name";
+	private static final String CFG_BANK_MATERIAL = CFG_BANK + "material";
+	private static final String CFG_BANK_OPEN = CFG_BANK + "open";
+	private static final String CFG_BANK_CLOSE = CFG_BANK + "close";
 	
 	public EconomyConfig(@NotNull String pluginFolderPath)
 	{
@@ -33,27 +45,47 @@ public class EconomyConfig
 	
 	private final YamlConfiguration config;
 	
+	private double startBalance;
+	private boolean transactionFeedback;
 	private String valueName;
 	private Material valueMaterial;
 	private String walletName;
 	private Material walletMaterial;
-	private double startBalance;
-	private boolean transactionFeedback;
+	private String bankName;
+	private Material bankMaterial;
+	private int bankOpen;
+	private int bankClose;
 
 	public void loadValues()
 	{
-		valueName = (String) FileHelper.readConfigValue(config, CFG_VALUENAME);
-		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_VALUEMATERIAL));
-		walletName = (String) FileHelper.readConfigValue(config, CFG_WALLETNAME);
-		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_WALLETMATERIAL));
 		startBalance = (int) FileHelper.readConfigValue(config, CFG_STARTBALANCE);
 		transactionFeedback = (boolean) FileHelper.readConfigValue(config, CFG_TRANSACTION_FEEDBACK);
+		valueName = (String) FileHelper.readConfigValue(config, CFG_VALUE_NAME);
+		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_VALUE_MATERIAL));
+		walletName = (String) FileHelper.readConfigValue(config, CFG_WALLET_NAME);
+		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_WALLET_MATERIAL));
+		bankName = (String) FileHelper.readConfigValue(config, CFG_BANK_NAME);
+		bankMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_BANK_MATERIAL));
+		bankOpen = (int) FileHelper.readConfigValue(config, CFG_BANK_OPEN);
+		bankClose = (int) FileHelper.readConfigValue(config, CFG_BANK_CLOSE);
 	}
+	
+	public @NotNull double getStartBalance()
+	{
+		return startBalance;
+	}
+	
+	public boolean hasTransactionFeedback()
+	{
+		return transactionFeedback;
+	} 
 	
 	public @NotNull String getValueName()
 	{
 		return valueName;
-	}
+	}	
+	
+	// V A L U E
 	
 	public @NotNull String getValueFormatted(double value)
 	{
@@ -65,6 +97,27 @@ public class EconomyConfig
 		return valueMaterial;
 	}
 	
+	public @NotNull ItemStack getValueItem()
+	{		
+		return InventoryHelper.getItemWithMeta(getValueMaterial(), "§e§l" + getValueName());
+	}
+	
+	public @NotNull List<String> getCurrentValueLore(TransactionKind transactionKind, double currentValue)
+	{
+		Validate.notNull((Object) valueName, "The value-name cannot be null.");
+		Validate.notNull((Object) transactionKind, "The transaction-kind cannot be null.");
+		
+		List<String> valueLore = new ArrayList<>();
+		
+		valueLore.add(String.format("§7%s: %.0f %s", 
+				                    transactionKind.isBankTransaction() ? getBankName() : getWalletName(),
+				                    currentValue, getValueName()));
+		
+		return valueLore;
+	}
+	
+	// W A L L E T
+	
 	public @NotNull String getWalletName()
 	{
 		return walletName;
@@ -75,26 +128,69 @@ public class EconomyConfig
 		return walletMaterial;
 	}
 	
-	public @NotNull double getStartBalance()
-	{
-		return startBalance;
+	public @NotNull ItemStack getWalletItem()
+	{		
+		return InventoryHelper.getItemWithMeta(getWalletMaterial(), "§6§l" + getWalletName());
 	}
 	
-	public @NotNull boolean hasTransactionFeedback()
+	public @NotNull String getWalletInventoryName()
+	{		
+		return "§7» §6" + getWalletName();
+	}
+	
+	// B A N K
+	
+	public @NotNull String getBankName()
 	{
-		return transactionFeedback;
-	} 
+		return bankName;
+	}
+	
+	public @NotNull Material getBankMaterial()
+	{
+		return bankMaterial;
+	}
+	
+	public int getBankOpen()
+	{
+		return bankOpen;
+	}
+	
+	public int getBankClose()
+	{
+		return bankClose;
+	}
+	
+	public @NotNull String getBankEntityName()
+	{
+		return "§e" + getBankName();
+	}
+	
+	public @NotNull String getBankInventoryName()
+	{		
+		return "§7» §e" + getBankName();
+	}
+	
+	// O T H E R
+	
+	public String getTransactionInventoryName(TransactionKind transactionKind)
+	{		
+		return StringHelper.build("§7» §e", getValueName(), " ", transactionKind.getLowerLabel());
+	}
 	
 	private Map<String, Object> createDefaults()
 	{
 		Map<String, Object> defaults = new HashMap<>();
 		
-		defaults.put(CFG_VALUENAME, "Goldlinge");
-		defaults.put(CFG_VALUEMATERIAL, Material.GOLD_NUGGET.toString());
-		defaults.put(CFG_WALLETNAME, "Geldbeutel");
-		defaults.put(CFG_WALLETMATERIAL, Material.BROWN_SHULKER_BOX.toString());
 		defaults.put(CFG_STARTBALANCE, 10);
 		defaults.put(CFG_TRANSACTION_FEEDBACK, true);
+		defaults.put(CFG_VALUE_NAME, "Goldlinge");
+		defaults.put(CFG_VALUE_MATERIAL, Material.GOLD_NUGGET.toString());
+		defaults.put(CFG_WALLET_NAME, "Geldbeutel");
+		defaults.put(CFG_WALLET_MATERIAL, Material.BROWN_SHULKER_BOX.toString());
+		defaults.put(CFG_BANK_NAME, "Bänker");
+		defaults.put(CFG_BANK_MATERIAL, Material.GOLD_BLOCK.toString());
+		defaults.put(CFG_BANK_OPEN, 1000);
+		defaults.put(CFG_BANK_CLOSE, 13000);
 		
 		return defaults;
 	}
