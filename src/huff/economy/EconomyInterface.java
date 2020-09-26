@@ -65,7 +65,7 @@ public class EconomyInterface
 		PluginManager pluginManager = Bukkit.getPluginManager();
 		
 		pluginManager.registerEvents(new JoinListener(economyConfig, economyStorage), plugin);
-		pluginManager.registerEvents(new WalletListener(economyConfig, economyStorage, economySignature), plugin);
+		pluginManager.registerEvents(new WalletListener(economyConfig, economyStorage, economySignature, economyBank), plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)

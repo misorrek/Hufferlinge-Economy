@@ -372,20 +372,15 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
 			return;
 		}
-		final Player player = (Player) sender;
-		final Location playerLocation = player.getLocation();
-		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5);
 		
-		if (economyBank.addBank(bankLocation) == EconomyBank.CODE_SUCCESS)
+		if (economyBank.handleBankAdd((Player) sender, economyConfig) == EconomyBank.CODE_SUCCESS)
 		{
-			bankLocation.subtract(0, 1, 0).getBlock().setType(economyConfig.getBankMaterial());
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " platziert.\n",
-					                              MessageHelper.PREFIX_HUFF, "Denke an die Öffnungszeiten von Sonnenaufgang bis Sonnenuntergang."));
+			sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " platziert.\n"));
 		}
 		else
 		{
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economyConfig.getBankName(), "."));
-		}	
+			sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economyConfig.getBankName(), "."));
+		}
 	}
 	
 	private void executeBankRemove(CommandSender sender)

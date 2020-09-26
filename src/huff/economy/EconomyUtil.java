@@ -86,7 +86,7 @@ public class EconomyUtil
 		return walletInventory;
 	}
 	
-	public static @NotNull Inventory getBankInventory(@NotNull EconomyConfig economyConfig, double currentBalance, double currentWallet)
+	public static @NotNull Inventory getBankInventory(@NotNull EconomyConfig economyConfig, double currentBalance, double currentWallet, boolean withRemove)
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 	
@@ -127,7 +127,15 @@ public class EconomyUtil
 		walletInventory.setItem(23, borderItem);
 		walletInventory.setItem(24, borderItem);
 		walletInventory.setItem(25, borderItem);
-		walletInventory.setItem(26, borderItem);
+		if (withRemove)
+		{
+			walletInventory.setItem(26, InventoryHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, economyConfig.getBankRemoveName()));
+		}
+		else
+		{
+			walletInventory.setItem(26, borderItem);
+		}
+		
 		
 		return walletInventory;
 	}

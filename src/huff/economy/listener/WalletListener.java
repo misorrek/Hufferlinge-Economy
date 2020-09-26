@@ -9,7 +9,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -18,6 +20,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.InventoryAction;
@@ -35,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import huff.economy.EconomyConfig;
 import huff.economy.EconomyUtil;
 import huff.economy.TransactionKind;
+import huff.economy.storage.EconomyBank;
 import huff.economy.storage.EconomySignature;
 import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
@@ -43,18 +47,21 @@ import huff.lib.helper.StringHelper;
 
 public class WalletListener implements Listener
 {
-	public WalletListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature)
+	public WalletListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature, @NotNull EconomyBank economyBank)
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 		Validate.notNull((Object) economyStorage, "The economy-table cannot be null.");
+		Validate.notNull((Object) economyBank, "The economy-bank cannot be null");
 		
 		this.economyConfig = economyConfig;
 		this.economyStorage = economyStorage;
 		this.economySignature = economySignature;
+		this.economyBank = economyBank;
 	}
 	private final EconomyConfig economyConfig;
 	private final EconomyStorage economyStorage;
 	private final EconomySignature economySignature;
+	private final EconomyBank economyBank;
 	
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onBlockPlace(BlockPlaceEvent event)
@@ -64,7 +71,33 @@ public class WalletListener implements Listener
 		if (equalsWalletItem(placedItem) || equalsValueItem(placedItem))
 		{
 			event.setCancelled(true);
+			return;
 		}
+		event.setCancelled(handleBankBlockInteract(event.getPlayer(), event.getBlock()));
+	}
+	
+	@EventHandler (priority = EventPriority.HIGH)
+	public void onBlockBreak(BlockBreakEvent event)
+	{
+		event.setCancelled(handleBankBlockInteract(event.getPlayer(), event.getBlock()));
+	}
+	
+	private boolean handleBankBlockInteract(@NotNull Player player, @NotNull Block block)
+	{
+		if (block.getType() == economyConfig.getBankMaterial())
+		{
+			final Location breakedBlockLocation = block.getLocation();
+			
+			for (Location bankLocation : economyBank.getBankLocations())
+			{
+				if (bankLocation.distance(breakedBlockLocation) < 2)
+				{
+					player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Das erlaubt der ", economyConfig.getBankName(), " nicht."));
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	@EventHandler (priority = EventPriority.HIGH)
@@ -79,14 +112,30 @@ public class WalletListener implements Listener
 	@EventHandler
 	public void onInteract(PlayerInteractEvent event)
 	{
+		final Action action = event.getAction();
 		final Player player = event.getPlayer();
+		final ItemStack playerMainItem = player.getInventory().getItemInMainHand();
 		
-		if ((event.getAction().equals(Action.LEFT_CLICK_AIR) || event.getAction().equals(Action.LEFT_CLICK_BLOCK)) &&
-			equalsWalletItem(player.getInventory().getItemInMainHand()))
+		if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) &&
+			equalsWalletItem(playerMainItem))
 		{
 			player.openInventory(EconomyUtil.getWalletInventory(economyConfig, economyStorage.getWallet(player.getUniqueId())));
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
+		}
+		else if (action == Action.RIGHT_CLICK_BLOCK && equalsBankSpawnItem(playerMainItem))
+		{
+			if (economyBank.handleBankAdd(player, economyConfig) == EconomyBank.CODE_SUCCESS)
+			{
+				player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " platziert.\n",
+                                                      MessageHelper.PREFIX_HUFF, "Denke an die Öffnungszeiten von ", MessageHelper.getTimeLabel(economyConfig.getBankOpen()),
+                                                                                 "bis ", MessageHelper.getTimeLabel(economyConfig.getBankClose()), "."));
+				player.getInventory().setItemInMainHand(null); //AMOUNT -1 ?
+			}
+			else
+			{
+				player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economyConfig.getBankName(), "."));
+			}
 		}
 	}
 	
@@ -111,7 +160,7 @@ public class WalletListener implements Listener
 		    (equalsWalletItem(player.getInventory().getItemInMainHand()) ||
 			 equalsWalletItem(player.getInventory().getItemInOffHand())))
 		{
-			player.closeInventory(); // TODO Test with Player
+			player.closeInventory();
 			player.openInventory(EconomyUtil.getTransactionInventory(economyConfig, TransactionKind.WALLET_OUT,  economyStorage.getWallet(player.getUniqueId()), ((Player) entity).getName()));		
 			return true;
 		}
@@ -121,13 +170,15 @@ public class WalletListener implements Listener
 		{
 			final UUID playerUUID = player.getUniqueId();
 			
-			player.openInventory(EconomyUtil.getBankInventory(economyConfig, economyStorage.getBalance(playerUUID), economyStorage.getWallet(playerUUID)));
+			player.openInventory(EconomyUtil.getBankInventory(economyConfig, economyStorage.getBalance(playerUUID), 
+					                                          economyStorage.getWallet(playerUUID), 
+					                                          economyBank.isOwner(playerUUID, entity.getLocation())));
 			return true;
 		}	
 		return false;
 	}
 	
-	@EventHandler (priority = EventPriority.HIGHEST)
+	@EventHandler (priority = EventPriority.HIGH)
 	public void onHumanInverntoryClick(InventoryClickEvent event) //TODO Handle full inventory
 	{	
 		if (event.getClickedInventory() != null && event.getCursor() != null)
@@ -372,5 +423,10 @@ public class WalletListener implements Listener
 	private boolean equalsValueItem(ItemStack item)
 	{
 		return item.getType().equals(economyConfig.getValueMaterial()) && item.getItemMeta().getDisplayName().equals("§e§l" + economyConfig.getValueName());
+	}
+	
+	private boolean equalsBankSpawnItem(ItemStack item)
+	{
+		return item.getType().equals(economyConfig.getBankSpawnMaterial()) && item.getItemMeta().getDisplayName().equals("§e§l" + economyConfig.getBankName());
 	}
 }

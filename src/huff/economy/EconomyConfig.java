@@ -31,6 +31,7 @@ public class EconomyConfig
 	private static final String CFG_WALLET_MATERIAL = CFG_WALLET + "material";
 	private static final String CFG_BANK_NAME = CFG_BANK + "name";
 	private static final String CFG_BANK_MATERIAL = CFG_BANK + "material";
+	private static final String CFG_BANK_SPAWN_MATERIAL = CFG_BANK + "spawn_material";
 	private static final String CFG_BANK_OPEN = CFG_BANK + "open";
 	private static final String CFG_BANK_CLOSE = CFG_BANK + "close";
 	
@@ -39,7 +40,7 @@ public class EconomyConfig
 		Validate.notNull((Object) pluginFolderPath, "The plugin-folder-path cannot be null.");
 		
 		this.config = FileHelper.loadYamlConfigurationFromFile(Paths.get(pluginFolderPath, "Economy", "config.yml").toString(), "Hufferlinge Economy Config File", createDefaults());
-		
+	
 		loadValues();
 	}
 	
@@ -48,11 +49,12 @@ public class EconomyConfig
 	private double startBalance;
 	private boolean transactionFeedback;
 	private String valueName;
-	private Material valueMaterial;
+	private Material valueMaterial; 
 	private String walletName;
 	private Material walletMaterial;
 	private String bankName;
 	private Material bankMaterial;
+	private Material bankSpawnMaterial;
 	private int bankOpen;
 	private int bankClose;
 
@@ -66,6 +68,7 @@ public class EconomyConfig
 		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_WALLET_MATERIAL));
 		bankName = (String) FileHelper.readConfigValue(config, CFG_BANK_NAME);
 		bankMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_BANK_MATERIAL));
+		bankSpawnMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_BANK_SPAWN_MATERIAL));
 		bankOpen = (int) FileHelper.readConfigValue(config, CFG_BANK_OPEN);
 		bankClose = (int) FileHelper.readConfigValue(config, CFG_BANK_CLOSE);
 	}
@@ -150,6 +153,11 @@ public class EconomyConfig
 		return bankMaterial;
 	}
 	
+	public @NotNull Material getBankSpawnMaterial()
+	{
+		return bankSpawnMaterial;
+	}
+	
 	public int getBankOpen()
 	{
 		return bankOpen;
@@ -168,6 +176,11 @@ public class EconomyConfig
 	public @NotNull String getBankInventoryName()
 	{		
 		return "§7» §e" + getBankName();
+	}
+	  
+	public @NotNull String getBankRemoveName()
+	{
+		return "§7» §c" + getBankName() + " entfernen";
 	}
 	
 	// O T H E R
@@ -189,6 +202,7 @@ public class EconomyConfig
 		defaults.put(CFG_WALLET_MATERIAL, Material.BROWN_SHULKER_BOX.toString());
 		defaults.put(CFG_BANK_NAME, "Bänker");
 		defaults.put(CFG_BANK_MATERIAL, Material.GOLD_BLOCK.toString());
+		defaults.put(CFG_BANK_SPAWN_MATERIAL, Material.OCELOT_SPAWN_EGG.toString());
 		defaults.put(CFG_BANK_OPEN, 1000);
 		defaults.put(CFG_BANK_CLOSE, 13000);
 		
