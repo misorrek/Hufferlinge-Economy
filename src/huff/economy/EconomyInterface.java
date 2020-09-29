@@ -1,117 +1,80 @@
 package huff.economy;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.lang.Validate;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.Villager.Type;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import huff.economy.listener.JoinListener;
-import huff.economy.listener.WalletListener;
 import huff.economy.storage.EconomyBank;
 import huff.economy.storage.EconomySignature;
 import huff.economy.storage.EconomyStorage;
-import huff.lib.manager.RedisManager;
 
 public class EconomyInterface
 {
-	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull RedisManager redisManager)
+	public EconomyInterface(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature, @NotNull EconomyBank economyBank)
 	{
-		Validate.notNull((Object) plugin, "The plugin-instance cannot be null.");
-		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
+		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
+		Validate.notNull((Object) economyStorage, "The economy-storage cannot be null.");
+		Validate.notNull((Object) economySignature, "The economy-signature cannot be null");
+		Validate.notNull((Object) economyBank, "The economy-bank cannot be null");
 		
-		this.plugin = plugin;
-		this.economyStorage = new EconomyStorage(redisManager);
-		this.economySignature = new EconomySignature(redisManager);
-		this.economyBank = new EconomyBank(redisManager);
-		this.economyConfig = new EconomyConfig(plugin.getDataFolder().getAbsolutePath());
+		this.economyConfig = economyConfig;
+		this.economyStorage = economyStorage;
+		this.economySignature = economySignature;
+		this.economyBank = economyBank;
 	}
-	
-	private final JavaPlugin plugin;
+	private final EconomyConfig economyConfig;
 	private final EconomyStorage economyStorage;
 	private final EconomySignature economySignature;
 	private final EconomyBank economyBank;
-	private final EconomyConfig economyConfig;
 	
-	private boolean bankOpen = false;
-	
-	public void registerCommands()
+	public @NotNull EconomyConfig getConfig()
 	{
-		EconomyCommand economyCommand = new EconomyCommand(economyStorage, economyBank, economyConfig);
-		PluginCommand pluginEconomyCommand = plugin.getCommand("huffeconomy");
-		List<String> economyCommandAliases = new ArrayList<>();
+		return economyConfig;
+	}
+	
+	public @NotNull EconomyStorage getStorage()
+	{
+		return economyStorage;
+	}
+	
+	public @NotNull EconomySignature getSignature()
+	{
+		return economySignature;
+	}
+	
+	public @NotNull EconomyBank getBank()
+	{
+		return economyBank;
+	}
+	
+	public @NotNull Villager spawnBankEntity(@NotNull Location location)
+	{
+		Validate.notNull((Object) location, "The bank-entity-location cannot be null");
 		
-		economyCommandAliases.add("huffconomy");
-		economyCommandAliases.add("economy");
-		economyCommandAliases.add("money");
+		final Villager bankEntity = (Villager) location.getWorld().spawnEntity(location, EntityType.VILLAGER);
 		
-		pluginEconomyCommand.setExecutor(economyCommand);
-		pluginEconomyCommand.setTabCompleter(economyCommand);
-		pluginEconomyCommand.setAliases(economyCommandAliases);
-		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
-	}
-	
-	public void registerListener()
-	{
-		PluginManager pluginManager = Bukkit.getPluginManager();
+		bankEntity.setAI(false);
+		bankEntity.setInvulnerable(true);
+		bankEntity.setCollidable(false);
+		bankEntity.setVillagerType(Type.DESERT);
+		bankEntity.setCustomName(economyConfig.getBankEntityName());
 		
-		pluginManager.registerEvents(new JoinListener(economyConfig, economyStorage), plugin);
-		pluginManager.registerEvents(new WalletListener(economyConfig, economyStorage, economySignature, economyBank), plugin);
+		return bankEntity;
 	}
 	
-	public void handleBankSpawning(long worldTime)
-	{	
-		if (worldTime >= economyConfig.getBankOpen() && worldTime < economyConfig.getBankClose())
-		{
-			if (!bankOpen)
-			{
-				spawnBank();
-				bankOpen = true;	
-			}			
-		}
-		else
-		{
-			if (bankOpen)
-			{
-				removeBank();
-				bankOpen = false;
-			}		
-		}
-	}
-	
-	public void spawnBank()
+	public void removeBankEntity(@NotNull Location location)
 	{
-		for (Location bankLocation : economyBank.getBankLocations())
+		Validate.notNull((Object) location, "The bank-entity-location cannot be null");
+		
+		for (Entity entity : location.getWorld().getNearbyEntities(location, 2, 2, 2))
 		{
-			final Villager bankEntity = (Villager) bankLocation.getWorld().spawnEntity(bankLocation, EntityType.VILLAGER);
-			
-			bankEntity.setAI(false);
-			bankEntity.setInvulnerable(true);
-			bankEntity.setCollidable(false);
-			bankEntity.setVillagerType(Type.DESERT);
-			bankEntity.setCustomName(economyConfig.getBankEntityName());
-		}
-	}
-	
-	public void removeBank()
-	{
-		for (Location bankLocation : economyBank.getBankLocations())
-		{
-			for (Entity entity : bankLocation.getWorld().getNearbyEntities(bankLocation, 5, 5, 5))
+			if (entity instanceof Villager && entity.getCustomName().equals(economyConfig.getBankEntityName()))
 			{
-				if (entity instanceof Villager && entity.getCustomName().equals(economyConfig.getBankEntityName()))
-				{
-					entity.remove();
-				}
+				entity.remove();
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.FileHelper;
 import huff.lib.helper.InventoryHelper;
@@ -83,17 +84,22 @@ public class EconomyConfig
 		return transactionFeedback;
 	} 
 	
+	// V A L U E
+	
 	public @NotNull String getValueName()
 	{
 		return valueName;
 	}	
 	
-	// V A L U E
-	
 	public @NotNull String getValueFormatted(double value)
 	{
 		return String.format("%.0f %s", value, getValueName());
 	}
+	
+	public @NotNull String getValueItemName()
+	{
+		return "§e§l" + valueName;
+	}	
 	
 	public @NotNull Material getValueMaterial()
 	{
@@ -102,7 +108,12 @@ public class EconomyConfig
 	
 	public @NotNull ItemStack getValueItem()
 	{		
-		return InventoryHelper.getItemWithMeta(getValueMaterial(), "§e§l" + getValueName());
+		return InventoryHelper.getItemWithMeta(getValueMaterial(), getValueItemName());
+	}
+	
+	public boolean equalsValueItem(@Nullable ItemStack item)
+	{
+		return item != null && item.getType().equals(getValueMaterial()) && item.getItemMeta().getDisplayName().equals(getValueItemName());
 	}
 	
 	public @NotNull List<String> getCurrentValueLore(TransactionKind transactionKind, double currentValue)
@@ -119,11 +130,21 @@ public class EconomyConfig
 		return valueLore;
 	}
 	
-	// W A L L E T
+	// W A L L E T 
 	
 	public @NotNull String getWalletName()
 	{
 		return walletName;
+	}
+	
+	public @NotNull String getWalletItemName()
+	{
+		return "§6§l" + walletName;
+	}
+	
+	public @NotNull String getWalletInventoryName()
+	{		
+		return "§7» §6" + getWalletName();
 	}
 	
 	public @NotNull Material getWalletMaterial()
@@ -133,12 +154,12 @@ public class EconomyConfig
 	
 	public @NotNull ItemStack getWalletItem()
 	{		
-		return InventoryHelper.getItemWithMeta(getWalletMaterial(), "§6§l" + getWalletName());
+		return InventoryHelper.getItemWithMeta(getWalletMaterial(), getWalletItemName());
 	}
 	
-	public @NotNull String getWalletInventoryName()
-	{		
-		return "§7» §6" + getWalletName();
+	public boolean equalsWalletItem(@Nullable ItemStack item)
+	{
+		return item != null && item.getType().equals(getWalletMaterial()) && item.getItemMeta().getDisplayName().equals(getWalletItemName());
 	}
 	
 	// B A N K
@@ -146,6 +167,26 @@ public class EconomyConfig
 	public @NotNull String getBankName()
 	{
 		return bankName;
+	}
+	
+	public @NotNull String getBankItemName()
+	{
+		return "§e§l" + bankName;
+	}
+	
+	public @NotNull String getBankEntityName()
+	{
+		return "§e" + getBankName();
+	}
+	
+	public @NotNull String getBankInventoryName()
+	{		
+		return "§7» §e" + getBankName();
+	}
+	  
+	public @NotNull String getBankRemoveName()
+	{
+		return "§7» §c" + getBankName() + " entfernen";
 	}
 	
 	public @NotNull Material getBankMaterial()
@@ -168,19 +209,14 @@ public class EconomyConfig
 		return bankClose;
 	}
 	
-	public @NotNull String getBankEntityName()
-	{
-		return "§e" + getBankName();
+	public @NotNull ItemStack getBankSpawnItem()
+	{		
+		return InventoryHelper.getItemWithMeta(getBankSpawnMaterial(), getBankItemName());
 	}
 	
-	public @NotNull String getBankInventoryName()
-	{		
-		return "§7» §e" + getBankName();
-	}
-	  
-	public @NotNull String getBankRemoveName()
+	public boolean equalsBankSpawnItem(@Nullable ItemStack item)
 	{
-		return "§7» §c" + getBankName() + " entfernen";
+		return item != null && item.getType().equals(getBankSpawnMaterial()) && item.getItemMeta().getDisplayName().equals(getBankItemName());
 	}
 	
 	// O T H E R

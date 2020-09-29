@@ -77,7 +77,9 @@ public class EconomyBank
 		
 		if (bankKey != null)
 		{
-			return redisManager.getFieldValue(bankKey, FIELD_OWNER).equals(uuid.toString());
+			final String fieldValue = redisManager.getFieldValue(bankKey, FIELD_OWNER);
+			
+			return fieldValue != null && fieldValue.equals(uuid.toString());		
 		}
 		return false;
 	}

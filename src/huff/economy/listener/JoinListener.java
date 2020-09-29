@@ -1,5 +1,6 @@
 package huff.economy.listener;
 
+import org.apache.commons.lang.Validate;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -8,34 +9,33 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import huff.economy.EconomyConfig;
-import huff.economy.storage.EconomyStorage;
+import huff.economy.EconomyInterface;
 
 public class JoinListener implements Listener
 {
-	public JoinListener(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage)
+	public JoinListener(@NotNull EconomyInterface economyInterface)
 	{
-		this.economyConfig = economyConfig;
-		this.economyStorage = economyStorage;
+		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
+		
+		this.economy = economyInterface;
 	}
-	private EconomyConfig economyConfig;
-	private EconomyStorage economyStorage;
+	private final EconomyInterface economy;
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event)
 	{
 		final Player player = event.getPlayer();
 		final Inventory playerInventory = player.getInventory();
-		final ItemStack walletItem = economyConfig.getWalletItem();
+		final ItemStack walletItem = economy.getConfig().getWalletItem();
 		
 		if (!playerInventory.contains(walletItem))
 		{
 			playerInventory.setItem(8, walletItem);
 		}
 		
-		if (!economyStorage.existUser(player.getUniqueId()))
+		if (!economy.getStorage().existUser(player.getUniqueId()))
 		{
-			economyStorage.addUser(player.getUniqueId(), economyConfig.getStartBalance());
+			economy.getStorage().addUser(player.getUniqueId(), economy.getConfig().getStartBalance());
 		}
 	}
 }

@@ -27,19 +27,13 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 {
 	private static final String PERM_ECONOMY = PermissionHelper.PERM_ROOT_HUFF + "economy";
 	
-	public EconomyCommand(@NotNull EconomyStorage economyStorage, @NotNull EconomyBank economyBank, @NotNull EconomyConfig economyConfig)
+	public EconomyCommand(@NotNull EconomyInterface economyInterface)
 	{
-		Validate.notNull((Object) economyStorage, "The economy-table cannot be null.");
-		Validate.notNull((Object) economyBank, "The economy-bank cannot be null.");
-		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
+		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		
-		this.economyStorage = economyStorage;
-		this.economyBank = economyBank;
-		this.economyConfig = economyConfig;
+		this.economy = economyInterface;
 	}
-	private final EconomyStorage economyStorage;
-	private final EconomyBank economyBank;
-	private final EconomyConfig economyConfig;
+	private final EconomyInterface economy;
 	
 	// C O M M A N D
 
@@ -86,7 +80,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private void executeList(CommandSender sender)
 	{
-		final List<String> economyOverview = economyStorage.getEconomyOverview();
+		final List<String> economyOverview = economy.getStorage().getEconomyOverview();
 		
 		if (!economyOverview.isEmpty())
 		{
@@ -153,7 +147,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final double value = isBalance ? economyStorage.getBalance(targetUUID) : economyStorage.getWallet(targetUUID);
+		final double value = isBalance ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
 		final int feedbackCode = value >= 0 ? EconomyStorage.CODE_SUCCESS : EconomyStorage.CODE_NOUSER;
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
@@ -192,7 +186,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String procesSetValue(boolean isBalance, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = isBalance ? economyStorage.setBalance(targetUUID, value) : economyStorage.setWallet(targetUUID, value);
+		final int feedbackCode = isBalance ? economy.getStorage().setBalance(targetUUID, value) : economy.getStorage().setWallet(targetUUID, value);
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null); 
 	}
@@ -230,7 +224,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = (isBalance ? economyStorage.updateBalance(targetUUID, value, isRemove, false) : economyStorage.updateWallet(targetUUID, value, isRemove));
+		final int feedbackCode = (isBalance ? economy.getStorage().updateBalance(targetUUID, value, isRemove, false) : economy.getStorage().updateWallet(targetUUID, value, isRemove));
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, targetName, targetUUID);
 	}
@@ -287,7 +281,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		case EconomyStorage.CODE_SUCCESS:
 			messageBuilder.append(selfPerform ? "hast " : "hat ");
 			messageBuilder.append(updatedPerform ? "nun " : "");
-			messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(value), false, true));
+			messageBuilder.append(MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(value), false, true));
 			if (updatedPerform) messageBuilder.append(withRemove ? "weniger " : "mehr ");
 			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
 			if (updatedPerform)
@@ -295,7 +289,8 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				messageBuilder.append("\n");
 				messageBuilder.append(MessageHelper.PREFIX_HUFF);
 				messageBuilder.append("Der neue Stand beträgt");
-				messageBuilder.append(MessageHelper.getHighlighted(economyConfig.getValueFormatted(isBalance ? economyStorage.getBalance(playerUUID) : economyStorage.getWallet(playerUUID)), true, false));
+				messageBuilder.append(MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(isBalance ? economy.getStorage().getBalance(playerUUID) : 
+						                                                                                             economy.getStorage().getWallet(playerUUID)), true, false));
 				messageBuilder.append(".");
 			}
 			break;
@@ -314,16 +309,27 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private boolean executeBankAction(CommandSender sender, String[] args)
 	{
-		switch (args[1].toLowerCase())
+		final String action = args[1].toLowerCase();
+		
+		if (!action.equals("show") && !(sender instanceof Player))
+		{
+			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
+			return true;
+		}
+		
+		switch (action)
 		{
 		case "show":
 			executeBankShow(sender);	
 			return true;
 		case "add":
-			executeBankAdd(sender);
+			executeBankAdd((Player) sender);
 			return true;
 		case "remove":
-			executeBankRemove(sender);
+			executeBankRemove((Player) sender);
+			return true;
+		case "item":
+			executeBankItem((Player) sender);
 			return true;
 		default:
 			return false;
@@ -332,7 +338,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private void executeBankShow(CommandSender sender)
 	{
-		final List<Location> bankLocations = economyBank.getBankLocations();
+		final List<Location> bankLocations = economy.getBank().getBankLocations();
 		
 		if (!bankLocations.isEmpty())
 		{
@@ -353,9 +359,9 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				
 				sender.sendMessage(String.format("§8☰  §a%d §8- §7Welt: §9%s\n" + 
 			                                     "§8☷ §7Koordinaten: §9%.0f %.0f %.0f §8× §7Distanz: §9%.2f", 
-			                                     position, bankLocationWorld, bankLocation.getX(), 
+			                                     position, bankLocationWorld.getName(), bankLocation.getX(), 
 			                                     bankLocation.getY(), bankLocation.getZ(),
-			                                     sameWorld ? ((Player) sender).getLocation().distance(bankLocation) : "-"));
+			                                     sameWorld ? ((Player) sender).getLocation().distance(bankLocation) : -1));
 				position++;
 			}	
 		}
@@ -365,41 +371,35 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		}	
 	}
 	
-	private void executeBankAdd(CommandSender sender)
+	private void executeBankAdd(Player player)
 	{
-		if (!(sender instanceof Player))
+		if (economy.getBank().handleBankAdd(player, economy.getConfig()) == EconomyBank.CODE_SUCCESS)
 		{
-			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
-			return;
-		}
-		
-		if (economyBank.handleBankAdd((Player) sender, economyConfig) == EconomyBank.CODE_SUCCESS)
-		{
-			sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " platziert.\n"));
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " platziert.\n"));
 		}
 		else
 		{
-			sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economyConfig.getBankName(), "."));
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economy.getConfig().getBankName(), "."));
 		}
 	}
 	
-	private void executeBankRemove(CommandSender sender)
+	private void executeBankRemove(Player player)
 	{
-		if (!(sender instanceof Player))
+		if (economy.getBank().removeBank(player.getLocation()) == EconomyBank.CODE_SUCCESS)
 		{
-			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
-			return;
-		}
-		final Player player = (Player) sender;
-		
-		if (economyBank.removeBank(player.getLocation()) == EconomyBank.CODE_SUCCESS)
-		{
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economyConfig.getBankName(), " entfernt."));
+			
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt."));
 		}
 		else
 		{
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist nicht in der Nähe von einem ", economyConfig.getBankName(), "."));
+			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist nicht in der Nähe von einem ", economy.getConfig().getBankName(), "."));
 		}	
+	}
+	
+	private void executeBankItem(Player player)
+	{
+		player.getInventory().addItem(economy.getConfig().getBankSpawnItem());
+		player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast das ", economy.getConfig().getBankName(), "-Spawn-Item bekommen."));		
 	}
 
 	// T A B C O M P L E T E
@@ -440,13 +440,12 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				paramSuggestions.sort(new AlphanumericComparator());
 			}
 		}
-		else if (args[0].equalsIgnoreCase("bank"))
+		else if (args[0].equalsIgnoreCase("bank") && args.length == 2)
 		{
-			if (args.length == 2)
-			{
-				paramSuggestions.add("add");
-				paramSuggestions.add("remove");
-			}
+			paramSuggestions.add("show");
+			paramSuggestions.add("item");
+			paramSuggestions.add("add");
+			paramSuggestions.add("remove");			
 		}
 		return paramSuggestions;
 	}
