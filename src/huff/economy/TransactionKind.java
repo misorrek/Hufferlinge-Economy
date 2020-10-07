@@ -15,6 +15,23 @@ public enum TransactionKind
 	}
 	
 	private final String label;
+	
+	public static boolean isTransaction(@NotNull String transactionLabel)
+	{
+		return getTransaction(transactionLabel) != null;
+	}
+	
+	public static @Nullable TransactionKind getTransaction(@NotNull String transactionLabel)
+	{
+		for (TransactionKind transactionKind : TransactionKind.values())
+		{
+			if (StringUtils.containsIgnoreCase(transactionLabel, transactionKind.getLabel()))
+			{
+				return transactionKind;
+			}
+		}
+		return null;
+	}	
 		
 	public @NotNull String getLabel()
 	{
