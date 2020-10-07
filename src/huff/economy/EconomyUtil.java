@@ -175,7 +175,13 @@ public class EconomyUtil
 		walletInventory.setItem(21, InventoryHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, false)));
 		if (StringHelper.isNotNullOrEmpty(playerName))
 		{
-			walletInventory.setItem(22, InventoryHelper.getItemWithMeta(Material.BLUE_STAINED_GLASS_PANE, "§7Empfänger: §9" + playerName));
+			final ItemStack targetSkull = new ItemStack(Material.SKULL_ITEM, 1, (short) 3); //TODO In Lib auslagern
+			final SkullMeta targetSkullMeta = (SkullMeta) targetSkull.getItemMeta();
+			targetSkullMeta.setOwner(playerName);
+			targetSkullMeta.setDisplayName("§7Empfänger: §9" + playerName);
+			targetSkull.setItemMeta(targetSkullMeta);
+			
+			walletInventory.setItem(22, targetSkull);
 		}
 		else
 		{
