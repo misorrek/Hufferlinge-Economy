@@ -2,24 +2,29 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>hufferlinge</groupId>
   <artifactId>economy</artifactId>
-  <version>1.0</version>
-  <dependencies>
-  	<dependency>
-	  <groupId>org.jetbrains</groupId>
-	  <artifactId>annotations</artifactId>
-	  <version>16.0.2</version>
-  	</dependency>
-  	<dependency>
-	  <groupId>redis.clients</groupId>
-	  <artifactId>jedis</artifactId>
-	  <version>3.3.0</version>
-	</dependency>
+  <version>1.16.3-R0.1-SNAPSHOT</version>
+  
+  <repositories>
+    <repository>
+      <id>spigot-repo</id>
+      <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+    </repository>
+  </repositories>
+  
+  <dependencies>  
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency> 
 	<dependency>
 	  <groupId>hufferlinge</groupId>
 	  <artifactId>lib</artifactId>
-	  <version>1.0</version>
+	  <version>${project.version}</version>
 	</dependency>
   </dependencies>
+  
   <build>
     <sourceDirectory>src</sourceDirectory>
     <plugins>
