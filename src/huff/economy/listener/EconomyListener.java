@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.economy.EconomyUtil;
+import huff.economy.TransactionInventory;
 import huff.economy.TransactionKind;
 import huff.economy.storage.EconomyBank;
 import huff.lib.helper.MessageHelper;
@@ -102,7 +103,7 @@ public class EconomyListener implements Listener
 		     economy.getConfig().equalsWalletItem(player.getInventory().getItemInOffHand())))
 		{
 			player.closeInventory();
-			player.openInventory(EconomyUtil.getTransactionInventory(economy.getConfig(), TransactionKind.WALLET_OUT,  economy.getStorage().getWallet(player.getUniqueId()), ((Player) entity).getName()));		
+			player.openInventory(new TransactionInventory(TransactionKind.WALLET_OUT, entity.getUniqueId()));		
 			return true;
 		}
 		

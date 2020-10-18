@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.FileHelper;
-import huff.lib.helper.InventoryHelper;
+import huff.lib.helper.ItemHelper;
 import huff.lib.helper.StringHelper;
 
 public class EconomyConfig
@@ -108,7 +108,7 @@ public class EconomyConfig
 	
 	public @NotNull ItemStack getValueItem()
 	{		
-		return InventoryHelper.getItemWithMeta(getValueMaterial(), getValueItemName());
+		return ItemHelper.getItemWithMeta(getValueMaterial(), getValueItemName());
 	}
 	
 	public boolean equalsValueItem(@Nullable ItemStack item)
@@ -154,7 +154,7 @@ public class EconomyConfig
 	
 	public @NotNull ItemStack getWalletItem()
 	{		
-		return InventoryHelper.getItemWithMeta(getWalletMaterial(), getWalletItemName());
+		return ItemHelper.getItemWithMeta(getWalletMaterial(), getWalletItemName());
 	}
 	
 	public boolean equalsWalletItem(@Nullable ItemStack item)
@@ -211,7 +211,7 @@ public class EconomyConfig
 	
 	public @NotNull ItemStack getBankSpawnItem()
 	{		
-		return InventoryHelper.getItemWithMeta(getBankSpawnMaterial(), getBankItemName());
+		return ItemHelper.getItemWithMeta(getBankSpawnMaterial(), getBankItemName());
 	}
 	
 	public boolean equalsBankSpawnItem(@Nullable ItemStack item)

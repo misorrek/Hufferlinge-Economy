@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -43,6 +44,17 @@ public class EconomyStorage
 	public boolean addUser(@NotNull UUID uuid, double startBalance) 
 	{
 		return redisManager.addMap(getPatternKey(uuid), getFieldValuePairs(startBalance, 0.0));
+	}
+	
+	public List<UUID> getUsers()
+	{
+		List<UUID> users = new ArrayList<>();
+		
+		for (String key : getKeys())
+		{
+			users.add(UUID.fromString(key));	
+		}
+		return users;
 	}
 	
 	public double getBalance(@NotNull UUID uuid)
@@ -153,6 +165,11 @@ public class EconomyStorage
 			Bukkit.getLogger().log(Level.SEVERE	, "Redis-Statement cannot be executed.", exception);
 		}	
 		return economyOverview;
+	}
+	
+	private @NotNull Set<String> getKeys()
+	{
+		return redisManager.getJedis().keys(StringHelper.build('*', PATTERN_USER, '*'));
 	}
 	
 	private @NotNull String getPatternKey(@NotNull UUID uuid)

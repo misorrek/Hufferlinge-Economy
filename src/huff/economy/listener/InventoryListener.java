@@ -1,10 +1,12 @@
 package huff.economy.listener;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -16,6 +18,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,11 +27,13 @@ import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.economy.EconomyUtil;
+import huff.economy.TransactionInventory;
 import huff.economy.TransactionKind;
 import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
+import huff.lib.inventories.PlayerChooser;
 
 public class InventoryListener
 {
@@ -113,15 +118,38 @@ public class InventoryListener
 	}
 	
 	@EventHandler
+	public void onPlayerChooserStorageInventoryClick(InventoryClickEvent event)
+	{
+		if (event.getInventory() instanceof PlayerChooser)
+		{
+			final HumanEntity human = event.getWhoClicked();
+			final UUID currentUUID = ((PlayerChooser) event.getInventory()).handleEvent(event.getCurrentItem());
+			
+			human.closeInventory();
+			
+			if (currentUUID != null)
+			{
+				human.openInventory(new TransactionInventory(TransactionKind.BANK_OTHER, currentUUID));
+			}
+			else
+			{
+				human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Auswahl einer Person war nicht erfolgreich.");
+			}
+			event.setCancelled(true);
+		}
+	}
+	
+	@EventHandler
 	public void onEconomyStorageInventoryClick(InventoryClickEvent event)
 	{
-		final HumanEntity human = event.getWhoClicked();
 		final InventoryView view = event.getView();
 		final String viewTitle = view.getTitle();
 		
 		if (viewTitle.equals(economy.getConfig().getWalletInventoryName()) || viewTitle.equals(economy.getConfig().getBankInventoryName()))
 		{
 			event.setCancelled(true);
+			
+			final ItemStack currentItem = event.getCurrentItem();
 			
 			if (currentItem == null)
 			{
@@ -135,25 +163,26 @@ public class InventoryListener
 			}
 			else
 			{
-				handleTransactionOpen(player, currentItemName)
+				handleTransactionOpen((Player) event.getWhoClicked(), currentItemName);
 			}
 		}
 	}
 	
 	public void handleTransactionOpen(@NotNull Player player, @NotNull String currentItemName)
 	{
-		if (isTransaction(currentItemName))
+		if (TransactionKind.isTransaction(currentItemName))
 		{
 			final TransactionKind transactionKind = TransactionKind.valueOf(currentItemName);
 			
+			player.closeInventory();
+			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				//TODO Open Player Chooser
+				player.openInventory(new PlayerChooser(economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true));
 			}
 			else
-			{		
-				player.closeInventory();
-				player.openInventory(EconomyUtil.getTransactionInventory(economy.getConfig(), , economy.getStorage().getWallet(player.getUniqueId()), null));
+			{						
+				player.openInventory(new TransactionInventory(transactionKind, null));
 			}
 		}
 	}
@@ -161,6 +190,15 @@ public class InventoryListener
 	@EventHandler
 	public void onTransactionInventoryClick(InventoryClickEvent event)
 	{
+		if (event.getInventory() instanceof TransactionInventory)
+		{
+			final HumanEntity human = event.getWhoClicked();
+			
+			((TransactionInventory) event.getInventory()).handleEvent(economy, event.getCurrentItem(), human);
+			
+			event.setCancelled(true);
+		}
+		
 		final HumanEntity human = event.getWhoClicked();
 		final InventoryView view = event.getView();
 		final String viewTitle = view.getTitle();
@@ -189,7 +227,7 @@ public class InventoryListener
 		}
 		else if (StringHelper.contains(false, currentItemName, "+", "-"))
 		{
-			modifyTransactionValue(event.getInventory(), (Player) human, transactionKind.isBankTransaction() ? economy.getStorage.getBank(human.getUniqueId() : economy.getStorage.getWallet(human.getUniqueId()));
+			modifyTransactionValue(event.getInventory(), (Player) human, currentItemName, (transactionKind.isBankTransaction() ? economy.getStorage().getBalance(human.getUniqueId()) : economy.getStorage().getWallet(human.getUniqueId())));
 		}
 		else if (StringUtils.containsIgnoreCase(currentItemName, transactionKind.getLabel()))
 		{		
@@ -202,8 +240,8 @@ public class InventoryListener
 					final double valueAmount = EconomyUtil.getPayValueAmount(event.getInventory());
 					final String formattedValueAmount = MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(valueAmount));
 					
-					final int selfFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBank(human.getUniqueId(), valueAmount, true) : economy.getStorage().updateWallet(human.getUniqueId(), valueAmount, true)
-					final int otherFeedbackcode = transactionKind.isBankTransaction() ?economy.getStorage().updateBank(targetPlayer.getUniqueId(), valueAmount, false) : economy.getStorage().updateWallet(targetPlayer.getUniqueId(), valueAmount, false)
+					final int selfFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(human.getUniqueId(), valueAmount, true, false) : economy.getStorage().updateWallet(human.getUniqueId(), valueAmount, true);
+					final int otherFeedbackcode = transactionKind.isBankTransaction() ?economy.getStorage().updateBalance(targetPlayer.getUniqueId(), valueAmount, false, false) : economy.getStorage().updateWallet(targetPlayer.getUniqueId(), valueAmount, false);
 					
 					if (selfFeedbackcode == EconomyStorage.CODE_SUCCESS && otherFeedbackcode == EconomyStorage.CODE_SUCCESS)
 					{
@@ -254,19 +292,19 @@ public class InventoryListener
 		
 	}
 	
-	private void modifyTransactionValue(@NotNull Inventory transactionInventory, @NotNull Player player, double currentStorageValue)
+	private void modifyTransactionValue(@NotNull Inventory transactionInventory, @NotNull Player player, @NotNull String itemName, double currentStorageValue)
 	{
 		try
 		{
 			final Pattern valuePattern = Pattern.compile("§.([+-]) ([0-9]*)");
-			final Matcher matcher = valuePattern.matcher(currentItemName);				
+			final Matcher matcher = valuePattern.matcher(itemName);				
 			
 			if (matcher.find())
 			{					
 				final boolean negativeChange = matcher.group(1).equals("-");
 				final double changeValue = Double.parseDouble(matcher.group(2));
 				final double currentValue = EconomyUtil.getPayValueAmount(transactionInventory); //TODO Inspect
-				final double summedUpValue = currentValue + (negativeChange ?  changeValue * -1 : changeValue);
+				double summedUpValue = currentValue + (negativeChange ?  changeValue * -1 : changeValue);
 				
 				if (summedUpValue < 0)
 				{
@@ -276,7 +314,7 @@ public class InventoryListener
 					}
 					else
 					{
-						player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2); //TODO Can Human playSound?
+						human.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2); //TODO Can Human playSound?
 						return;
 					}
 				}	
@@ -292,7 +330,7 @@ public class InventoryListener
 						return;
 					}
 				}
-				EconomyUtil.setPayValueAmount(event.getInventory(), economy.getConfig().getValueFormatted(summedUpValue)); //TODO Inspect
+				EconomyUtil.setPayValueAmount(transactionInventory, economy.getConfig().getValueFormatted(summedUpValue)); //TODO Inspect
 				player.playSound(player.getLocation(), (negativeChange ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
 			}
 		}
@@ -302,17 +340,10 @@ public class InventoryListener
 		}
 	}
 	
-	private void m
-	
 	private void applyLore(@NotNull ItemStack loreItem, @NotNull List<String> lore)
 	{
 		ItemMeta loreMeta = loreItem.getItemMeta();
 		loreMeta.setLore(lore);
 		loreItem.setItemMeta(loreMeta);
-	}
-	
-	private void handleWalletInventoryActions(@NotNull HumanEntity player, @NotNull InventoryView view, @Nullable ItemStack currentItem)
-	{	
-		
 	}
 }
