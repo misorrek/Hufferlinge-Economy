@@ -9,14 +9,15 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Sound;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
@@ -35,11 +36,18 @@ public class TransactionInventory extends ExpandableInventory
 	{
 		super(null, InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
 		
+		Validate.isTrue(targetUUID != null || !transactionKind.isHumanTransaction(), "The target-uuid cannot be null in a human transaction.");
+		
 		this.transactionKind = transactionKind;
 		this.targetUUID = targetUUID;
 		this.transactionValue = 0;
 		
 		initInventory();
+	}
+	
+	public TransactionInventory(TransactionKind transactionKind)
+	{
+		this(transactionKind, null);
 	}
 	
 	private final TransactionKind transactionKind;
@@ -52,120 +60,33 @@ public class TransactionInventory extends ExpandableInventory
 		Validate.notNull((Object) economy, "The economy-interface cannot be null.");
 		Validate.notNull((Object) human, "The human who clicked cannot be null.");
 		
+		if (currentItem == null || currentItem.getItemMeta() == null)
+		{
+			return;
+		}	
 		final String currentItemName = currentItem.getItemMeta().getDisplayName();
 		
 		if (StringHelper.contains(false, currentItemName, "+", "-"))
 		{		
-			final Player player = (Player) human;
-			final double storageValue = transactionKind.isBankTransaction ? economy.getStorage().getBalance() : economy.getStorage().getWallet);
-			final int changeValue = getAmountFromItemName(currentItemName);
-			
-			double updatedTransactionValue = transactionValue + changeValue;
-			
-			if (updatedTransactionValue < 0)
-			{
-				if (transactionValue > 0)
-				{
-					updatedTransactionValue = 0;
-				}
-				else
-				{
-					player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-					return;
-				}
-			}	
-			else if (updatedTransactionValue > storageValue)
-			{
-				if (transactionValue < storageValue)
-				{
-					updatedTransactionValue = storageValue;
-				}
-				else
-				{
-					player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-					return;
-				}
-			}
-			updateTransactionValue(economy.getConfig());
-			player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
-			player.closeInventory();
+			handleTransactionValueChange(economy, currentItemName, human);
 		}
-		else if (currentItemName.equals(getPerformItemName())
+		else if (currentItemName.equals(getPerformItemName()))
 		{
-			final String formattedValueAmount = MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue));
-			
-			if (targetUUID != null)
+			if (transactionKind == TransactionKind.BANK_OTHER || transactionKind == TransactionKind.WALLET_OTHER)
 			{			
-				final int selfFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, true, false) : economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true);
-				final int otherFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(targetUUID, transactionValue, false, false) : economy.getStorage().updateWallet(targetUUID, transactionValue, false);
-				
-				if (selfFeedbackcode == EconomyStorage.CODE_SUCCESS && otherFeedbackcode == EconomyStorage.CODE_SUCCESS)
-				{
-					human.closeInventory();
-					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
-														 MessageHelper.getHighlighted(targetPlayer.getName()), "übergeben."));
-					
-					if (Bukkit.getOfflinePlayer(targetUUID).isOnline())
-					{
-						targetPlayer.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
-											                        MessageHelper.getHighlighted(human.getName()), "erhalten."));
-					}
-					else
-					{
-						//TODO DelayedMessage
-					}				
-					return;
-				}				
+				handleTransactionHuman(economy, human);			
 			}
-			else if (transactionKind == TransactionKind.WALLET_OUT_BANK)
+			else if (transactionKind == TransactionKind.BANK_IN)
 			{				
-				if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, false, true) == EconomyStorage.CODE_SUCCESS)
-				{		
-					human.closeInventory();
-					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "auf die",
-														 economy.getConfig().getBankName(), " eingezahlt."));
-					return;
-				}	
+				handleTransactionBank(economy, human, false);
 			}
 			else if (transactionKind == TransactionKind.BANK_OUT)
 			{
-				if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, true, true) == EconomyStorage.CODE_SUCCESS)
-				{		
-					human.closeInventory();
-					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von der",
-														 economy.getConfig().getBankName(), " abgehoben."));
-					return;
-				}	
+				handleTransactionBank(economy, human, true);
 			}
-			else if (transactionKind == TransactionKind.WALLET_OUT)
+			else if (transactionKind == TransactionKind.WALLET_OUT) //TODO Check Inventory Space
 			{
-				final ItemStack valueItem = economy.getConfig().getValueItem();
-				
-				if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == EconomyStorage.CODE_SUCCESS)
-				{
-					int maxStackSize = valueItem.getMaxStackSize();
-					
-					while ((int) transactionValue > 0)
-					{
-						if ((int) transactionValue >= maxStackSize)
-						{
-							valueItem.setAmount(maxStackSize);
-							applyLore(valueItem, economy.getSignature().createSignatureLore(maxStackSize));
-							transactionValue -= maxStackSize;
-						}
-						else
-						{
-							valueItem.setAmount((int) transactionValue);
-							applyLore(valueItem, economy.getSignature().createSignatureLore((int) transactionValue));
-							transactionValue = 0;
-						}						
-						human.getInventory().addItem(valueItem);
-					}
-					human.closeInventory();
-					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "aus deinem ",
-														             economy.getConfig().getWalletName(), " herausgenommen."));
-					return;
-				}					
+				handleTransactionWalletOut(economy, human);			
 			}
 			human.closeInventory();
 			human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Transaktion konnte nicht abgeschlossen werden.");	
@@ -202,52 +123,6 @@ public class TransactionInventory extends ExpandableInventory
 		InventoryHelper.setItem(this, 4, 9, InventoryHelper.getAbortItem());
 	}
 	
-	private @Nullable Player getPayTargetPlayer(@NotNull Inventory payInventory)
-	{
-		Validate.notNull((Object) payInventory, "The pay-inventory cannot be null.");
-		
-		final ItemStack targetItem = payInventory.getItem(22);
-		
-		if (targetItem == null)
-		{
-			return null;
-		}	
-		final Pattern valuePattern = Pattern.compile("§.*: §.(.*)");
-		final Matcher matcher = valuePattern.matcher(targetItem.getItemMeta().getDisplayName());
-		
-		if (matcher.find())
-		{
-			return Bukkit.getPlayer(matcher.group(1));
-		}
-		return null;
-	}
-	
-	private @Nullable double getPayValueAmount(@NotNull Inventory payInventory)
-	{
-		Validate.notNull((Object) payInventory, "The pay-inventory cannot be null.");
-		
-		final ItemStack targetItem = payInventory.getItem(13);
-		
-		if (targetItem != null)
-		{
-			try
-			{
-				final Pattern valuePattern = Pattern.compile("§.([0-9.]*).*");
-				final Matcher matcher = valuePattern.matcher(targetItem.getItemMeta().getDisplayName());
-				
-				if (matcher.find())
-				{
-					return Double.parseDouble(matcher.group(1));
-				}
-			}
-			catch (NumberFormatException exception)
-			{
-				Bukkit.getLogger().log(Level.WARNING, "The pay-value-amount is invalid.", exception);
-			}
-		}
-		return 0;
-	} 
-	
 	private void updateTransactionValue(@NotNull EconomyConfig economyConfig)
 	{	
 		final ItemStack transactionValueItem = InventoryHelper.getItem(this, 2, 5);
@@ -257,11 +132,111 @@ public class TransactionInventory extends ExpandableInventory
 		transactionValueItem.setItemMeta(transactionValueMeta);	
 	}
 	
-	private void applyLore(@NotNull ItemStack loreItem, @NotNull List<String> lore) //TODO Move to ItemHelper
+	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String currentItemName, @NotNull HumanEntity human)
 	{
-		ItemMeta loreMeta = loreItem.getItemMeta();
-		loreMeta.setLore(lore);
-		loreItem.setItemMeta(loreMeta);
+		final Player player = (Player) human;
+		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
+		final double changeValue = getAmountFromItemName(currentItemName);
+		
+		double updatedTransactionValue = transactionValue + changeValue;
+		
+		if (updatedTransactionValue < 0)
+		{
+			if (transactionValue > 0)
+			{
+				transactionValue = 0;
+			}
+			else
+			{
+				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+				return;
+			}
+		}	
+		else if (updatedTransactionValue > storageValue)
+		{
+			if (transactionValue < storageValue)
+			{
+				transactionValue = storageValue;
+			}
+			else
+			{
+				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+				return;
+			}
+		}
+		else
+		{
+			transactionValue = updatedTransactionValue;
+		}		
+		updateTransactionValue(economy.getConfig());
+		player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
+		player.closeInventory();
+	}
+	
+	private void handleTransactionHuman(@NotNull EconomyInterface economy, @NotNull HumanEntity human)
+	{
+		final String formattedValueAmount = MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue));
+		final int selfFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, true, false) : economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true);
+		final int otherFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(targetUUID, transactionValue, false, false) : economy.getStorage().updateWallet(targetUUID, transactionValue, false);
+		
+		if (selfFeedbackcode == EconomyStorage.CODE_SUCCESS && otherFeedbackcode == EconomyStorage.CODE_SUCCESS)
+		{
+			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetUUID);
+			
+			human.closeInventory();
+			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
+												 MessageHelper.getHighlighted(targetPlayer.getName()), "übergeben."));
+			
+			if (targetPlayer.isOnline())
+			{
+				((Player) targetPlayer).sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
+									                                   MessageHelper.getHighlighted(human.getName()), "erhalten."));
+			}
+			else
+			{
+				//TODO DelayedMessage
+			}		
+		}	
+	}
+	
+	private void handleTransactionBank(@NotNull EconomyInterface economy, @NotNull HumanEntity human, boolean outgoingTransaction)
+	{		
+		if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, outgoingTransaction, true) == EconomyStorage.CODE_SUCCESS)
+		{		
+			human.closeInventory();
+			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), "auf die",
+												 economy.getConfig().getBankName(), " eingezahlt."));
+		}	
+	}
+	
+	private void handleTransactionWalletOut(@NotNull EconomyInterface economy, @NotNull HumanEntity human)
+	{
+		final ItemStack valueItem = economy.getConfig().getValueItem();
+		
+		if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == EconomyStorage.CODE_SUCCESS)
+		{
+			int maxStackSize = valueItem.getMaxStackSize();
+			
+			while ((int) transactionValue > 0)
+			{
+				if ((int) transactionValue >= maxStackSize)
+				{
+					valueItem.setAmount(maxStackSize);
+					ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(maxStackSize));
+					transactionValue -= maxStackSize;
+				}
+				else
+				{
+					valueItem.setAmount((int) transactionValue);
+					ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore((int) transactionValue));
+					transactionValue = 0;
+				}						
+				human.getInventory().addItem(valueItem);
+			}
+			human.closeInventory();
+			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), "aus deinem ",
+												 economy.getConfig().getWalletName(), " herausgenommen."));
+		}
 	}
 	
 	private @NotNull String getAmountItemName(int amount, boolean negativeValue)
@@ -269,9 +244,26 @@ public class TransactionInventory extends ExpandableInventory
 		return negativeValue ? "§c- " + amount : "§a+ " + amount;
 	}
 	
-	private int getAmountFromItemName(@NotNull String amountItemName)
+	private double getAmountFromItemName(@NotNull String amountItemName)
 	{
-		
+		try
+		{
+			final Pattern valuePattern = Pattern.compile("§.([+-]) ([0-9]*)");
+			final Matcher matcher = valuePattern.matcher(amountItemName);				
+			
+			if (matcher.find())
+			{					
+				final double changeValue = Double.parseDouble(matcher.group(2));
+				
+				return matcher.group(1).equals("-") ? changeValue * -1 : changeValue;
+			}
+		}
+		catch (NumberFormatException exception)
+		{
+			Bukkit.getLogger().log(Level.WARNING, "The transaction-change-value is invalid.", exception);
+			return 0;
+		}
+		return 0;
 	}
 	
 	private @NotNull String getPerformItemName()

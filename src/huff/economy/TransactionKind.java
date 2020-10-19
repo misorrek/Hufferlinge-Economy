@@ -6,10 +6,11 @@ import org.jetbrains.annotations.Nullable;
 
 public enum TransactionKind
 {
+	BANK_IN("Einzahlen"),
 	BANK_OUT("Auszahlen"),
 	BANK_OTHER("Übertragen"), 
 	WALLET_OUT("Herausnehmen"),
-	WALLET_OUT_BANK("Einzahlen");
+	WALLET_OTHER("Übergeben");
 	
 	private TransactionKind(@NotNull String label)
 	{
@@ -47,11 +48,16 @@ public enum TransactionKind
 	
 	public boolean isBankTransaction()
 	{
-		return this == BANK_OUT || this == BANK_OTHER;
+		return this == BANK_IN || this == BANK_OUT || this == BANK_OTHER;
 	}
 	
 	public boolean isWalletTransaction()
 	{
-		return this == WALLET_OUT || this == WALLET_OUT_BANK;
+		return this == WALLET_OUT || this == WALLET_OTHER;
+	}
+	
+	public boolean isHumanTransaction()
+	{
+		return this == BANK_OTHER || this == WALLET_OTHER;
 	}
 }
