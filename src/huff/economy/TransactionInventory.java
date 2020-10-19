@@ -52,7 +52,124 @@ public class TransactionInventory extends ExpandableInventory
 		Validate.notNull((Object) economy, "The economy-interface cannot be null.");
 		Validate.notNull((Object) human, "The human who clicked cannot be null.");
 		
+		final String currentItemName = currentItem.getItemMeta().getDisplayName();
 		
+		if (StringHelper.contains(false, currentItemName, "+", "-"))
+		{		
+			final Player player = (Player) human;
+			final double storageValue = transactionKind.isBankTransaction ? economy.getStorage().getBalance() : economy.getStorage().getWallet);
+			final int changeValue = getAmountFromItemName(currentItemName);
+			
+			double updatedTransactionValue = transactionValue + changeValue;
+			
+			if (updatedTransactionValue < 0)
+			{
+				if (transactionValue > 0)
+				{
+					updatedTransactionValue = 0;
+				}
+				else
+				{
+					player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+					return;
+				}
+			}	
+			else if (updatedTransactionValue > storageValue)
+			{
+				if (transactionValue < storageValue)
+				{
+					updatedTransactionValue = storageValue;
+				}
+				else
+				{
+					player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+					return;
+				}
+			}
+			updateTransactionValue(economy.getConfig());
+			player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
+			player.closeInventory();
+		}
+		else if (currentItemName.equals(getPerformItemName())
+		{
+			final String formattedValueAmount = MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue));
+			
+			if (targetUUID != null)
+			{			
+				final int selfFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, true, false) : economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true);
+				final int otherFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(targetUUID, transactionValue, false, false) : economy.getStorage().updateWallet(targetUUID, transactionValue, false);
+				
+				if (selfFeedbackcode == EconomyStorage.CODE_SUCCESS && otherFeedbackcode == EconomyStorage.CODE_SUCCESS)
+				{
+					human.closeInventory();
+					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
+														 MessageHelper.getHighlighted(targetPlayer.getName()), "übergeben."));
+					
+					if (Bukkit.getOfflinePlayer(targetUUID).isOnline())
+					{
+						targetPlayer.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
+											                        MessageHelper.getHighlighted(human.getName()), "erhalten."));
+					}
+					else
+					{
+						//TODO DelayedMessage
+					}				
+					return;
+				}				
+			}
+			else if (transactionKind == TransactionKind.WALLET_OUT_BANK)
+			{				
+				if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, false, true) == EconomyStorage.CODE_SUCCESS)
+				{		
+					human.closeInventory();
+					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "auf die",
+														 economy.getConfig().getBankName(), " eingezahlt."));
+					return;
+				}	
+			}
+			else if (transactionKind == TransactionKind.BANK_OUT)
+			{
+				if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, true, true) == EconomyStorage.CODE_SUCCESS)
+				{		
+					human.closeInventory();
+					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von der",
+														 economy.getConfig().getBankName(), " abgehoben."));
+					return;
+				}	
+			}
+			else if (transactionKind == TransactionKind.WALLET_OUT)
+			{
+				final ItemStack valueItem = economy.getConfig().getValueItem();
+				
+				if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == EconomyStorage.CODE_SUCCESS)
+				{
+					int maxStackSize = valueItem.getMaxStackSize();
+					
+					while ((int) transactionValue > 0)
+					{
+						if ((int) transactionValue >= maxStackSize)
+						{
+							valueItem.setAmount(maxStackSize);
+							applyLore(valueItem, economy.getSignature().createSignatureLore(maxStackSize));
+							transactionValue -= maxStackSize;
+						}
+						else
+						{
+							valueItem.setAmount((int) transactionValue);
+							applyLore(valueItem, economy.getSignature().createSignatureLore((int) transactionValue));
+							transactionValue = 0;
+						}						
+						human.getInventory().addItem(valueItem);
+					}
+					human.closeInventory();
+					human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "aus deinem ",
+														             economy.getConfig().getWalletName(), " herausgenommen."));
+					return;
+				}					
+			}
+			human.closeInventory();
+			human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Transaktion konnte nicht abgeschlossen werden.");	
+		}
 	}
 	
 	private void initInventory()
@@ -81,7 +198,7 @@ public class TransactionInventory extends ExpandableInventory
 		InventoryHelper.setItem(this, 3, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, true)));
 		InventoryHelper.setItem(this, 3, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, true)));
 		
-		InventoryHelper.setItem(this, 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName(transactionKind)));
+		InventoryHelper.setItem(this, 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
 		InventoryHelper.setItem(this, 4, 9, InventoryHelper.getAbortItem());
 	}
 	
@@ -140,12 +257,24 @@ public class TransactionInventory extends ExpandableInventory
 		transactionValueItem.setItemMeta(transactionValueMeta);	
 	}
 	
+	private void applyLore(@NotNull ItemStack loreItem, @NotNull List<String> lore) //TODO Move to ItemHelper
+	{
+		ItemMeta loreMeta = loreItem.getItemMeta();
+		loreMeta.setLore(lore);
+		loreItem.setItemMeta(loreMeta);
+	}
+	
 	private @NotNull String getAmountItemName(int amount, boolean negativeValue)
 	{
 		return negativeValue ? "§c- " + amount : "§a+ " + amount;
 	}
 	
-	private @NotNull String getPerformItemName(TransactionKind transactionKind)
+	private int getAmountFromItemName(@NotNull String amountItemName)
+	{
+		
+	}
+	
+	private @NotNull String getPerformItemName()
 	{		
 		return StringHelper.build("§7» §a", transactionKind.getLabel());
 	}
