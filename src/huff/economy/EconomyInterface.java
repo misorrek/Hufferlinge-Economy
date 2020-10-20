@@ -11,25 +11,30 @@ import org.jetbrains.annotations.NotNull;
 import huff.economy.storage.EconomyBank;
 import huff.economy.storage.EconomySignature;
 import huff.economy.storage.EconomyStorage;
+import huff.lib.manager.delayedmessage.DelayedMessageManager;
 
 public class EconomyInterface
 {
-	public EconomyInterface(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature, @NotNull EconomyBank economyBank)
+	public EconomyInterface(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature, 
+			                @NotNull EconomyBank economyBank, @NotNull DelayedMessageManager delayedMessageManager)
 	{
 		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
 		Validate.notNull((Object) economyStorage, "The economy-storage cannot be null.");
 		Validate.notNull((Object) economySignature, "The economy-signature cannot be null");
 		Validate.notNull((Object) economyBank, "The economy-bank cannot be null");
+		Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
 		
 		this.economyConfig = economyConfig;
 		this.economyStorage = economyStorage;
 		this.economySignature = economySignature;
 		this.economyBank = economyBank;
+		this.delayedMessageManager = delayedMessageManager;
 	}
 	private final EconomyConfig economyConfig;
 	private final EconomyStorage economyStorage;
 	private final EconomySignature economySignature;
 	private final EconomyBank economyBank;
+	private final DelayedMessageManager delayedMessageManager;
 	
 	public @NotNull EconomyConfig getConfig()
 	{
@@ -49,6 +54,11 @@ public class EconomyInterface
 	public @NotNull EconomyBank getBank()
 	{
 		return economyBank;
+	}
+	
+	public @NotNull DelayedMessageManager getDelayedMessageManager()
+	{
+		return delayedMessageManager;
 	}
 	
 	public @NotNull Villager spawnBankEntity(@NotNull Location location)

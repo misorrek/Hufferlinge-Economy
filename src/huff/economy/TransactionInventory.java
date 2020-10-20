@@ -22,6 +22,8 @@ import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
+import huff.lib.manager.delayedmessage.DelayType;
+import huff.lib.manager.delayedmessage.MessageType;
 import huff.lib.various.ExpandableInventory;
 
 public class TransactionInventory extends ExpandableInventory
@@ -187,6 +189,9 @@ public class TransactionInventory extends ExpandableInventory
 			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
 												 MessageHelper.getHighlighted(targetPlayer.getName()), "übergeben."));
 			
+			final String otherMessage = StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
+                                                           MessageHelper.getHighlighted(human.getName()), "erhalten.");
+			
 			if (targetPlayer.isOnline())
 			{
 				((Player) targetPlayer).sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
@@ -194,7 +199,7 @@ public class TransactionInventory extends ExpandableInventory
 			}
 			else
 			{
-				//TODO DelayedMessage
+				economy.getDelayedMessageManager().addDelayedMessage(targetUUID, DelayType.NEXTJOIN, MessageType.INFO, otherMessage);
 			}		
 		}	
 	}

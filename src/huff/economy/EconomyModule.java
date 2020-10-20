@@ -17,19 +17,22 @@ import huff.economy.storage.EconomyBank;
 import huff.economy.storage.EconomySignature;
 import huff.economy.storage.EconomyStorage;
 import huff.lib.manager.RedisManager;
+import huff.lib.manager.delayedmessage.DelayedMessageManager;
 
 public class EconomyModule
 {
-	public EconomyModule(@NotNull JavaPlugin plugin, @NotNull RedisManager redisManager)
+	public EconomyModule(@NotNull JavaPlugin plugin, @NotNull RedisManager redisManager, @NotNull DelayedMessageManager delayedMessageManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin-instance cannot be null.");
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
+		Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
 		
 		this.plugin = plugin;	
 		this.economyInterface = new EconomyInterface(new EconomyConfig(plugin.getDataFolder().getAbsolutePath()), 
 				                                     new EconomyStorage(redisManager), 
 				                                     new EconomySignature(redisManager), 
-				                                     new EconomyBank(redisManager));
+				                                     new EconomyBank(redisManager),
+				                                     delayedMessageManager);
 	}
 	
 	private final JavaPlugin plugin;	
