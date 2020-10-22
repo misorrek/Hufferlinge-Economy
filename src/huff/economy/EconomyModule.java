@@ -44,16 +44,44 @@ public class EconomyModule
 	{
 		EconomyCommand economyCommand = new EconomyCommand(economyInterface);
 		PluginCommand pluginEconomyCommand = plugin.getCommand("huffeconomy");
-		List<String> economyCommandAliases = new ArrayList<>();
-		
-		economyCommandAliases.add("huffconomy");
-		economyCommandAliases.add("economy");
-		economyCommandAliases.add("money");
 		
 		pluginEconomyCommand.setExecutor(economyCommand);
 		pluginEconomyCommand.setTabCompleter(economyCommand);
-		pluginEconomyCommand.setAliases(economyCommandAliases);
 		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
+		addAliases(pluginEconomyCommand, "huffconomy", "economy", "money");
+	}
+	
+	private void addAliases(Command command, String... aliases) //TODO Move to Lib
+	{
+		Map<String, Command> internalCommandMap = getInternalCommandMap();
+		
+		for (String alias : aliases)
+		{
+			map.put(alias.toLowerCase(), command);
+		}
+	}
+	
+	private @Nullable HashMap<String, Command> getInternalCommandMap() //TODO Move to Lib
+	{
+		try
+		{
+			Method getCommandMap = plugin.getServer().getClass().getMethod("getCommandMap");
+			SimpleCommandMap commandMap = (SimpleCommandMap) getCommandMap.invoke(plugin.getServer());
+			
+			if (commandMap == null)
+			{
+				return null;
+			}
+			Field knownCommands = commandMap.getClass().getDeclaredField("knownCommands");
+			knownCommands.setAccessible(true);
+			
+			return (HashMap<String, Command>) knownCommands.get(commandMap);
+		}
+		catch (Exception exception)
+		{
+			//TODO
+			return null;
+		}
 	}
 	
 	public void registerListener()
@@ -62,6 +90,7 @@ public class EconomyModule
 		
 		pluginManager.registerEvents(new JoinListener(economyInterface), plugin);
 		pluginManager.registerEvents(new EconomyListener(economyInterface), plugin);
+		pluginManager.registerEvents(new InventoryListener(economyInterface), plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)
