@@ -137,6 +137,7 @@ public class TransactionInventory extends ExpandableInventory
 	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String currentItemName, @NotNull HumanEntity human)
 	{
 		final Player player = (Player) human;
+		final int maxInventoryValue = 0; //TODO Method in Lib
 		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
 		final double changeValue = getAmountFromItemName(currentItemName);
 		
@@ -153,7 +154,26 @@ public class TransactionInventory extends ExpandableInventory
 				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
 				return;
 			}
-		}	
+		}
+		else if (transactionKind == TransactionKind.WALLET_OUT && updatedTransactionValue > maxInventoryValue)
+		{
+			if (transactionValue < maxInventoryValue)
+			{
+				if (maxInventoryValue > storageValue)
+				{
+					transactionValue = storageValue;
+				}
+				else
+				{
+					transactionValue = maxInventoryValue;
+				}				
+			}
+			else
+			{
+				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+				return;
+			}
+		}
 		else if (updatedTransactionValue > storageValue)
 		{
 			if (transactionValue < storageValue)
@@ -172,7 +192,6 @@ public class TransactionInventory extends ExpandableInventory
 		}		
 		updateTransactionValue(economy.getConfig());
 		player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
-		player.closeInventory();
 	}
 	
 	private void handleTransactionHuman(@NotNull EconomyInterface economy, @NotNull HumanEntity human)
