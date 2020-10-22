@@ -3,7 +3,9 @@ package huff.economy.listener;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -19,15 +21,17 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
-import huff.economy.EconomyUtil;
 import huff.economy.TransactionInventory;
 import huff.economy.TransactionKind;
 import huff.economy.storage.EconomyBank;
+import huff.lib.helper.InventoryHelper;
+import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
 
@@ -112,9 +116,7 @@ public class EconomyListener implements Listener
 		{
 			final UUID playerUUID = player.getUniqueId();
 			
-			player.openInventory(EconomyUtil.getBankInventory(economy.getConfig(), economy.getStorage().getBalance(playerUUID), 
-					                                          economy.getStorage().getWallet(playerUUID), 
-					                                          economy.getBank().isOwner(playerUUID, entity.getLocation())));
+			player.openInventory(getBankInventory(playerUUID, economy.getBank().isOwner(playerUUID, entity.getLocation())));
 			return true;
 		}	
 		return false;
@@ -141,7 +143,7 @@ public class EconomyListener implements Listener
 		if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) &&
 			economy.getConfig().equalsWalletItem(playerMainItem))
 		{
-			player.openInventory(EconomyUtil.getWalletInventory(economy.getConfig(), economy.getStorage().getWallet(player.getUniqueId())));
+			player.openInventory(getWalletInventory(player.getUniqueId()));
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}
@@ -166,50 +168,46 @@ public class EconomyListener implements Listener
 	
 	// I N V E N T O R I E S
 	
-	public static @NotNull Inventory getWalletInventory(@NotNull EconomyConfig economyConfig, double currentWallet)
+	private @NotNull Inventory getWalletInventory(@NotNull UUID uuid)
 	{
-		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
-	
-		final Inventory walletInventory = Bukkit.createInventory(null, InventoryHelper.INV_SIZE_3, economyConfig.getWalletInventoryName());
+		final Inventory walletInventory = Bukkit.createInventory(null, InventoryHelper.INV_SIZE_3, economy.getConfig().getWalletInventoryName());
 		
 		InventoryHelper.setBorder(walletInventory, InventoryHelper.getBorderItem());
 		InventoryHelper.setFill(walletInventory, InventoryHelper.getFillItem(), false);
 		
-		InventoryHelper.setItem(walletInventory, 2, 2, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), 
-				                                                          MessageHelper.getHighlighted(economyConfig.getValueFormatted(currentWallet), 
-						                                          false , false));
+		InventoryHelper.setItem(walletInventory, 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+				                                                                  MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getWallet(uuid)), 
+						                                                          false , false)));
 		InventoryHelper.setItem(walletInventory, 2, 8, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-				                                                          economyConfig.getTransactionInventoryName(TransactionKind.WALLET_OUT)));
+																				  economy.getConfig().getTransactionInventoryName(TransactionKind.WALLET_OUT)));
 		InventoryHelper.setItem(walletInventory, 3, 5, InventoryHelper.getCloseItem());
 		
 		return walletInventory;
 	}
 	
-	public static @NotNull Inventory getBankInventory(@NotNull EconomyConfig economyConfig, double currentBalance, double currentWallet, boolean withRemove)
+	private @NotNull Inventory getBankInventory(@NotNull UUID uuid, boolean withRemove)
 	{
-		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
-	
-		final Inventory bankInventory = Bukkit.createInventory(null, InventoryHelper.INV_SIZE_4 , economyConfig.getBankInventoryName());
+		final Inventory bankInventory = Bukkit.createInventory(null, InventoryHelper.INV_SIZE_4 , economy.getConfig().getBankInventoryName());
 
 		InventoryHelper.setFill(bankInventory, InventoryHelper.getBorderItem(), true);
 		
-		InventoryHelper.setItem(bankInventory, 2, 2, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), 
-									                MessageHelper.getHighlighted(economyConfig.getValueFormatted(currentBalance), 
-									                false , false));
+		InventoryHelper.setItem(bankInventory, 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+																                MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getBalance(uuid)), 
+																                false , false)));
 		InventoryHelper.setItem(bankInventory, 2, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-				                                                        economyConfig.getTransactionInventoryName(TransactionKind.BANK_IN)));
+																				economy.getConfig().getTransactionInventoryName(TransactionKind.BANK_IN)));
 		InventoryHelper.setItem(bankInventory, 2, 5, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-									                economyConfig.getTransactionInventoryName(TransactionKind.BANK_OTHER)));
+																				economy.getConfig().getTransactionInventoryName(TransactionKind.BANK_OTHER)));
 		InventoryHelper.setItem(bankInventory, 2, 7, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-									                economyConfig.getTransactionInventoryName(TransactionKind.BANK_OUT)));			
-		InventoryHelper.setItem(bankInventory, 2, 8, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), 
-									                MessageHelper.getHighlighted(economyConfig.getValueFormatted(currentWallet), 
-									                false , false));
+																				economy.getConfig().getTransactionInventoryName(TransactionKind.BANK_OUT)));			
+		InventoryHelper.setItem(bankInventory, 2, 8, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+																                MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getWallet(uuid)), 
+																                false , false)));
 		InventoryHelper.setItem(bankInventory, 4, 5, InventoryHelper.getCloseItem());
 					
 		if (withRemove)
 		{
-			InventoryHelper.setItem(bankInventory, 4, 9, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, economyConfig.getBankRemoveName()));
+			InventoryHelper.setItem(bankInventory, 4, 9, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, economy.getConfig().getBankRemoveName()));
 		}
 		return bankInventory;
 	}

@@ -1,8 +1,5 @@
 package huff.economy;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -11,11 +8,13 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import huff.economy.listener.JoinListener;
 import huff.economy.listener.EconomyListener;
+import huff.economy.listener.InventoryListener;
+import huff.economy.listener.JoinListener;
 import huff.economy.storage.EconomyBank;
 import huff.economy.storage.EconomySignature;
 import huff.economy.storage.EconomyStorage;
+import huff.lib.helper.CommandHelper;
 import huff.lib.manager.RedisManager;
 import huff.lib.manager.delayedmessage.DelayedMessageManager;
 
@@ -48,41 +47,8 @@ public class EconomyModule
 		pluginEconomyCommand.setExecutor(economyCommand);
 		pluginEconomyCommand.setTabCompleter(economyCommand);
 		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
-		addAliases(pluginEconomyCommand, "huffconomy", "economy", "money");
-	}
-	
-	private void addAliases(Command command, String... aliases) //TODO Move to Lib
-	{
-		Map<String, Command> internalCommandMap = getInternalCommandMap();
-		
-		for (String alias : aliases)
-		{
-			map.put(alias.toLowerCase(), command);
-		}
-	}
-	
-	private @Nullable HashMap<String, Command> getInternalCommandMap() //TODO Move to Lib
-	{
-		try
-		{
-			Method getCommandMap = plugin.getServer().getClass().getMethod("getCommandMap");
-			SimpleCommandMap commandMap = (SimpleCommandMap) getCommandMap.invoke(plugin.getServer());
-			
-			if (commandMap == null)
-			{
-				return null;
-			}
-			Field knownCommands = commandMap.getClass().getDeclaredField("knownCommands");
-			knownCommands.setAccessible(true);
-			
-			return (HashMap<String, Command>) knownCommands.get(commandMap);
-		}
-		catch (Exception exception)
-		{
-			//TODO
-			return null;
-		}
-	}
+		CommandHelper.addAliases(plugin, pluginEconomyCommand, "huffconomy", "economy", "money");
+	} 
 	
 	public void registerListener()
 	{

@@ -86,7 +86,7 @@ public class TransactionInventory extends ExpandableInventory
 			{
 				handleTransactionBank(economy, human, true);
 			}
-			else if (transactionKind == TransactionKind.WALLET_OUT) //TODO Check Inventory Space
+			else if (transactionKind == TransactionKind.WALLET_OUT)
 			{
 				handleTransactionWalletOut(economy, human);			
 			}
@@ -125,10 +125,12 @@ public class TransactionInventory extends ExpandableInventory
 		InventoryHelper.setItem(this, 4, 9, InventoryHelper.getAbortItem());
 	}
 	
-	private void updateTransactionValue(@NotNull EconomyConfig economyConfig)
+	private void updateTransactionValue(@NotNull EconomyConfig economyConfig, double updatedTransactionValue)
 	{	
 		final ItemStack transactionValueItem = InventoryHelper.getItem(this, 2, 5);
 		final ItemMeta transactionValueMeta = transactionValueItem.getItemMeta();
+		
+		transactionValue = updatedTransactionValue;
 		
 		transactionValueMeta.setDisplayName(MessageHelper.getHighlighted(economyConfig.getValueFormatted(transactionValue)));
 		transactionValueItem.setItemMeta(transactionValueMeta);	
@@ -137,7 +139,7 @@ public class TransactionInventory extends ExpandableInventory
 	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String currentItemName, @NotNull HumanEntity human)
 	{
 		final Player player = (Player) human;
-		final int maxInventoryValue = 0; //TODO Method in Lib
+		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(this, economy.getConfig().getValueItem());
 		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
 		final double changeValue = getAmountFromItemName(currentItemName);
 		
@@ -147,12 +149,7 @@ public class TransactionInventory extends ExpandableInventory
 		{
 			if (transactionValue > 0)
 			{
-				transactionValue = 0;
-			}
-			else
-			{
-				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-				return;
+				updatedTransactionValue = 0;
 			}
 		}
 		else if (transactionKind == TransactionKind.WALLET_OUT && updatedTransactionValue > maxInventoryValue)
@@ -161,37 +158,35 @@ public class TransactionInventory extends ExpandableInventory
 			{
 				if (maxInventoryValue > storageValue)
 				{
-					transactionValue = storageValue;
+					updatedTransactionValue = storageValue;
 				}
 				else
 				{
-					transactionValue = maxInventoryValue;
+					updatedTransactionValue = maxInventoryValue;
 				}				
-			}
-			else
-			{
-				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-				return;
 			}
 		}
 		else if (updatedTransactionValue > storageValue)
 		{
 			if (transactionValue < storageValue)
 			{
-				transactionValue = storageValue;
-			}
-			else
-			{
-				player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-				return;
+				updatedTransactionValue = storageValue;
 			}
 		}
 		else
 		{
 			transactionValue = updatedTransactionValue;
 		}		
-		updateTransactionValue(economy.getConfig());
-		player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
+		
+		if (transactionValue != updatedTransactionValue)
+		{
+			updateTransactionValue(economy.getConfig(), updatedTransactionValue);
+			player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
+		}
+		else
+		{
+			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+		}
 	}
 	
 	private void handleTransactionHuman(@NotNull EconomyInterface economy, @NotNull HumanEntity human)

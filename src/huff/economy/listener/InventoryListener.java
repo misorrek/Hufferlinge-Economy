@@ -10,6 +10,7 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -26,7 +27,7 @@ import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.inventories.PlayerChooser;
 
-public class InventoryListener
+public class InventoryListener implements Listener
 {
 	private static final String PLAYERCHOOSER_KEY = "Transaction";
 	
@@ -46,9 +47,9 @@ public class InventoryListener
 		final ItemStack cursorItem = event.getCursor();
 		
 		final boolean isWalletItemCase = economy.getConfig().equalsWalletItem(cursorItem) && 
-			                         (inventoryType != InventoryType.PLAYER || inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY)
+			                         (inventoryType != InventoryType.PLAYER || inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY);
 		final boolean isValueItemCase = economy.getConfig().equalsValueItem(cursorItem) && (!isContainerInventory(inventoryType) ||
-			                         (inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY && !isContainerInventory(event.getView().getTopInventory().getType()))) //TODO Sinn überprüfen
+			                         (inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY && !isContainerInventory(event.getView().getTopInventory().getType()))); //TODO Sinn überprüfen
 		
 		if (isWalletItemCase || isValueItemCase)			
 		{			
