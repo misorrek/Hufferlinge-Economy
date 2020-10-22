@@ -163,4 +163,54 @@ public class EconomyListener implements Listener
 			}
 		}
 	}
+	
+	// I N V E N T O R I E S
+	
+	public static @NotNull Inventory getWalletInventory(@NotNull EconomyConfig economyConfig, double currentWallet)
+	{
+		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
+	
+		final Inventory walletInventory = Bukkit.createInventory(null, InventoryHelper.INV_SIZE_3, economyConfig.getWalletInventoryName());
+		
+		InventoryHelper.setBorder(walletInventory, InventoryHelper.getBorderItem());
+		InventoryHelper.setFill(walletInventory, InventoryHelper.getFillItem(), false);
+		
+		InventoryHelper.setItem(walletInventory, 2, 2, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), 
+				                                                          MessageHelper.getHighlighted(economyConfig.getValueFormatted(currentWallet), 
+						                                          false , false));
+		InventoryHelper.setItem(walletInventory, 2, 8, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
+				                                                          economyConfig.getTransactionInventoryName(TransactionKind.WALLET_OUT)));
+		InventoryHelper.setItem(walletInventory, 3, 5, InventoryHelper.getCloseItem());
+		
+		return walletInventory;
+	}
+	
+	public static @NotNull Inventory getBankInventory(@NotNull EconomyConfig economyConfig, double currentBalance, double currentWallet, boolean withRemove)
+	{
+		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
+	
+		final Inventory bankInventory = Bukkit.createInventory(null, InventoryHelper.INV_SIZE_4 , economyConfig.getBankInventoryName());
+
+		InventoryHelper.setFill(bankInventory, InventoryHelper.getBorderItem(), true);
+		
+		InventoryHelper.setItem(bankInventory, 2, 2, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), 
+									                MessageHelper.getHighlighted(economyConfig.getValueFormatted(currentBalance), 
+									                false , false));
+		InventoryHelper.setItem(bankInventory, 2, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
+				                                                        economyConfig.getTransactionInventoryName(TransactionKind.BANK_IN)));
+		InventoryHelper.setItem(bankInventory, 2, 5, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
+									                economyConfig.getTransactionInventoryName(TransactionKind.BANK_OTHER)));
+		InventoryHelper.setItem(bankInventory, 2, 7, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
+									                economyConfig.getTransactionInventoryName(TransactionKind.BANK_OUT)));			
+		InventoryHelper.setItem(bankInventory, 2, 8, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), 
+									                MessageHelper.getHighlighted(economyConfig.getValueFormatted(currentWallet), 
+									                false , false));
+		InventoryHelper.setItem(bankInventory, 4, 5, InventoryHelper.getCloseItem());
+					
+		if (withRemove)
+		{
+			InventoryHelper.setItem(bankInventory, 4, 9, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, economyConfig.getBankRemoveName()));
+		}
+		return bankInventory;
+	}
 }
