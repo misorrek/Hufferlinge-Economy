@@ -45,14 +45,12 @@ public class InventoryListener
 		final InventoryAction inventoryAction = event.getAction();
 		final ItemStack cursorItem = event.getCursor();
 		
-		if ((economy.getConfig().equalsWalletItem(cursorItem) && 
-			 (inventoryType != InventoryType.PLAYER ||
-			  inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY)) //TODO Sinn überprüfen
-			||
-			(economy.getConfig().equalsValueItem(cursorItem) && 
-		     (!isContainerInventory(inventoryType) ||
-			  (inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY && 
-			   !isContainerInventory(event.getView().getTopInventory().getType())))))
+		final boolean isWalletItemCase = economy.getConfig().equalsWalletItem(cursorItem) && 
+			                         (inventoryType != InventoryType.PLAYER || inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY)
+		final boolean isValueItemCase = economy.getConfig().equalsValueItem(cursorItem) && (!isContainerInventory(inventoryType) ||
+			                         (inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY && !isContainerInventory(event.getView().getTopInventory().getType()))) //TODO Sinn überprüfen
+		
+		if (isWalletItemCase || isValueItemCase)			
 		{			
 			Bukkit.getConsoleSender().sendMessage("InventoryTyp: " + inventoryType.toString());
 			Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
