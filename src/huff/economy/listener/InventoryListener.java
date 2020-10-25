@@ -26,6 +26,7 @@ import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.inventories.PlayerChooser;
+import huff.lib.various.ExpandableInventory;
 
 public class InventoryListener implements Listener
 {
@@ -42,6 +43,11 @@ public class InventoryListener implements Listener
 	@EventHandler (priority = EventPriority.HIGHEST) //TODO Handle full inventory
 	public void onDenyHumanInventoryClick(InventoryClickEvent event)
 	{
+		if (event.getClickedInventory() == null)
+		{
+			return;
+		}
+		
 		final InventoryType inventoryType = event.getClickedInventory().getType();
 		final InventoryAction inventoryAction = event.getAction();
 		final ItemStack cursorItem = event.getCursor();
@@ -133,26 +139,26 @@ public class InventoryListener implements Listener
 			}
 			else
 			{
-				handleTransactionOpen((Player) event.getWhoClicked(), currentItemName);
+				handleTransactionOpen(event.getWhoClicked(), currentItemName);
 			}
 		}
 	}
 	
-	public void handleTransactionOpen(@NotNull Player player, @NotNull String currentItemName)
+	public void handleTransactionOpen(@NotNull HumanEntity human, @NotNull String currentItemName)
 	{
 		if (TransactionKind.isTransaction(currentItemName))
 		{
-			final TransactionKind transactionKind = TransactionKind.valueOf(currentItemName);
+			final TransactionKind transactionKind = TransactionKind.getTransaction(currentItemName);
 			
-			player.closeInventory();
+			human.closeInventory();
 			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				player.openInventory(new PlayerChooser(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true));
+				human.openInventory(new PlayerChooser(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true));
 			}
 			else
 			{						
-				player.openInventory(new TransactionInventory(transactionKind));
+				human.openInventory(new ExpandableInventory(null, InventoryHelper.INV_SIZE_4, "Test"));
 			}
 		}
 	}

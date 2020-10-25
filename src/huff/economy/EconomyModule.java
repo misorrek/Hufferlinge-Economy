@@ -47,7 +47,7 @@ public class EconomyModule
 		pluginEconomyCommand.setExecutor(economyCommand);
 		pluginEconomyCommand.setTabCompleter(economyCommand);
 		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
-		CommandHelper.addAliases(plugin, pluginEconomyCommand, "huffconomy", "economy", "money");
+		CommandHelper.addAliases(pluginEconomyCommand, "huffconomy", "economy", "money");
 	} 
 	
 	public void registerListener()
