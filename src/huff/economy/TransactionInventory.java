@@ -28,15 +28,15 @@ import huff.lib.various.ExpandableInventory;
 
 public class TransactionInventory extends ExpandableInventory
 {
-	public static final int AMOUNT_1 = 1;
-	public static final int AMOUNT_2 = 5;
-	public static final int AMOUNT_3 = 10;
-	public static final int AMOUNT_4 = 100;
-	public static final int AMOUNT_5 = 1000;
+	private static final int AMOUNT_1 = 1;
+	private static final int AMOUNT_2 = 5;
+	private static final int AMOUNT_3 = 10;
+	private static final int AMOUNT_4 = 100;
+	private static final int AMOUNT_5 = 1000;
 	
-	public TransactionInventory(TransactionKind transactionKind, @Nullable UUID targetUUID)
+	public TransactionInventory(@NotNull EconomyConfig economyConfig, TransactionKind transactionKind, @Nullable UUID targetUUID)
 	{
-		super(null, InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
+		super(InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
 		
 		Validate.isTrue(targetUUID != null || !transactionKind.isHumanTransaction(), "The target-uuid cannot be null in a human transaction.");
 		
@@ -44,12 +44,12 @@ public class TransactionInventory extends ExpandableInventory
 		this.targetUUID = targetUUID;
 		this.transactionValue = 0;
 		
-		initInventory();
+		initInventory(economyConfig);
 	}
 	
-	public TransactionInventory(TransactionKind transactionKind)
+	public TransactionInventory(@NotNull EconomyConfig economyConfig, TransactionKind transactionKind)
 	{
-		this(transactionKind, null);
+		this(economyConfig, transactionKind, null);
 	}
 	
 	private final TransactionKind transactionKind;
@@ -95,39 +95,37 @@ public class TransactionInventory extends ExpandableInventory
 		}
 	}
 	
-	private void initInventory()
+	private void initInventory(@NotNull EconomyConfig economyConfig)
 	{	
-		InventoryHelper.setFill(this, InventoryHelper.getBorderItem(), true);
+		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getBorderItem(), true);
+	
+		InventoryHelper.setItem(this.getInventory(), 2, 2, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_5, false)));
+		InventoryHelper.setItem(this.getInventory(), 2, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_4, false)));
+		InventoryHelper.setItem(this.getInventory(), 2, 4, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_3, false)));
+		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), MessageHelper.getHighlighted(economyConfig.getValueFormatted(0))));
+		InventoryHelper.setItem(this.getInventory(), 2, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_3, true)));
+		InventoryHelper.setItem(this.getInventory(), 2, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_4, true)));
+		InventoryHelper.setItem(this.getInventory(), 2, 8, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_5, true)));
 		
-
-		InventoryHelper.setItem(this, 2, 2, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_5, false)));
-		InventoryHelper.setItem(this, 2, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_4, false)));
-		InventoryHelper.setItem(this, 2, 4, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_3, false)));
-		
-		InventoryHelper.setItem(this, 2, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_3, true)));
-		InventoryHelper.setItem(this, 2, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_4, true)));
-		InventoryHelper.setItem(this, 2, 8, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_5, true)));
-		
-		InventoryHelper.setItem(this, 3, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, false)));
-		InventoryHelper.setItem(this, 3, 4, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, false)));
+		InventoryHelper.setItem(this.getInventory(), 3, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, false)));
+		InventoryHelper.setItem(this.getInventory(), 3, 4, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, false)));
 		
 		if (targetUUID != null)
 		{		
 			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetUUID);
 			
-			InventoryHelper.setItem(this, 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
-		}
+			InventoryHelper.setItem(this.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
+		}		
+		InventoryHelper.setItem(this.getInventory(), 3, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, true)));
+		InventoryHelper.setItem(this.getInventory(), 3, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, true)));
 		
-		InventoryHelper.setItem(this, 3, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, true)));
-		InventoryHelper.setItem(this, 3, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, true)));
-		
-		InventoryHelper.setItem(this, 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
-		InventoryHelper.setItem(this, 4, 9, InventoryHelper.getAbortItem());
+		InventoryHelper.setItem(this.getInventory(), 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
+		InventoryHelper.setItem(this.getInventory(), 4, 9, InventoryHelper.getAbortItem());
 	}
 	
 	private void updateTransactionValue(@NotNull EconomyConfig economyConfig, double updatedTransactionValue)
 	{	
-		final ItemStack transactionValueItem = InventoryHelper.getItem(this, 2, 5);
+		final ItemStack transactionValueItem = InventoryHelper.getItem(this.getInventory(), 2, 5);
 		final ItemMeta transactionValueMeta = transactionValueItem.getItemMeta();
 		
 		transactionValue = updatedTransactionValue;
@@ -139,8 +137,8 @@ public class TransactionInventory extends ExpandableInventory
 	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String currentItemName, @NotNull HumanEntity human)
 	{
 		final Player player = (Player) human;
-		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(this, economy.getConfig().getValueItem());
-		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
+		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(this.getInventory(), economy.getConfig().getValueItem());
+		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(player.getUniqueId()) : economy.getStorage().getWallet(player.getUniqueId());
 		final double changeValue = getAmountFromItemName(currentItemName);
 		
 		double updatedTransactionValue = transactionValue + changeValue;

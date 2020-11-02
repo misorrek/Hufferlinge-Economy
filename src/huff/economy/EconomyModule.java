@@ -24,7 +24,7 @@ public class EconomyModule
 	{
 		Validate.notNull((Object) plugin, "The plugin-instance cannot be null.");
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
-		Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
+		//Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
 		
 		this.plugin = plugin;	
 		this.economyInterface = new EconomyInterface(new EconomyConfig(plugin.getDataFolder().getAbsolutePath()), 

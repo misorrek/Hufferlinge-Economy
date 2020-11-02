@@ -22,7 +22,7 @@ public class EconomyInterface
 		Validate.notNull((Object) economyStorage, "The economy-storage cannot be null.");
 		Validate.notNull((Object) economySignature, "The economy-signature cannot be null");
 		Validate.notNull((Object) economyBank, "The economy-bank cannot be null");
-		Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
+		//Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
 		
 		this.economyConfig = economyConfig;
 		this.economyStorage = economyStorage;

@@ -26,7 +26,6 @@ import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.inventories.PlayerChooser;
-import huff.lib.various.ExpandableInventory;
 
 public class InventoryListener implements Listener
 {
@@ -154,11 +153,11 @@ public class InventoryListener implements Listener
 			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				human.openInventory(new PlayerChooser(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true));
+				human.openInventory(new PlayerChooser(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true).getInventory());
 			}
 			else
 			{						
-				human.openInventory(new ExpandableInventory(null, InventoryHelper.INV_SIZE_4, "Test"));
+				human.openInventory(new TransactionInventory(economy.getConfig(), transactionKind).getInventory());
 			}
 		}
 	}
@@ -166,7 +165,7 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onPlayerChooserInventoryClick(InventoryClickEvent event)
 	{
-		if (event.getInventory() instanceof PlayerChooser && ((PlayerChooser) event.getInventory()).getKey().equals(PLAYERCHOOSER_KEY))
+		if (event.getInventory().getHolder() instanceof PlayerChooser && ((PlayerChooser) event.getInventory().getHolder()).getKey().equals(PLAYERCHOOSER_KEY))
 		{
 			final HumanEntity human = event.getWhoClicked();
 			final UUID currentUUID = ((PlayerChooser) event.getInventory()).handleEvent(event.getCurrentItem());
@@ -175,7 +174,7 @@ public class InventoryListener implements Listener
 			
 			if (currentUUID != null)
 			{
-				human.openInventory(new TransactionInventory(TransactionKind.BANK_OTHER, currentUUID));
+				human.openInventory(new TransactionInventory(economy.getConfig(), TransactionKind.BANK_OTHER, currentUUID).getInventory());
 			}
 			else
 			{
@@ -188,9 +187,9 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onTransactionInventoryClick(InventoryClickEvent event)
 	{
-		if (event.getInventory() instanceof TransactionInventory)
+		if (event.getInventory().getHolder() instanceof TransactionInventory)
 		{			
-			((TransactionInventory) event.getInventory()).handleEvent(economy, event.getCurrentItem(), event.getWhoClicked());
+			((TransactionInventory) event.getInventory().getHolder()).handleEvent(economy, event.getCurrentItem(), event.getWhoClicked());
 			
 			event.setCancelled(true);
 		}
