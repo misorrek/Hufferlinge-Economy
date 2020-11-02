@@ -1,9 +1,6 @@
 package huff.economy;
 
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -21,6 +18,7 @@ import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
+import huff.lib.helper.NMSHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.delayedmessage.DelayType;
 import huff.lib.manager.delayedmessage.MessageType;
@@ -28,6 +26,8 @@ import huff.lib.various.ExpandableInventory;
 
 public class TransactionInventory extends ExpandableInventory
 {
+	private static final String NBT_KEY = "changeamount";
+	
 	private static final int AMOUNT_1 = 1;
 	private static final int AMOUNT_2 = 5;
 	private static final int AMOUNT_3 = 10;
@@ -67,10 +67,11 @@ public class TransactionInventory extends ExpandableInventory
 			return;
 		}	
 		final String currentItemName = currentItem.getItemMeta().getDisplayName();
+		final String amountValue = NMSHelper.getTagFromItemStack(currentItem, NBT_KEY);
 		
-		if (StringHelper.contains(false, currentItemName, "+", "-"))
+		if (StringHelper.isNotNullOrEmpty(amountValue))
 		{		
-			handleTransactionValueChange(economy, currentItemName, human);
+			handleTransactionValueChange(economy, amountValue, human);
 		}
 		else if (currentItemName.equals(getPerformItemName()))
 		{
@@ -98,17 +99,17 @@ public class TransactionInventory extends ExpandableInventory
 	private void initInventory(@NotNull EconomyConfig economyConfig)
 	{	
 		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getBorderItem(), true);
-	
-		InventoryHelper.setItem(this.getInventory(), 2, 2, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_5, false)));
-		InventoryHelper.setItem(this.getInventory(), 2, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_4, false)));
-		InventoryHelper.setItem(this.getInventory(), 2, 4, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_3, false)));
-		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), MessageHelper.getHighlighted(economyConfig.getValueFormatted(0))));
-		InventoryHelper.setItem(this.getInventory(), 2, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_3, true)));
-		InventoryHelper.setItem(this.getInventory(), 2, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_4, true)));
-		InventoryHelper.setItem(this.getInventory(), 2, 8, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_5, true)));
 		
-		InventoryHelper.setItem(this.getInventory(), 3, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, false)));
-		InventoryHelper.setItem(this.getInventory(), 3, 4, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, false)));
+		InventoryHelper.setItem(this.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));
+		InventoryHelper.setItem(this.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
+		InventoryHelper.setItem(this.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
+		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), MessageHelper.getHighlighted(economyConfig.getValueFormatted(0))));
+		InventoryHelper.setItem(this.getInventory(), 2, 6, getAmountItem(AMOUNT_3, true));
+		InventoryHelper.setItem(this.getInventory(), 2, 7, getAmountItem(AMOUNT_4, true));
+		InventoryHelper.setItem(this.getInventory(), 2, 8, getAmountItem(AMOUNT_5, true));
+		
+		InventoryHelper.setItem(this.getInventory(), 3, 3, getAmountItem(AMOUNT_2, false));
+		InventoryHelper.setItem(this.getInventory(), 3, 4, getAmountItem(AMOUNT_1, false));
 		
 		if (targetUUID != null)
 		{		
@@ -116,8 +117,8 @@ public class TransactionInventory extends ExpandableInventory
 			
 			InventoryHelper.setItem(this.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
 		}		
-		InventoryHelper.setItem(this.getInventory(), 3, 6, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_1, true)));
-		InventoryHelper.setItem(this.getInventory(), 3, 7, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, getAmountItemName(AMOUNT_2, true)));
+		InventoryHelper.setItem(this.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
+		InventoryHelper.setItem(this.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
 		
 		InventoryHelper.setItem(this.getInventory(), 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
 		InventoryHelper.setItem(this.getInventory(), 4, 9, InventoryHelper.getAbortItem());
@@ -134,47 +135,34 @@ public class TransactionInventory extends ExpandableInventory
 		transactionValueItem.setItemMeta(transactionValueMeta);	
 	}
 	
-	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String currentItemName, @NotNull HumanEntity human)
+	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String changeValueString, @NotNull HumanEntity human)
 	{
 		final Player player = (Player) human;
 		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(this.getInventory(), economy.getConfig().getValueItem());
 		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(player.getUniqueId()) : economy.getStorage().getWallet(player.getUniqueId());
-		final double changeValue = getAmountFromItemName(currentItemName);
-		
+		final double changeValue = Integer.parseInt(changeValueString);
 		double updatedTransactionValue = transactionValue + changeValue;
 		
-		if (updatedTransactionValue < 0)
+		if (updatedTransactionValue < 0 && transactionValue > 0)
 		{
-			if (transactionValue > 0)
-			{
-				updatedTransactionValue = 0;
-			}
+			updatedTransactionValue = 0;
 		}
-		else if (transactionKind == TransactionKind.WALLET_OUT && updatedTransactionValue > maxInventoryValue)
+		else if (transactionKind == TransactionKind.WALLET_OUT && updatedTransactionValue > maxInventoryValue &&
+				 transactionValue < maxInventoryValue)
 		{
-			if (transactionValue < maxInventoryValue)
-			{
-				if (maxInventoryValue > storageValue)
-				{
-					updatedTransactionValue = storageValue;
-				}
-				else
-				{
-					updatedTransactionValue = maxInventoryValue;
-				}				
-			}
-		}
-		else if (updatedTransactionValue > storageValue)
-		{
-			if (transactionValue < storageValue)
+			if (maxInventoryValue > storageValue)
 			{
 				updatedTransactionValue = storageValue;
 			}
+			else
+			{
+				updatedTransactionValue = maxInventoryValue;
+			}				
 		}
-		else
+		else if (updatedTransactionValue > storageValue && transactionValue < storageValue)
 		{
-			transactionValue = updatedTransactionValue;
-		}		
+			updatedTransactionValue = storageValue;
+		}	
 		
 		if (transactionValue != updatedTransactionValue)
 		{
@@ -256,11 +244,17 @@ public class TransactionInventory extends ExpandableInventory
 		}
 	}
 	
-	private @NotNull String getAmountItemName(int amount, boolean negativeValue)
+	private @NotNull ItemStack getAmountItem(int amount, boolean negativeValue)
 	{
-		return negativeValue ? "§c- " + amount : "§a+ " + amount;
+		final ItemStack amountItem = ItemHelper.getItemWithMeta(negativeValue ? Material.RED_STAINED_GLASS_PANE : Material.LIME_STAINED_GLASS_PANE, 
+				                                                negativeValue ? "§c- " + amount : "§a+ " + amount);
+		
+		NMSHelper.getTaggedItemStack(amountItem, NBT_KEY, Integer.toString(amount));
+		
+		return amountItem; 
 	}
 	
+	/*
 	private double getAmountFromItemName(@NotNull String amountItemName)
 	{
 		try
@@ -282,9 +276,10 @@ public class TransactionInventory extends ExpandableInventory
 		}
 		return 0;
 	}
+	*/
 	
 	private @NotNull String getPerformItemName()
 	{		
-		return StringHelper.build("§7» §a", transactionKind.getLabel());
+		return StringHelper.build("§7§a", transactionKind.getLabel());
 	}
 }
