@@ -25,7 +25,7 @@ import huff.economy.storage.EconomyStorage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.inventories.PlayerChooser;
+import huff.lib.inventories.PlayerChooserInventory;
 
 public class InventoryListener implements Listener
 {
@@ -153,11 +153,11 @@ public class InventoryListener implements Listener
 			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				human.openInventory(new PlayerChooser(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true).getInventory());
+				human.openInventory(new PlayerChooserInventory(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true).getInventory());
 			}
 			else
 			{						
-				human.openInventory(new TransactionInventory(economy.getConfig(), transactionKind).getInventory());
+				human.openInventory(new TransactionInventory(economy, transactionKind).getInventory());
 			}
 		}
 	}
@@ -165,16 +165,16 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onPlayerChooserInventoryClick(InventoryClickEvent event)
 	{
-		if (event.getInventory().getHolder() instanceof PlayerChooser && ((PlayerChooser) event.getInventory().getHolder()).getKey().equals(PLAYERCHOOSER_KEY))
+		if (event.getInventory().getHolder() instanceof PlayerChooserInventory && ((PlayerChooserInventory) event.getInventory().getHolder()).getKey().equals(PLAYERCHOOSER_KEY))
 		{
 			final HumanEntity human = event.getWhoClicked();
-			final UUID currentUUID = ((PlayerChooser) event.getInventory()).handleEvent(event.getCurrentItem());
+			final UUID currentUUID = ((PlayerChooserInventory) event.getInventory()).handleEvent(event.getCurrentItem());
 			
 			human.closeInventory();
 			
 			if (currentUUID != null)
 			{
-				human.openInventory(new TransactionInventory(economy.getConfig(), TransactionKind.BANK_OTHER, currentUUID).getInventory());
+				human.openInventory(new TransactionInventory(economy, TransactionKind.BANK_OTHER, currentUUID).getInventory());
 			}
 			else
 			{
@@ -189,7 +189,7 @@ public class InventoryListener implements Listener
 	{
 		if (event.getInventory().getHolder() instanceof TransactionInventory)
 		{			
-			((TransactionInventory) event.getInventory().getHolder()).handleEvent(economy, event.getCurrentItem(), event.getWhoClicked());
+			((TransactionInventory) event.getInventory().getHolder()).handleEvent(event.getCurrentItem(), event.getWhoClicked());
 			
 			event.setCancelled(true);
 		}

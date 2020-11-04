@@ -107,7 +107,7 @@ public class EconomyListener implements Listener
 		     economy.getConfig().equalsWalletItem(player.getInventory().getItemInOffHand())))
 		{
 			player.closeInventory();
-			player.openInventory(new TransactionInventory(economy.getConfig(), TransactionKind.WALLET_OTHER, entity.getUniqueId()).getInventory());		
+			player.openInventory(new TransactionInventory(economy, TransactionKind.WALLET_OTHER, entity.getUniqueId()).getInventory());		
 			return true;
 		}
 		

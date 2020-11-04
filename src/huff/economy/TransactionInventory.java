@@ -34,32 +34,34 @@ public class TransactionInventory extends ExpandableInventory
 	private static final int AMOUNT_4 = 100;
 	private static final int AMOUNT_5 = 1000;
 	
-	public TransactionInventory(@NotNull EconomyConfig economyConfig, TransactionKind transactionKind, @Nullable UUID targetUUID)
+	public TransactionInventory(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind, @Nullable UUID targetUUID)
 	{
 		super(InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
 		
+		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.isTrue(targetUUID != null || !transactionKind.isHumanTransaction(), "The target-uuid cannot be null in a human transaction.");
 		
+		this.economy = economyInterface;
 		this.transactionKind = transactionKind;
 		this.targetUUID = targetUUID;
 		this.transactionValue = 0;
 		
-		initInventory(economyConfig);
+		initInventory();
 	}
 	
-	public TransactionInventory(@NotNull EconomyConfig economyConfig, TransactionKind transactionKind)
+	public TransactionInventory(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind)
 	{
-		this(economyConfig, transactionKind, null);
+		this(economyInterface, transactionKind, null);
 	}
 	
+	private final EconomyInterface economy;
 	private final TransactionKind transactionKind;
 	private final UUID targetUUID;
 	
 	private double transactionValue;
 	
-	public void handleEvent(@NotNull EconomyInterface economy, @Nullable ItemStack currentItem, @NotNull HumanEntity human)
+	public void handleEvent(@Nullable ItemStack currentItem, @NotNull HumanEntity human)
 	{
-		Validate.notNull((Object) economy, "The economy-interface cannot be null.");
 		Validate.notNull((Object) human, "The human who clicked cannot be null.");
 		
 		if (currentItem == null || currentItem.getItemMeta() == null)
@@ -96,14 +98,15 @@ public class TransactionInventory extends ExpandableInventory
 		}
 	}
 	
-	private void initInventory(@NotNull EconomyConfig economyConfig)
+	private void initInventory()
 	{	
 		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getBorderItem(), true);
 		
 		InventoryHelper.setItem(this.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));
 		InventoryHelper.setItem(this.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
 		InventoryHelper.setItem(this.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
-		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economyConfig.getValueMaterial(), MessageHelper.getHighlighted(economyConfig.getValueFormatted(0))));
+		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(),
+				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(0))));
 		InventoryHelper.setItem(this.getInventory(), 2, 6, getAmountItem(AMOUNT_3, true));
 		InventoryHelper.setItem(this.getInventory(), 2, 7, getAmountItem(AMOUNT_4, true));
 		InventoryHelper.setItem(this.getInventory(), 2, 8, getAmountItem(AMOUNT_5, true));
@@ -253,30 +256,6 @@ public class TransactionInventory extends ExpandableInventory
 		
 		return amountItem; 
 	}
-	
-	/*
-	private double getAmountFromItemName(@NotNull String amountItemName)
-	{
-		try
-		{
-			final Pattern valuePattern = Pattern.compile("§.([+-]) ([0-9]*)");
-			final Matcher matcher = valuePattern.matcher(amountItemName);				
-			
-			if (matcher.find())
-			{					
-				final double changeValue = Double.parseDouble(matcher.group(2));
-				
-				return matcher.group(1).equals("-") ? changeValue * -1 : changeValue;
-			}
-		}
-		catch (NumberFormatException exception)
-		{
-			Bukkit.getLogger().log(Level.WARNING, "The transaction-change-value is invalid.", exception);
-			return 0;
-		}
-		return 0;
-	}
-	*/
 	
 	private @NotNull String getPerformItemName()
 	{		
