@@ -22,10 +22,12 @@ import huff.lib.helper.NMSHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.delayedmessage.DelayType;
 import huff.lib.manager.delayedmessage.MessageType;
-import huff.lib.various.ExpandableInventory;
+import huff.lib.various.MenuInventoryHolder;
 
-public class TransactionInventory extends ExpandableInventory
+public class TransactionInventory extends MenuInventoryHolder
 {
+	public static final String MENU_IDENTIFIER = "menu:transaction";
+	
 	private static final String NBT_KEY = "changeamount";
 	
 	private static final int AMOUNT_1 = 1;
@@ -36,7 +38,7 @@ public class TransactionInventory extends ExpandableInventory
 	
 	public TransactionInventory(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind, @Nullable UUID targetUUID)
 	{
-		super(InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
+		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.isTrue(targetUUID != null || !transactionKind.isHumanTransaction(), "The target-uuid cannot be null in a human transaction.");
