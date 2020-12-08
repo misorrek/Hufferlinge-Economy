@@ -13,11 +13,12 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import huff.economy.inventories.TransactionKind;
 import huff.lib.helper.FileHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.StringHelper;
 
-public class EconomyConfig
+public class Config
 {
 	private static final String CFG_ROOT = "huffeconomy.";
 	private static final String CFG_VALUE = CFG_ROOT + "value.";
@@ -36,16 +37,16 @@ public class EconomyConfig
 	private static final String CFG_BANK_OPEN = CFG_BANK + "open";
 	private static final String CFG_BANK_CLOSE = CFG_BANK + "close";
 	
-	public EconomyConfig(@NotNull String pluginFolderPath)
+	public Config(@NotNull String pluginFolderPath)
 	{
 		Validate.notNull((Object) pluginFolderPath, "The plugin-folder-path cannot be null.");
 		
-		this.config = FileHelper.loadYamlConfigurationFromFile(Paths.get(pluginFolderPath, "Economy", "config.yml").toString(), "Hufferlinge Economy Config File", createDefaults());
+		this.configuration = FileHelper.loadYamlConfigurationFromFile(Paths.get(pluginFolderPath, "Economy", "config.yml").toString(), "Hufferlinge Economy Config File", createDefaults());
 	
 		loadValues();
 	}
 	
-	private final YamlConfiguration config;
+	private final YamlConfiguration configuration;
 	
 	private double startBalance;
 	private boolean transactionFeedback;
@@ -61,17 +62,17 @@ public class EconomyConfig
 
 	public void loadValues()
 	{
-		startBalance = (int) FileHelper.readConfigValue(config, CFG_STARTBALANCE);
-		transactionFeedback = (boolean) FileHelper.readConfigValue(config, CFG_TRANSACTION_FEEDBACK);
-		valueName = (String) FileHelper.readConfigValue(config, CFG_VALUE_NAME);
-		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_VALUE_MATERIAL));
-		walletName = (String) FileHelper.readConfigValue(config, CFG_WALLET_NAME);
-		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_WALLET_MATERIAL));
-		bankName = (String) FileHelper.readConfigValue(config, CFG_BANK_NAME);
-		bankMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_BANK_MATERIAL));
-		bankSpawnMaterial = Material.getMaterial((String) FileHelper.readConfigValue(config, CFG_BANK_SPAWN_MATERIAL));
-		bankOpen = (int) FileHelper.readConfigValue(config, CFG_BANK_OPEN);
-		bankClose = (int) FileHelper.readConfigValue(config, CFG_BANK_CLOSE);
+		startBalance = (int) FileHelper.readConfigValue(configuration, CFG_STARTBALANCE);
+		transactionFeedback = (boolean) FileHelper.readConfigValue(configuration, CFG_TRANSACTION_FEEDBACK);
+		valueName = (String) FileHelper.readConfigValue(configuration, CFG_VALUE_NAME);
+		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_VALUE_MATERIAL));
+		walletName = (String) FileHelper.readConfigValue(configuration, CFG_WALLET_NAME);
+		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_WALLET_MATERIAL));
+		bankName = (String) FileHelper.readConfigValue(configuration, CFG_BANK_NAME);
+		bankMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_BANK_MATERIAL));
+		bankSpawnMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_BANK_SPAWN_MATERIAL));
+		bankOpen = (int) FileHelper.readConfigValue(configuration, CFG_BANK_OPEN);
+		bankClose = (int) FileHelper.readConfigValue(configuration, CFG_BANK_CLOSE);
 	}
 	
 	public @NotNull double getStartBalance()

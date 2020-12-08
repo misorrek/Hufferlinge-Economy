@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
+import huff.lib.manager.delayedmessage.DelayType;
 
 public class JoinListener implements Listener
 {
@@ -30,8 +31,9 @@ public class JoinListener implements Listener
 		
 		if (!playerInventory.contains(walletItem))
 		{
-			playerInventory.setItem(8, walletItem);
-		}
+			playerInventory.setItem(8, walletItem); //TODO Check Space and make add instead of set
+		}	
+		economy.getDelayedMessageManager().sendDelayedMessages(player, DelayType.NEXTJOIN);
 		
 		if (!economy.getStorage().existUser(player.getUniqueId()))
 		{

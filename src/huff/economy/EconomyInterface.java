@@ -2,61 +2,62 @@ package huff.economy;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.Villager.Type;
 import org.jetbrains.annotations.NotNull;
 
-import huff.economy.storage.EconomyBank;
-import huff.economy.storage.EconomySignature;
-import huff.economy.storage.EconomyStorage;
-import huff.lib.manager.delayedmessage.DelayedMessageManager;
+import huff.economy.storage.Bank;
+import huff.economy.storage.Signature;
+import huff.economy.storage.Storage;
+import huff.lib.manager.delayedmessage.DelayedMessagesManager;
 
 public class EconomyInterface
 {
-	public EconomyInterface(@NotNull EconomyConfig economyConfig, @NotNull EconomyStorage economyStorage, @NotNull EconomySignature economySignature, 
-			                @NotNull EconomyBank economyBank, @NotNull DelayedMessageManager delayedMessageManager)
+	public EconomyInterface(@NotNull Config config, @NotNull Storage storage, @NotNull Signature signature, 
+			                @NotNull Bank bank, @NotNull DelayedMessagesManager delayedMessageManager)
 	{
-		Validate.notNull((Object) economyConfig, "The economy-config cannot be null.");
-		Validate.notNull((Object) economyStorage, "The economy-storage cannot be null.");
-		Validate.notNull((Object) economySignature, "The economy-signature cannot be null");
-		Validate.notNull((Object) economyBank, "The economy-bank cannot be null");
-		//Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
+		Validate.notNull((Object) config, "The economy-config cannot be null.");
+		Validate.notNull((Object) storage, "The economy-storage cannot be null.");
+		Validate.notNull((Object) signature, "The economy-signature cannot be null");
+		Validate.notNull((Object) bank, "The economy-bank cannot be null");
+		Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
 		
-		this.economyConfig = economyConfig;
-		this.economyStorage = economyStorage;
-		this.economySignature = economySignature;
-		this.economyBank = economyBank;
+		this.config = config;
+		this.storage = storage;
+		this.signature = signature;
+		this.bank = bank;
 		this.delayedMessageManager = delayedMessageManager;
 	}
-	private final EconomyConfig economyConfig;
-	private final EconomyStorage economyStorage;
-	private final EconomySignature economySignature;
-	private final EconomyBank economyBank;
-	private final DelayedMessageManager delayedMessageManager;
+	private final Config config;
+	private final Storage storage;
+	private final Signature signature;
+	private final Bank bank;
+	private final DelayedMessagesManager delayedMessageManager;
 	
-	public @NotNull EconomyConfig getConfig()
+	public @NotNull Config getConfig()
 	{
-		return economyConfig;
+		return config;
 	}
 	
-	public @NotNull EconomyStorage getStorage()
+	public @NotNull Storage getStorage()
 	{
-		return economyStorage;
+		return storage;
 	}
 	
-	public @NotNull EconomySignature getSignature()
+	public @NotNull Signature getSignature()
 	{
-		return economySignature;
+		return signature;
 	}
 	
-	public @NotNull EconomyBank getBank()
+	public @NotNull Bank getBank()
 	{
-		return economyBank;
+		return bank;
 	}
 	
-	public @NotNull DelayedMessageManager getDelayedMessageManager()
+	public @NotNull DelayedMessagesManager getDelayedMessageManager()
 	{
 		return delayedMessageManager;
 	}
@@ -71,20 +72,25 @@ public class EconomyInterface
 		bankEntity.setInvulnerable(true);
 		bankEntity.setCollidable(false);
 		bankEntity.setVillagerType(Type.DESERT);
-		bankEntity.setCustomName(economyConfig.getBankEntityName());
+		bankEntity.setCustomName(config.getBankEntityName());
 		
 		return bankEntity;
 	}
 	
-	public void removeBankEntity(@NotNull Location location)
+	public void removeBankEntity(@NotNull Location location, boolean removeBlock)
 	{
 		Validate.notNull((Object) location, "The bank-entity-location cannot be null");
 		
 		for (Entity entity : location.getWorld().getNearbyEntities(location, 2, 2, 2))
 		{
-			if (entity instanceof Villager && entity.getCustomName().equals(economyConfig.getBankEntityName()))
+			if (entity instanceof Villager && entity.getCustomName().equals(config.getBankEntityName()))
 			{
 				entity.remove();
+				
+				if (removeBlock)
+				{
+					entity.getLocation().subtract(0, 1, 0).getBlock().setType(Material.AIR);
+				}			
 			}
 		}
 	}

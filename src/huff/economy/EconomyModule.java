@@ -11,26 +11,26 @@ import org.jetbrains.annotations.NotNull;
 import huff.economy.listener.EconomyListener;
 import huff.economy.listener.InventoryListener;
 import huff.economy.listener.JoinListener;
-import huff.economy.storage.EconomyBank;
-import huff.economy.storage.EconomySignature;
-import huff.economy.storage.EconomyStorage;
+import huff.economy.storage.Bank;
+import huff.economy.storage.Signature;
+import huff.economy.storage.Storage;
 import huff.lib.helper.CommandHelper;
+import huff.lib.listener.MenuInventoryListener;
 import huff.lib.manager.RedisManager;
-import huff.lib.manager.delayedmessage.DelayedMessageManager;
+import huff.lib.manager.delayedmessage.DelayedMessagesManager;
 
 public class EconomyModule
 {
-	public EconomyModule(@NotNull JavaPlugin plugin, @NotNull RedisManager redisManager, @NotNull DelayedMessageManager delayedMessageManager)
+	public EconomyModule(@NotNull JavaPlugin plugin, @NotNull RedisManager redisManager, @NotNull DelayedMessagesManager delayedMessageManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin-instance cannot be null.");
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
-		//Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
 		
 		this.plugin = plugin;	
-		this.economyInterface = new EconomyInterface(new EconomyConfig(plugin.getDataFolder().getAbsolutePath()), 
-				                                     new EconomyStorage(redisManager), 
-				                                     new EconomySignature(redisManager), 
-				                                     new EconomyBank(redisManager),
+		this.economyInterface = new EconomyInterface(new Config(plugin.getDataFolder().getAbsolutePath()), 
+				                                     new Storage(redisManager), 
+				                                     new Signature(redisManager), 
+				                                     new Bank(redisManager),
 				                                     delayedMessageManager);
 	}
 	
@@ -47,6 +47,7 @@ public class EconomyModule
 		pluginEconomyCommand.setExecutor(economyCommand);
 		pluginEconomyCommand.setTabCompleter(economyCommand);
 		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
+		pluginEconomyCommand.setPermission(EconomyCommand.PERM_ECONOMY);
 		CommandHelper.addAliases(pluginEconomyCommand, "huffconomy", "economy", "money");
 	} 
 	
@@ -57,6 +58,7 @@ public class EconomyModule
 		pluginManager.registerEvents(new JoinListener(economyInterface), plugin);
 		pluginManager.registerEvents(new EconomyListener(economyInterface), plugin);
 		pluginManager.registerEvents(new InventoryListener(economyInterface), plugin);
+		pluginManager.registerEvents(new MenuInventoryListener(), plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)
@@ -67,7 +69,7 @@ public class EconomyModule
 			{
 				for (Location bankLocation : economyInterface.getBank().getBankLocations())
 				{
-					economyInterface.removeBankEntity(bankLocation);
+					economyInterface.spawnBankEntity(bankLocation);
 				}	
 				bankOpen = true;	
 			}			
@@ -78,7 +80,7 @@ public class EconomyModule
 			{
 				for (Location bankLocation : economyInterface.getBank().getBankLocations())
 				{
-					economyInterface.removeBankEntity(bankLocation);
+					economyInterface.removeBankEntity(bankLocation, false);
 				}			
 				bankOpen = false;
 			}		

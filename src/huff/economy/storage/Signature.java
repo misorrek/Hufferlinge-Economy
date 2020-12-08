@@ -6,16 +6,17 @@ import java.util.List;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.Validate;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
 
-public class EconomySignature
+public class Signature
 {
 	private static final String PATTERN_USER = "signature:";
 	private static final String OFFLINE_SIGNATURE = "#0000#";	
 	
-	public EconomySignature(@NotNull RedisManager redisManager)
+	public Signature(@NotNull RedisManager redisManager)
 	{
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");	
 		
@@ -35,8 +36,12 @@ public class EconomySignature
 		return signatureLore;
 	}
 	
-	public int getSignatureValueAmount(List<String> signatureLore, int wantedValueAmount)
+	public int getSignatureValueAmount(@Nullable List<String> signatureLore, int wantedValueAmount)
 	{
+		if (signatureLore == null || signatureLore.isEmpty())
+		{
+			return -1;
+		}
 		final String loreSignature = signatureLore.get(1).substring(2);
 		
 		if (StringHelper.isNullOrEmpty(loreSignature))

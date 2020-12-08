@@ -1,4 +1,4 @@
-package huff.economy;
+package huff.economy.inventories;
 
 import java.util.UUID;
 
@@ -14,19 +14,22 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.storage.EconomyStorage;
+import huff.economy.Config;
+import huff.economy.EconomyInterface;
+import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
-import huff.lib.helper.NMSHelper;
+import huff.lib.helper.IndependencyHelper;
 import huff.lib.helper.StringHelper;
+import huff.lib.inventories.PlayerChooserInventory;
 import huff.lib.manager.delayedmessage.DelayType;
-import huff.lib.manager.delayedmessage.MessageType;
 import huff.lib.various.MenuInventoryHolder;
 
 public class TransactionInventory extends MenuInventoryHolder
 {
-	public static final String MENU_IDENTIFIER = "menu:transaction";
+	public static final String MENU_IDENTIFIER = "menu:economy:transaction";
+	public static final String CHOOSER_KEY = "Transaction";
 	
 	private static final String NBT_KEY = "changeamount";
 	
@@ -62,6 +65,27 @@ public class TransactionInventory extends MenuInventoryHolder
 	
 	private double transactionValue;
 	
+	public static void handleTransactionOpen(@NotNull EconomyInterface economy, @NotNull HumanEntity human, @NotNull String currentItemName)
+	{
+		Validate.notNull((Object) economy, "The economy-interface who clicked cannot be null.");
+		
+		if (TransactionKind.isTransaction(currentItemName))
+		{
+			final TransactionKind transactionKind = TransactionKind.getTransaction(currentItemName);
+			
+			human.closeInventory();
+			
+			if (transactionKind == TransactionKind.BANK_OTHER)
+			{
+				human.openInventory(new PlayerChooserInventory(CHOOSER_KEY, economy.getStorage().getUsers(human.getUniqueId()), InventoryHelper.INV_SIZE_6, null, true).getInventory());
+			}
+			else
+			{						
+				human.openInventory(new TransactionInventory(economy, transactionKind).getInventory());
+			}
+		}
+	}
+	
 	public void handleEvent(@Nullable ItemStack currentItem, @NotNull HumanEntity human)
 	{
 		Validate.notNull((Object) human, "The human who clicked cannot be null.");
@@ -69,34 +93,41 @@ public class TransactionInventory extends MenuInventoryHolder
 		if (currentItem == null || currentItem.getItemMeta() == null)
 		{
 			return;
-		}	
+		}			
 		final String currentItemName = currentItem.getItemMeta().getDisplayName();
-		final String amountValue = NMSHelper.getTagFromItemStack(currentItem, NBT_KEY);
+		final String amountValue = IndependencyHelper.getTagFromItemStack(currentItem, NBT_KEY);
 		
 		if (StringHelper.isNotNullOrEmpty(amountValue))
-		{		
-			handleTransactionValueChange(economy, amountValue, human);
+		{					
+			handleTransactionValueChange(amountValue, human);
 		}
 		else if (currentItemName.equals(getPerformItemName()))
 		{
-			if (transactionKind == TransactionKind.BANK_OTHER || transactionKind == TransactionKind.WALLET_OTHER)
+			if (transactionValue == 0)
+			{
+				((Player) human).playSound(human.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+			}
+			else if (transactionKind == TransactionKind.BANK_OTHER || transactionKind == TransactionKind.WALLET_OTHER)
 			{			
-				handleTransactionHuman(economy, human);			
+				handleTransactionHuman(human);			
 			}
 			else if (transactionKind == TransactionKind.BANK_IN)
 			{				
-				handleTransactionBank(economy, human, false);
+				handleTransactionBank(human, false);
 			}
 			else if (transactionKind == TransactionKind.BANK_OUT)
 			{
-				handleTransactionBank(economy, human, true);
+				handleTransactionBank(human, true);
 			}
 			else if (transactionKind == TransactionKind.WALLET_OUT)
 			{
-				handleTransactionWalletOut(economy, human);			
+				handleTransactionWalletOut(human);			
 			}
-			human.closeInventory();
-			human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Transaktion konnte nicht abgeschlossen werden.");	
+			else
+			{
+				human.closeInventory();
+				human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Transaktion konnte nicht abgeschlossen werden.");	
+			}	
 		}
 	}
 	
@@ -104,11 +135,11 @@ public class TransactionInventory extends MenuInventoryHolder
 	{	
 		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getBorderItem(), true);
 		
-		InventoryHelper.setItem(this.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));
+		InventoryHelper.setItem(this.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));		
 		InventoryHelper.setItem(this.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
 		InventoryHelper.setItem(this.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
 		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(),
-				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(0))));
+				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(0))));	
 		InventoryHelper.setItem(this.getInventory(), 2, 6, getAmountItem(AMOUNT_3, true));
 		InventoryHelper.setItem(this.getInventory(), 2, 7, getAmountItem(AMOUNT_4, true));
 		InventoryHelper.setItem(this.getInventory(), 2, 8, getAmountItem(AMOUNT_5, true));
@@ -129,7 +160,7 @@ public class TransactionInventory extends MenuInventoryHolder
 		InventoryHelper.setItem(this.getInventory(), 4, 9, InventoryHelper.getAbortItem());
 	}
 	
-	private void updateTransactionValue(@NotNull EconomyConfig economyConfig, double updatedTransactionValue)
+	private void updateTransactionValue(@NotNull Config economyConfig, double updatedTransactionValue)
 	{	
 		final ItemStack transactionValueItem = InventoryHelper.getItem(this.getInventory(), 2, 5);
 		final ItemMeta transactionValueMeta = transactionValueItem.getItemMeta();
@@ -140,20 +171,19 @@ public class TransactionInventory extends MenuInventoryHolder
 		transactionValueItem.setItemMeta(transactionValueMeta);	
 	}
 	
-	private void handleTransactionValueChange(@NotNull EconomyInterface economy, @NotNull String changeValueString, @NotNull HumanEntity human)
+	private void handleTransactionValueChange(@NotNull String changeValueString, @NotNull HumanEntity human)
 	{
 		final Player player = (Player) human;
-		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(this.getInventory(), economy.getConfig().getValueItem());
+		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(human.getInventory(), economy.getConfig().getValueItem());
 		final double storageValue = transactionKind.isBankTransaction() ? economy.getStorage().getBalance(player.getUniqueId()) : economy.getStorage().getWallet(player.getUniqueId());
 		final double changeValue = Integer.parseInt(changeValueString);
 		double updatedTransactionValue = transactionValue + changeValue;
-		
-		if (updatedTransactionValue < 0 && transactionValue > 0)
+	
+		if (updatedTransactionValue < 0)
 		{
 			updatedTransactionValue = 0;
 		}
-		else if (transactionKind == TransactionKind.WALLET_OUT && updatedTransactionValue > maxInventoryValue &&
-				 transactionValue < maxInventoryValue)
+		else if (transactionKind == TransactionKind.WALLET_OUT && updatedTransactionValue > maxInventoryValue)
 		{
 			if (maxInventoryValue > storageValue)
 			{
@@ -164,11 +194,11 @@ public class TransactionInventory extends MenuInventoryHolder
 				updatedTransactionValue = maxInventoryValue;
 			}				
 		}
-		else if (updatedTransactionValue > storageValue && transactionValue < storageValue)
+		else if (updatedTransactionValue > storageValue)
 		{
 			updatedTransactionValue = storageValue;
 		}	
-		
+
 		if (transactionValue != updatedTransactionValue)
 		{
 			updateTransactionValue(economy.getConfig(), updatedTransactionValue);
@@ -180,19 +210,19 @@ public class TransactionInventory extends MenuInventoryHolder
 		}
 	}
 	
-	private void handleTransactionHuman(@NotNull EconomyInterface economy, @NotNull HumanEntity human)
+	private void handleTransactionHuman(@NotNull HumanEntity human)
 	{
 		final String formattedValueAmount = MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue));
 		final int selfFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, true, false) : economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true);
 		final int otherFeedbackcode = transactionKind.isBankTransaction() ? economy.getStorage().updateBalance(targetUUID, transactionValue, false, false) : economy.getStorage().updateWallet(targetUUID, transactionValue, false);
 		
-		if (selfFeedbackcode == EconomyStorage.CODE_SUCCESS && otherFeedbackcode == EconomyStorage.CODE_SUCCESS)
+		if (selfFeedbackcode == Storage.CODE_SUCCESS && otherFeedbackcode == Storage.CODE_SUCCESS)
 		{
 			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(targetUUID);
 			
 			human.closeInventory();
 			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
-												 MessageHelper.getHighlighted(targetPlayer.getName()), "übergeben."));
+												 MessageHelper.getHighlighted(targetPlayer.getName()), "übertragen."));
 			
 			final String otherMessage = StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
                                                            MessageHelper.getHighlighted(human.getName()), "erhalten.");
@@ -204,46 +234,48 @@ public class TransactionInventory extends MenuInventoryHolder
 			}
 			else
 			{
-				economy.getDelayedMessageManager().addDelayedMessage(targetUUID, DelayType.NEXTJOIN, MessageType.INFO, otherMessage);
+				economy.getDelayedMessageManager().addDelayedMessage(targetUUID, DelayType.NEXTJOIN, otherMessage);
 			}		
 		}	
 	}
 	
-	private void handleTransactionBank(@NotNull EconomyInterface economy, @NotNull HumanEntity human, boolean outgoingTransaction)
+	private void handleTransactionBank(@NotNull HumanEntity human, boolean outgoingTransaction)
 	{		
-		if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, outgoingTransaction, true) == EconomyStorage.CODE_SUCCESS)
+		if (economy.getStorage().updateBalance(human.getUniqueId(), transactionValue, outgoingTransaction, true) == Storage.CODE_SUCCESS)
 		{		
 			human.closeInventory();
-			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), "auf die",
-												 economy.getConfig().getBankName(), " eingezahlt."));
+			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), 
+												 (outgoingTransaction ? "von der Bank ausgezahlt." :"auf die Bank eingezahlt.")));
 		}	
 	}
 	
-	private void handleTransactionWalletOut(@NotNull EconomyInterface economy, @NotNull HumanEntity human)
+	private void handleTransactionWalletOut(@NotNull HumanEntity human)
 	{
 		final ItemStack valueItem = economy.getConfig().getValueItem();
 		
-		if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == EconomyStorage.CODE_SUCCESS)
+		if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == Storage.CODE_SUCCESS)
 		{
 			int maxStackSize = valueItem.getMaxStackSize();
+			int openTransactionValue = (int) transactionValue;
 			
-			while ((int) transactionValue > 0)
+			while (openTransactionValue > 0)
 			{
-				if ((int) transactionValue >= maxStackSize)
+				if (openTransactionValue >= maxStackSize)
 				{
 					valueItem.setAmount(maxStackSize);
 					ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(maxStackSize));
-					transactionValue -= maxStackSize;
+					openTransactionValue -= maxStackSize;
 				}
 				else
 				{
-					valueItem.setAmount((int) transactionValue);
-					ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore((int) transactionValue));
-					transactionValue = 0;
+					valueItem.setAmount(openTransactionValue);
+					ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(openTransactionValue));
+					openTransactionValue = 0;
 				}						
 				human.getInventory().addItem(valueItem);
 			}
 			human.closeInventory();
+			((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);
 			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), "aus deinem ",
 												 economy.getConfig().getWalletName(), " herausgenommen."));
 		}
@@ -254,13 +286,11 @@ public class TransactionInventory extends MenuInventoryHolder
 		final ItemStack amountItem = ItemHelper.getItemWithMeta(negativeValue ? Material.RED_STAINED_GLASS_PANE : Material.LIME_STAINED_GLASS_PANE, 
 				                                                negativeValue ? "§c- " + amount : "§a+ " + amount);
 		
-		NMSHelper.getTaggedItemStack(amountItem, NBT_KEY, Integer.toString(amount));
-		
-		return amountItem; 
+		return IndependencyHelper.getTaggedItemStack(amountItem, NBT_KEY, Integer.toString(negativeValue ? Math.negateExact(amount) : amount)); 
 	}
 	
 	private @NotNull String getPerformItemName()
 	{		
-		return StringHelper.build("§7§a", transactionKind.getLabel());
+		return "§7» §a" + transactionKind.getLabel();
 	}
 }

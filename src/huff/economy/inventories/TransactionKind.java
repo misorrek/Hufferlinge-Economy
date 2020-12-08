@@ -1,4 +1,4 @@
-package huff.economy;
+package huff.economy.inventories;
 
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +12,7 @@ public enum TransactionKind
 	WALLET_OUT("Herausnehmen"),
 	WALLET_OTHER("Übergeben");
 	
-	private TransactionKind(@NotNull String label)
+	private TransactionKind(String label)
 	{
 		this.label = label;
 	}
@@ -48,12 +48,12 @@ public enum TransactionKind
 	
 	public boolean isBankTransaction()
 	{
-		return this == BANK_IN || this == BANK_OUT || this == BANK_OTHER;
+		return this == BANK_OUT || this == BANK_OTHER;
 	}
 	
 	public boolean isWalletTransaction()
 	{
-		return this == WALLET_OUT || this == WALLET_OTHER;
+		return this == WALLET_OUT || this == WALLET_OTHER || this == BANK_IN;
 	}
 	
 	public boolean isHumanTransaction()

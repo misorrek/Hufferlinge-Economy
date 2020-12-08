@@ -1,5 +1,7 @@
 package huff.economy.listener;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
@@ -11,25 +13,30 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
-import huff.economy.TransactionInventory;
-import huff.economy.TransactionKind;
-import huff.economy.storage.EconomyStorage;
+import huff.economy.inventories.BankInventory;
+import huff.economy.inventories.TransactionInventory;
+import huff.economy.inventories.TransactionKind;
+import huff.economy.inventories.WalletInventory;
+import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
+import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.inventories.PlayerChooserInventory;
 
 public class InventoryListener implements Listener
 {
-	private static final String PLAYERCHOOSER_KEY = "Transaction";
+	private Map<UUID, Integer> pickedUpSlot = new HashMap<>();
 	
 	public InventoryListener(@NotNull EconomyInterface economyInterface)
 	{
@@ -39,39 +46,171 @@ public class InventoryListener implements Listener
 	}
 	private final EconomyInterface economy;
 	
-	@EventHandler (priority = EventPriority.HIGHEST) //TODO Handle full inventory
+	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onDenyHumanInventoryClick(InventoryClickEvent event)
 	{
 		if (event.getClickedInventory() == null)
 		{
+			Bukkit.getConsoleSender().sendMessage("EMPTY");
+			
+			if (pickedUpSlot.containsKey(event.getView().getPlayer().getUniqueId()))
+			{
+				pickedUpSlot.remove(event.getView().getPlayer().getUniqueId());
+			}
+			return;
+		}	
+		final InventoryType inventoryType = event.getClickedInventory().getType();
+		final InventoryAction inventoryAction = event.getAction();
+		final ItemStack currentItem = event.getCurrentItem();
+		final ItemStack cursorItem = event.getCursor();		
+		final HumanEntity human = event.getView().getPlayer();
+		
+		final boolean isWalletItemCase = (economy.getConfig().equalsWalletItem(cursorItem) && inventoryType != InventoryType.PLAYER) || 
+										 (economy.getConfig().equalsWalletItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
+					                      event.getView().countSlots() > human.getInventory().getSize());
+		final boolean isValueItemCase = (economy.getConfig().equalsValueItem(cursorItem) && !InventoryHelper.isContainerInventory(inventoryType)) ||
+										(economy.getConfig().equalsValueItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
+										 !InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType()));
+		
+		//Bukkit.getConsoleSender().sendMessage("ViewSlots: " + event.getView().countSlots());
+		//Bukkit.getConsoleSender().sendMessage("InvSize: " + human.getInventory().getSize());
+		//Bukkit.getConsoleSender().sendMessage("CurrentItem: " + currentItem.toString());
+		//Bukkit.getConsoleSender().sendMessage("CursorItem: " + cursorItem.toString());
+		//Bukkit.getConsoleSender().sendMessage("InventoryTyp: " + inventoryType.toString());
+		Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
+		Bukkit.getConsoleSender().sendMessage("ClickType: " + event.getClick().toString());		
+			
+		if (InventoryHelper.isPickupAction(inventoryAction) && (economy.getConfig().equalsWalletItem(currentItem) || 
+				                                                economy.getConfig().equalsValueItem(currentItem)))
+		{
+			if (pickedUpSlot.containsKey(human.getUniqueId()))
+			{
+				pickedUpSlot.remove(human.getUniqueId());
+			}
+			pickedUpSlot.put(human.getUniqueId(), event.getRawSlot());
 			return;
 		}
 		
-		final InventoryType inventoryType = event.getClickedInventory().getType();
-		final InventoryAction inventoryAction = event.getAction();
-		final ItemStack cursorItem = event.getCursor();
-		
-		final boolean isWalletItemCase = economy.getConfig().equalsWalletItem(cursorItem) && 
-			                         (inventoryType != InventoryType.PLAYER || inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY);
-		final boolean isValueItemCase = economy.getConfig().equalsValueItem(cursorItem) && (!isContainerInventory(inventoryType) ||
-			                         (inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY && !isContainerInventory(event.getView().getTopInventory().getType()))); //TODO Sinn überprüfen
-		
 		if (isWalletItemCase || isValueItemCase)			
-		{			
-			Bukkit.getConsoleSender().sendMessage("InventoryTyp: " + inventoryType.toString());
-			Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
+		{		
+			if (pickedUpSlot.containsKey(human.getUniqueId()))
+			{
+				final int rawPickedUpSlot = pickedUpSlot.get(human.getUniqueId());
+				final ItemStack rawPickedUpSlotItem = event.getView().getItem(rawPickedUpSlot);
+				final ItemStack replaceItem = inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY ? currentItem : cursorItem;
+				
+				if (rawPickedUpSlotItem.isSimilar(replaceItem))
+				{
+					cursorItem.setAmount(replaceItem.getAmount() + rawPickedUpSlotItem.getAmount());
+					event.getView().setItem(rawPickedUpSlot, replaceItem);	
+				}
+				else
+				{
+					event.getView().setItem(rawPickedUpSlot, replaceItem);	
+				}					
+				
+				if (inventoryAction != InventoryAction.MOVE_TO_OTHER_INVENTORY)
+				{
+					event.getView().setCursor(null);
+				}		
+				pickedUpSlot.remove(human.getUniqueId());
+			}			
+			event.setCancelled(true);
+		}
+		else if (inventoryAction == InventoryAction.SWAP_WITH_CURSOR && economy.getConfig().equalsValueItem(cursorItem))
+		{
+			final ItemStack clickedSlotItem = event.getView().getItem(event.getRawSlot());
 			
+			if (economy.getConfig().equalsValueItem(clickedSlotItem))
+			{				
+				final int cursorItemAmount = inventoryAction == InventoryAction.PLACE_ONE ? 1 : cursorItem.getAmount();
+				final int clickedSlotItemAmount = clickedSlotItem.getAmount();
+				int clickedSlotSpace = clickedSlotItem.getMaxStackSize() - clickedSlotItemAmount; //TODO INV MAX SIZE
+				
+				Bukkit.getConsoleSender().sendMessage("CursorAmount : " + cursorItemAmount);
+				Bukkit.getConsoleSender().sendMessage("ClickedAmount : " + clickedSlotItemAmount);
+				Bukkit.getConsoleSender().sendMessage("ClickedSlotSpace : " + clickedSlotSpace);
+				
+				if (cursorItemAmount < clickedSlotSpace)
+				{
+					clickedSlotSpace = cursorItemAmount;
+				}			
+				int cursorSignatureValueAmount = economy.getSignature().getSignatureValueAmount(cursorItem.getItemMeta().getLore(), clickedSlotSpace);
+				int clickedSignatureValueAmount = economy.getSignature().getSignatureValueAmount(clickedSlotItem.getItemMeta().getLore(), clickedSlotItemAmount);
+							
+				if (cursorSignatureValueAmount > clickedSlotSpace)
+				{
+					cursorSignatureValueAmount = clickedSlotSpace;
+				}
+				
+				if (clickedSignatureValueAmount > clickedSlotItemAmount)
+				{
+					clickedSignatureValueAmount = clickedSlotItemAmount;
+				}			
+				Bukkit.getConsoleSender().sendMessage("ClickedSlotSpaceUpdated : " + clickedSlotSpace);
+				Bukkit.getConsoleSender().sendMessage("CursorSig : " + cursorSignatureValueAmount);
+				Bukkit.getConsoleSender().sendMessage("ClickedSig : " + clickedSignatureValueAmount);
+				
+				if (cursorSignatureValueAmount == -1)
+				{
+					cursorSignatureValueAmount = 0;
+				}
+				
+				if (clickedSignatureValueAmount == -1)
+				{
+					event.getView().setItem(event.getRawSlot(), null);
+				}
+								
+				cursorItem.setAmount(cursorItemAmount - clickedSlotSpace);
+		
+				final ItemStack valueItem = economy.getConfig().getValueItem();
+				
+				valueItem.setAmount(cursorSignatureValueAmount + clickedSignatureValueAmount);
+				
+				ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(cursorSignatureValueAmount + clickedSignatureValueAmount));
+							
+				event.getView().setItem(event.getRawSlot(), valueItem);
+				event.setCancelled(true);
+			}			
+		}
+		
+		if (pickedUpSlot.containsKey(human.getUniqueId()))
+		{
+			pickedUpSlot.remove(human.getUniqueId());
+		}
+	}
+	
+	@EventHandler
+	public void onDenyHumanInventoryPickup(EntityPickupItemEvent event)
+	{
+		if (pickedUpSlot.containsKey(event.getEntity().getUniqueId()) && InventoryHelper.getFreeSlotsAfterAdding(((Player) event.getEntity()).getInventory(), event.getItem().getItemStack()) < 1)
+		{			
 			event.setCancelled(true);
 		}
 	}
 	
-	private boolean isContainerInventory(@NotNull InventoryType inventoryType)
-	{
-		return inventoryType == InventoryType.CHEST || inventoryType == InventoryType.BARREL || inventoryType == InventoryType.SHULKER_BOX ||
-			   inventoryType == InventoryType.ENDER_CHEST || inventoryType == InventoryType.HOPPER ||
-			   inventoryType == InventoryType.DISPENSER || inventoryType == InventoryType.DROPPER;
-	}
-	
+	@EventHandler
+	public void onDenyHumanInventoryDrag(InventoryDragEvent event)
+	{	
+		if (InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType()) && 
+			InventoryHelper.isContainerInventory(event.getView().getBottomInventory().getType()))
+		{
+			return;
+		}
+		final ItemStack oldCursorItem = event.getOldCursor();	
+		
+		if (economy.getConfig().equalsWalletItem(oldCursorItem) || economy.getConfig().equalsValueItem(oldCursorItem))
+		{
+			for (int slot : event.getNewItems().keySet())
+			{
+				if (slot < event.getView().getTopInventory().getSize())
+				{		
+					event.setCancelled(true);				
+				}
+			}
+		}		
+	}	
+
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onHumanInverntoryClick(InventoryClickEvent event)
 	{	
@@ -86,99 +225,104 @@ public class InventoryListener implements Listener
 			
 			if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
 			{
+				event.getView().setCursor(null);
 				human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst in deinem Spielmodus nicht in den ", economy.getConfig().getWalletName(), " einlagern."));
 				return;
 			}	
-		    int valueAmount = cursorItem.getAmount();
-			final int signatureValueAmount = economy.getSignature().getSignatureValueAmount(cursorItem.getItemMeta().getLore(), valueAmount);
-			
-			if (signatureValueAmount == -1)
+		    
+			if (checkValueItem(cursorItem, human, true))
 			{
 				event.getView().setCursor(null);
-				((Player) human).playSound(human.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 1, 2);	
-			} 
-			else
-			{
-				if (valueAmount > signatureValueAmount)
-				{
-					valueAmount = signatureValueAmount;
-				}							
-				
-				if (economy.getStorage().updateWallet(human.getUniqueId(), valueAmount, false) == EconomyStorage.CODE_SUCCESS)
-				{						
-					event.getView().setCursor(null);
-					((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);						
-				}	
 			}
+			
+			if (event.isShiftClick())
+			{
+				handleWalletInShift(human);
+			}		
 			event.setCancelled(true);			
+		}
+	}
+	
+	private boolean checkValueItem(@NotNull ItemStack valueItem, @NotNull HumanEntity human, boolean withSoundFeedback)
+	{
+		if (!economy.getConfig().equalsValueItem(valueItem))
+		{
+			return false;
+		}
+		int valueAmount = valueItem.getAmount();
+		final int signatureValueAmount = economy.getSignature().getSignatureValueAmount(valueItem.getItemMeta().getLore(), valueAmount);
+		
+		if (signatureValueAmount == -1)
+		{
+			if (withSoundFeedback)
+			{
+				((Player) human).playSound(human.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 1, 2);
+			}
+			return true;
+		}
+		else
+		{
+			if (valueAmount > signatureValueAmount)
+			{
+				valueAmount = signatureValueAmount;
+			}							
+			
+			if (economy.getStorage().updateWallet(human.getUniqueId(), valueAmount, false) == Storage.CODE_SUCCESS)
+			{		
+				if (withSoundFeedback)
+				{					
+					((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);	
+				}
+				return true;		
+			}	
+		}
+		return false;
+	}
+	
+	private void handleWalletInShift(@NotNull HumanEntity human)
+	{
+		for (ItemStack currentItemStack : human.getInventory().getStorageContents())
+		{
+			if (checkValueItem(currentItemStack, human, false))
+			{
+				human.getInventory().remove(currentItemStack);			
+			}
 		}
 	}
 	
 	@EventHandler
 	public void onEconomyStorageInventoryClick(InventoryClickEvent event)
 	{
-		final InventoryView view = event.getView();
-		final String viewTitle = view.getTitle();
+		final InventoryHolder inventoryHolder = event.getInventory().getHolder();
+		final HumanEntity human = event.getWhoClicked();
+		final ItemStack currentItem = event.getCurrentItem();
 		
-		if (viewTitle.equals(economy.getConfig().getWalletInventoryName()) || viewTitle.equals(economy.getConfig().getBankInventoryName()))
+		if (inventoryHolder instanceof WalletInventory)
 		{
+			((WalletInventory) inventoryHolder).handleEvent(currentItem, human);
+			
 			event.setCancelled(true);
-			
-			final ItemStack currentItem = event.getCurrentItem();
-			
-			if (currentItem == null)
-			{
-				return;
-			}
-			final String currentItemName = currentItem.getItemMeta().getDisplayName();
-			
-			if (currentItemName.equals(InventoryHelper.ITEM_CLOSE))
-			{
-				view.close();
-			}
-			else
-			{
-				handleTransactionOpen(event.getWhoClicked(), currentItemName);
-			}
 		}
-	}
-	
-	public void handleTransactionOpen(@NotNull HumanEntity human, @NotNull String currentItemName)
-	{
-		if (TransactionKind.isTransaction(currentItemName))
+		else if (inventoryHolder instanceof BankInventory)
 		{
-			final TransactionKind transactionKind = TransactionKind.getTransaction(currentItemName);
+			((BankInventory) inventoryHolder).handleEvent(currentItem, human);
 			
-			human.closeInventory();
-			
-			if (transactionKind == TransactionKind.BANK_OTHER)
-			{
-				human.openInventory(new PlayerChooserInventory(PLAYERCHOOSER_KEY, economy.getStorage().getUsers(), InventoryHelper.INV_SIZE_6, null, true).getInventory());
-			}
-			else
-			{						
-				human.openInventory(new TransactionInventory(economy, transactionKind).getInventory());
-			}
+			event.setCancelled(true);
 		}
 	}
-	
+
 	@EventHandler
 	public void onPlayerChooserInventoryClick(InventoryClickEvent event)
 	{
-		if (event.getInventory().getHolder() instanceof PlayerChooserInventory && ((PlayerChooserInventory) event.getInventory().getHolder()).getKey().equals(PLAYERCHOOSER_KEY))
+		if (event.getInventory().getHolder() instanceof PlayerChooserInventory && ((PlayerChooserInventory) event.getInventory().getHolder()).getKey().equals(TransactionInventory.CHOOSER_KEY))
 		{
 			final HumanEntity human = event.getWhoClicked();
-			final UUID currentUUID = ((PlayerChooserInventory) event.getInventory()).handleEvent(event.getCurrentItem());
-			
-			human.closeInventory();
-			
+			final UUID currentUUID = ((PlayerChooserInventory) event.getInventory().getHolder()).handleEvent(event.getCurrentItem());
+						
 			if (currentUUID != null)
 			{
-				human.openInventory(new TransactionInventory(economy, TransactionKind.BANK_OTHER, currentUUID).getInventory());
-			}
-			else
-			{
-				human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Auswahl einer Person war nicht erfolgreich.");
+				human.closeInventory();
+				human.openInventory(new TransactionInventory(economy, TransactionKind.BANK_OTHER, currentUUID).getInventory());			
 			}
 			event.setCancelled(true);
 		}

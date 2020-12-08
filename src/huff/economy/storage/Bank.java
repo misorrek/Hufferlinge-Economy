@@ -13,12 +13,12 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.EconomyConfig;
+import huff.economy.Config;
 import huff.lib.helper.DataHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
 
-public class EconomyBank
+public class Bank
 {
 	public static final int CODE_SUCCESS = 0;
 	public static final int CODE_NOBANK = -1;
@@ -30,7 +30,7 @@ public class EconomyBank
 	private static final String FIELD_OWNER = "owner";
 	private static final double REMOVE_DISTANCE = 10;
 	
-	public EconomyBank(@NotNull RedisManager redisManager)
+	public Bank(@NotNull RedisManager redisManager)
 	{
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");	
 		
@@ -112,14 +112,14 @@ public class EconomyBank
 		return CODE_SUCCESS;
 	}	
 	
-	public int handleBankAdd(@NotNull Player player, @NotNull EconomyConfig economyConfig)
+	public int handleBankAdd(@NotNull Player player, @NotNull Config economyConfig)
 	{
-		Validate.notNull((Object) player, "The bank-location cannot be null.");
+		Validate.notNull((Object) player, "The player cannot be null.");
 		
 		final Location playerLocation = player.getLocation();
 		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5);
 		
-		if (addBank(bankLocation, player.getUniqueId()) == EconomyBank.CODE_SUCCESS)
+		if (addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 		{
 			bankLocation.subtract(0, 1, 0).getBlock().setType(economyConfig.getBankMaterial());
 			return CODE_SUCCESS;
@@ -129,6 +129,24 @@ public class EconomyBank
 			return CODE_DUPLICATE;
 		}	
 	}
+	
+	public int handleBankAdd(@NotNull Location location, @Nullable UUID ownerUUID, @NotNull Config economyConfig)
+	{		
+		Validate.notNull((Object) location, "The bank-place-location cannot be null.");	
+		
+		final Location bankLocation = new Location(location.getWorld(), location.getBlockX() + 0.5, location.getBlockY() + 1, location.getBlockZ() + 0.5);
+		
+		if (addBank(bankLocation, ownerUUID) == Bank.CODE_SUCCESS)
+		{
+			bankLocation.subtract(0, 1, 0).getBlock().setType(economyConfig.getBankMaterial());
+			return CODE_SUCCESS;
+		}
+		else
+		{
+			return CODE_DUPLICATE;
+		}	
+	}
+	
 	
 	public int removeBank(@NotNull Location location)
 	{

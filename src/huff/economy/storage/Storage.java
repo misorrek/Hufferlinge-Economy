@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
 
-public class EconomyStorage
+public class Storage
 {
 	public static final int CODE_SUCCESS = 0;
 	public static final int CODE_NOUSER = -1;
@@ -27,7 +27,7 @@ public class EconomyStorage
 	private static final String FIELD_BALANCE = "balance";
 	private static final String FIELD_WALLET = "wallet";
 	
-	public EconomyStorage(@NotNull RedisManager redisManager)
+	public Storage(@NotNull RedisManager redisManager)
 	{
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");	
 		
@@ -48,11 +48,21 @@ public class EconomyStorage
 	
 	public List<UUID> getUsers()
 	{
+		return getUsers(null);
+	}
+	
+	public List<UUID> getUsers(@Nullable UUID filteredUUID)
+	{
 		List<UUID> users = new ArrayList<>();
 		
 		for (String key : getKeys())
 		{
-			users.add(UUID.fromString(key));	
+			final UUID currentUUID = UUID.fromString(key.replace(PATTERN_USER, ""));
+			
+			if (!currentUUID.equals(filteredUUID))
+			{
+				users.add(currentUUID);
+			}			
 		}
 		return users;
 	}

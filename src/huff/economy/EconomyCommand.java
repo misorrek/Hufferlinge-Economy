@@ -16,8 +16,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.storage.EconomyBank;
-import huff.economy.storage.EconomyStorage;
+import huff.economy.storage.Bank;
+import huff.economy.storage.Storage;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
@@ -25,7 +25,7 @@ import huff.lib.various.AlphanumericComparator;
 
 public class EconomyCommand implements CommandExecutor, TabCompleter
 {
-	private static final String PERM_ECONOMY = PermissionHelper.PERM_ROOT_HUFF + "economy";
+	public static final String PERM_ECONOMY = PermissionHelper.PERM_ROOT_HUFF + "economy";
 	
 	public EconomyCommand(@NotNull EconomyInterface economyInterface)
 	{
@@ -40,7 +40,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args)
 	{
-		if (sender instanceof Player && !PermissionHelper.hasPlayerPermissionFeedbacked((Player) sender, PERM_ECONOMY))
+		if (args.length == 0 || (sender instanceof Player && !PermissionHelper.hasPlayerPermissionFeedbacked((Player) sender, PERM_ECONOMY)))
 		{
 			return false;
 		}
@@ -148,7 +148,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	private @NotNull String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
 		final double value = isBalance ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
-		final int feedbackCode = value >= 0 ? EconomyStorage.CODE_SUCCESS : EconomyStorage.CODE_NOUSER;
+		final int feedbackCode = value >= 0 ? Storage.CODE_SUCCESS : Storage.CODE_NOUSER;
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
 	}
@@ -269,16 +269,16 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 		
 		switch (code)
 		{
-		case EconomyStorage.CODE_NOUSER:
+		case Storage.CODE_NOUSER:
 			messageBuilder.append(selfPerform ? "bist " : "ist ");
 			messageBuilder.append("nicht in der Economy-Datenbank vorhanden.");
 			break;
-		case EconomyStorage.CODE_NOTENOUGHVALUE:
+		case Storage.CODE_NOTENOUGHVALUE:
 			messageBuilder.append(selfPerform ? "hast " : "hat ");
 			messageBuilder.append("dazu nicht genug ");
 			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
 			break;
-		case EconomyStorage.CODE_SUCCESS:
+		case Storage.CODE_SUCCESS:
 			messageBuilder.append(selfPerform ? "hast " : "hat ");
 			messageBuilder.append(updatedPerform ? "nun " : "");
 			messageBuilder.append(MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(value), false, true));
@@ -373,7 +373,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private void executeBankAdd(Player player)
 	{
-		if (economy.getBank().handleBankAdd(player, economy.getConfig()) == EconomyBank.CODE_SUCCESS)
+		if (economy.getBank().handleBankAdd(player, economy.getConfig()) == Bank.CODE_SUCCESS)
 		{
 			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " platziert.\n"));
 		}
@@ -385,7 +385,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private void executeBankRemove(Player player)
 	{
-		if (economy.getBank().removeBank(player.getLocation()) == EconomyBank.CODE_SUCCESS)
+		if (economy.getBank().removeBank(player.getLocation()) == Bank.CODE_SUCCESS)
 		{
 			
 			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt."));
