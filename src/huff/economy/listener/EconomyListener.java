@@ -1,6 +1,8 @@
 package huff.economy.listener;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
@@ -28,10 +30,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
-import huff.economy.inventories.BankInventory;
-import huff.economy.inventories.TransactionInventory;
-import huff.economy.inventories.TransactionKind;
-import huff.economy.inventories.WalletInventory;
+import huff.economy.menuholders.BankHolder;
+import huff.economy.menuholders.TransactionHolder;
+import huff.economy.menuholders.TransactionKind;
+import huff.economy.menuholders.WalletHolder;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
 import huff.lib.helper.ItemHelper;
@@ -47,6 +49,7 @@ public class EconomyListener implements Listener
 		this.economy = economyInterface;
 	}
 	private final EconomyInterface economy;
+	private final Map<UUID, Integer> lastWalletSlot = new HashMap<>();
 	
 	// B L O C K S
 	
@@ -99,6 +102,7 @@ public class EconomyListener implements Listener
 			if (economy.getConfig().equalsWalletItem(playerDrop))
 			{
 				walletItem = playerDrop;
+				lastWalletSlot.put(event.getEntity().getUniqueId(), event.getEntity().getInventory().first(playerDrop));
 			}
 		}
 		
@@ -140,7 +144,17 @@ public class EconomyListener implements Listener
 		
 		if (!playerInventory.contains(walletItem))
 		{
-			playerInventory.setItem(8, walletItem);
+			final UUID uuid = event.getPlayer().getUniqueId();
+			
+			if (lastWalletSlot.containsKey(uuid))
+			{
+				playerInventory.setItem(lastWalletSlot.get(uuid), walletItem);
+				lastWalletSlot.remove(uuid);
+			}
+			else
+			{
+				playerInventory.setItem(economy.getConfig().getWalletDefaultSlot(), walletItem);
+			}						
 		}		
 	}
 	
@@ -169,7 +183,7 @@ public class EconomyListener implements Listener
 			if (entity instanceof Player)
 			{
 				player.closeInventory();
-				player.openInventory(new TransactionInventory(economy, TransactionKind.WALLET_OTHER, entity.getUniqueId()).getInventory());
+				player.openInventory(new TransactionHolder(economy, TransactionKind.WALLET_OTHER, entity.getUniqueId()).getInventory());
 			}		
 			return true;
 		}
@@ -179,7 +193,7 @@ public class EconomyListener implements Listener
 		{
 			final UUID playerUUID = player.getUniqueId();
 			
-			player.openInventory(new BankInventory(economy, playerUUID, entity.getLocation()).getInventory());
+			player.openInventory(new BankHolder(economy, playerUUID, entity.getLocation()).getInventory());
 			return true;
 		}	
 		return false;
@@ -206,7 +220,7 @@ public class EconomyListener implements Listener
 		if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) &&
 			economy.getConfig().equalsWalletItem(playerMainItem))
 		{
-			player.openInventory(new WalletInventory(economy, player.getUniqueId()).getInventory());
+			player.openInventory(new WalletHolder(economy, player.getUniqueId()).getInventory());
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}

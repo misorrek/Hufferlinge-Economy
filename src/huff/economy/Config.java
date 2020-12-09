@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.inventories.TransactionKind;
+import huff.economy.menuholders.TransactionKind;
 import huff.lib.helper.FileHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.StringHelper;
@@ -24,6 +24,7 @@ public class Config
 	private static final String CFG_VALUE = CFG_ROOT + "value.";
 	private static final String CFG_WALLET = CFG_ROOT + "wallet.";
 	private static final String CFG_BANK = CFG_ROOT + "bank.";
+	private static final String CFG_TRADE = CFG_ROOT + "trade.";
 	
 	private static final String CFG_STARTBALANCE = CFG_ROOT + "start_balance";
 	private static final String CFG_TRANSACTION_FEEDBACK = CFG_ROOT + "transaction_feedback";
@@ -31,11 +32,14 @@ public class Config
 	private static final String CFG_VALUE_MATERIAL = CFG_VALUE + "material";
 	private static final String CFG_WALLET_NAME = CFG_WALLET + "name";
 	private static final String CFG_WALLET_MATERIAL = CFG_WALLET + "material";
+	private static final String CFG_WALLET_DEFAULTSLOT = CFG_WALLET + "default_slot";
 	private static final String CFG_BANK_NAME = CFG_BANK + "name";
 	private static final String CFG_BANK_MATERIAL = CFG_BANK + "material";
 	private static final String CFG_BANK_SPAWN_MATERIAL = CFG_BANK + "spawn_material";
 	private static final String CFG_BANK_OPEN = CFG_BANK + "open";
 	private static final String CFG_BANK_CLOSE = CFG_BANK + "close";
+	private static final String CFG_TRADE_NAME= CFG_TRADE + "name";
+	private static final String CFG_TRADE_MATERIAL= CFG_TRADE + "material";
 	
 	public Config(@NotNull String pluginFolderPath)
 	{
@@ -54,11 +58,14 @@ public class Config
 	private Material valueMaterial; 
 	private String walletName;
 	private Material walletMaterial;
+	private int walletDefaultSlot;
 	private String bankName;
 	private Material bankMaterial;
 	private Material bankSpawnMaterial;
 	private int bankOpen;
 	private int bankClose;
+	private String tradeName;
+	private Material tradeMaterial;
 
 	public void loadValues()
 	{
@@ -68,11 +75,14 @@ public class Config
 		valueMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_VALUE_MATERIAL));
 		walletName = (String) FileHelper.readConfigValue(configuration, CFG_WALLET_NAME);
 		walletMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_WALLET_MATERIAL));
+		walletDefaultSlot = (int) FileHelper.readConfigValue(configuration, CFG_WALLET_DEFAULTSLOT);
 		bankName = (String) FileHelper.readConfigValue(configuration, CFG_BANK_NAME);
 		bankMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_BANK_MATERIAL));
 		bankSpawnMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_BANK_SPAWN_MATERIAL));
 		bankOpen = (int) FileHelper.readConfigValue(configuration, CFG_BANK_OPEN);
 		bankClose = (int) FileHelper.readConfigValue(configuration, CFG_BANK_CLOSE);
+		tradeName = (String) FileHelper.readConfigValue(configuration, CFG_TRADE_NAME);
+		tradeMaterial = Material.getMaterial((String) FileHelper.readConfigValue(configuration, CFG_TRADE_MATERIAL));
 	}
 	
 	public @NotNull double getStartBalance()
@@ -99,7 +109,7 @@ public class Config
 	
 	public @NotNull String getValueItemName()
 	{
-		return "§e§l" + valueName;
+		return "§e§l" + getValueName();
 	}	
 	
 	public @NotNull Material getValueMaterial()
@@ -140,7 +150,7 @@ public class Config
 	
 	public @NotNull String getWalletItemName()
 	{
-		return "§6§l" + walletName;
+		return "§6§l" + getWalletName();
 	}
 	
 	public @NotNull String getWalletInventoryName()
@@ -151,6 +161,11 @@ public class Config
 	public @NotNull Material getWalletMaterial()
 	{
 		return walletMaterial;
+	}
+	
+	public int getWalletDefaultSlot() 
+	{
+		return walletDefaultSlot;
 	}
 	
 	public @NotNull ItemStack getWalletItem()
@@ -172,7 +187,7 @@ public class Config
 	
 	public @NotNull String getBankItemName()
 	{
-		return "§e§l" + bankName;
+		return "§e§l" + getBankName();
 	}
 	
 	public @NotNull String getBankEntityName()
@@ -220,6 +235,28 @@ public class Config
 		return item != null && item.getType().equals(getBankSpawnMaterial()) && item.getItemMeta().getDisplayName().equals(getBankItemName());
 	}
 	
+	// T R A D E
+	
+	public String getTradeName()
+	{
+		return tradeName;
+	}
+	
+	public @NotNull String getTradeInventoryName()
+	{
+		return "§7» §e" + getTradeName();
+	}
+	
+	public Material getTradeMaterial()
+	{
+		return tradeMaterial;
+	}
+	
+	public boolean equalsTradeItem(@Nullable ItemStack item)
+	{
+		return item != null && item.getType().equals(getTradeMaterial()) && item.getItemMeta().getDisplayName().equals(getTradeInventoryName());
+	}
+	
 	// O T H E R
 	
 	public String getTransactionInventoryName(TransactionKind transactionKind)
@@ -237,11 +274,14 @@ public class Config
 		defaults.put(CFG_VALUE_MATERIAL, Material.GOLD_NUGGET.toString());
 		defaults.put(CFG_WALLET_NAME, "Geldbeutel");
 		defaults.put(CFG_WALLET_MATERIAL, Material.BROWN_SHULKER_BOX.toString());
+		defaults.put(CFG_WALLET_DEFAULTSLOT, 8);
 		defaults.put(CFG_BANK_NAME, "Bänker");
 		defaults.put(CFG_BANK_MATERIAL, Material.GOLD_BLOCK.toString());
 		defaults.put(CFG_BANK_SPAWN_MATERIAL, Material.OCELOT_SPAWN_EGG.toString());
 		defaults.put(CFG_BANK_OPEN, 1000);
 		defaults.put(CFG_BANK_CLOSE, 13000);
+		defaults.put(CFG_TRADE_NAME, "Handel");
+		defaults.put(CFG_TRADE_MATERIAL, Material.BARREL);
 		
 		return defaults;
 	}

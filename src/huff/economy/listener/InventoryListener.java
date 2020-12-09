@@ -23,16 +23,16 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
-import huff.economy.inventories.BankInventory;
-import huff.economy.inventories.TransactionInventory;
-import huff.economy.inventories.TransactionKind;
-import huff.economy.inventories.WalletInventory;
+import huff.economy.menuholders.BankHolder;
+import huff.economy.menuholders.TransactionHolder;
+import huff.economy.menuholders.TransactionKind;
+import huff.economy.menuholders.WalletHolder;
 import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.inventories.PlayerChooserInventory;
+import huff.lib.menuholders.PlayerChooserHolder;
 
 public class InventoryListener implements Listener
 {
@@ -297,15 +297,15 @@ public class InventoryListener implements Listener
 		final HumanEntity human = event.getWhoClicked();
 		final ItemStack currentItem = event.getCurrentItem();
 		
-		if (inventoryHolder instanceof WalletInventory)
+		if (inventoryHolder instanceof WalletHolder)
 		{
-			((WalletInventory) inventoryHolder).handleEvent(currentItem, human);
+			((WalletHolder) inventoryHolder).handleEvent(currentItem, human);
 			
 			event.setCancelled(true);
 		}
-		else if (inventoryHolder instanceof BankInventory)
+		else if (inventoryHolder instanceof BankHolder)
 		{
-			((BankInventory) inventoryHolder).handleEvent(currentItem, human);
+			((BankHolder) inventoryHolder).handleEvent(currentItem, human);
 			
 			event.setCancelled(true);
 		}
@@ -314,15 +314,17 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onPlayerChooserInventoryClick(InventoryClickEvent event)
 	{
-		if (event.getInventory().getHolder() instanceof PlayerChooserInventory && ((PlayerChooserInventory) event.getInventory().getHolder()).getKey().equals(TransactionInventory.CHOOSER_KEY))
+		final PlayerChooserHolder playerChooserHolder = InventoryHelper.getMenuHolder(event.getClickedInventory(), PlayerChooserHolder.class);
+		
+		if (playerChooserHolder != null && playerChooserHolder.getKey().equals(TransactionHolder.CHOOSER_KEY))
 		{
 			final HumanEntity human = event.getWhoClicked();
-			final UUID currentUUID = ((PlayerChooserInventory) event.getInventory().getHolder()).handleEvent(event.getCurrentItem());
+			final UUID currentUUID = playerChooserHolder.handleEvent(event.getCurrentItem());
 						
 			if (currentUUID != null)
 			{
 				human.closeInventory();
-				human.openInventory(new TransactionInventory(economy, TransactionKind.BANK_OTHER, currentUUID).getInventory());			
+				human.openInventory(new TransactionHolder(economy, TransactionKind.BANK_OTHER, currentUUID).getInventory());			
 			}
 			event.setCancelled(true);
 		}
@@ -331,9 +333,11 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onTransactionInventoryClick(InventoryClickEvent event)
 	{
-		if (event.getInventory().getHolder() instanceof TransactionInventory)
+		final TransactionHolder transactionHolder = InventoryHelper.getMenuHolder(event.getClickedInventory(), TransactionHolder.class);
+		
+		if (transactionHolder != null)
 		{			
-			((TransactionInventory) event.getInventory().getHolder()).handleEvent(event.getCurrentItem(), event.getWhoClicked());
+			transactionHolder.handleEvent(event.getCurrentItem(), event.getWhoClicked());
 			
 			event.setCancelled(true);
 		}

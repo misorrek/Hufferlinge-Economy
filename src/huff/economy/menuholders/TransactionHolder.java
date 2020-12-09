@@ -1,4 +1,4 @@
-package huff.economy.inventories;
+package huff.economy.menuholders;
 
 import java.util.UUID;
 
@@ -22,11 +22,11 @@ import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.IndependencyHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.inventories.PlayerChooserInventory;
 import huff.lib.manager.delayedmessage.DelayType;
-import huff.lib.various.MenuInventoryHolder;
+import huff.lib.menuholders.PlayerChooserHolder;
+import huff.lib.various.MenuHolder;
 
-public class TransactionInventory extends MenuInventoryHolder
+public class TransactionHolder extends MenuHolder
 {
 	public static final String MENU_IDENTIFIER = "menu:economy:transaction";
 	public static final String CHOOSER_KEY = "Transaction";
@@ -39,7 +39,7 @@ public class TransactionInventory extends MenuInventoryHolder
 	private static final int AMOUNT_4 = 100;
 	private static final int AMOUNT_5 = 1000;
 	
-	public TransactionInventory(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind, @Nullable UUID targetUUID)
+	public TransactionHolder(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind, @Nullable UUID targetUUID)
 	{
 		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_4, transactionKind.getLabel());
 		
@@ -54,7 +54,7 @@ public class TransactionInventory extends MenuInventoryHolder
 		initInventory();
 	}
 	
-	public TransactionInventory(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind)
+	public TransactionHolder(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind)
 	{
 		this(economyInterface, transactionKind, null);
 	}
@@ -77,11 +77,11 @@ public class TransactionInventory extends MenuInventoryHolder
 			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				human.openInventory(new PlayerChooserInventory(CHOOSER_KEY, economy.getStorage().getUsers(human.getUniqueId()), InventoryHelper.INV_SIZE_6, null, true).getInventory());
+				human.openInventory(new PlayerChooserHolder(CHOOSER_KEY, economy.getStorage().getUsers(human.getUniqueId()), InventoryHelper.INV_SIZE_6, null, true).getInventory());
 			}
 			else
 			{						
-				human.openInventory(new TransactionInventory(economy, transactionKind).getInventory());
+				human.openInventory(new TransactionHolder(economy, transactionKind).getInventory());
 			}
 		}
 	}

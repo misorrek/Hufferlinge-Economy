@@ -1,4 +1,4 @@
-package huff.economy.inventories;
+package huff.economy.menuholders;
 
 import java.util.UUID;
 
@@ -13,13 +13,13 @@ import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
-import huff.lib.various.MenuInventoryHolder;
+import huff.lib.various.MenuHolder;
 
-public class WalletInventory extends MenuInventoryHolder
+public class WalletHolder extends MenuHolder
 {
 	public static final String MENU_IDENTIFIER = "menu:economy:wallet";
 	
-	public WalletInventory(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer)
+	public WalletHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer)
 	{
 		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_3, economyInterface.getConfig().getWalletInventoryName());
 		
@@ -43,7 +43,7 @@ public class WalletInventory extends MenuInventoryHolder
 		{
 			return;
 		}			
-		TransactionInventory.handleTransactionOpen(economy, human,  currentItem.getItemMeta().getDisplayName());
+		TransactionHolder.handleTransactionOpen(economy, human,  currentItem.getItemMeta().getDisplayName());
 	}
 	
 	private void initInventory()

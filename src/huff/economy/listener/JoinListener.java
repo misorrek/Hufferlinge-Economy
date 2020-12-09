@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
+import huff.lib.helper.InventoryHelper;
 import huff.lib.manager.delayedmessage.DelayType;
 
 public class JoinListener implements Listener
@@ -31,13 +32,20 @@ public class JoinListener implements Listener
 		
 		if (!playerInventory.contains(walletItem))
 		{
-			playerInventory.setItem(8, walletItem); //TODO Check Space and make add instead of set
-		}	
-		economy.getDelayedMessageManager().sendDelayedMessages(player, DelayType.NEXTJOIN);
+			if (InventoryHelper.getFreeSlots(playerInventory) > 0)
+			{
+				playerInventory.addItem(walletItem);
+			}
+			else
+			{
+				playerInventory.setItem(economy.getConfig().getWalletDefaultSlot(), walletItem);
+			}
+		}
 		
 		if (!economy.getStorage().existUser(player.getUniqueId()))
 		{
 			economy.getStorage().addUser(player.getUniqueId(), economy.getConfig().getStartBalance());
 		}
+		economy.getDelayedMessageManager().sendDelayedMessages(player, DelayType.NEXTJOIN);
 	}
 }

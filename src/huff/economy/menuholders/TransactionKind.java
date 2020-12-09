@@ -1,4 +1,4 @@
-package huff.economy.inventories;
+package huff.economy.menuholders;
 
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
