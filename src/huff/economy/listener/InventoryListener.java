@@ -18,12 +18,15 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
 import huff.economy.menuholders.BankHolder;
+import huff.economy.menuholders.InteractionHolder;
+import huff.economy.menuholders.TradeHolder;
 import huff.economy.menuholders.TransactionHolder;
 import huff.economy.menuholders.TransactionKind;
 import huff.economy.menuholders.WalletHolder;
@@ -335,13 +338,33 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onTransactionInventoryClick(InventoryClickEvent event)
 	{
-		final TransactionHolder transactionHolder = InventoryHelper.getMenuHolder(event.getClickedInventory(), TransactionHolder.class);
+		final Inventory inventory = event.getClickedInventory();
+		
+		final InteractionHolder interactionHolder = InventoryHelper.getMenuHolder(inventory, InteractionHolder.class);
+		
+		if (interactionHolder != null)
+		{			
+			interactionHolder.handleEvent(event.getCurrentItem(), event.getWhoClicked());
+			
+			event.setCancelled(true);
+			return;
+		}
+		
+		final TransactionHolder transactionHolder = InventoryHelper.getMenuHolder(inventory, TransactionHolder.class);
 		
 		if (transactionHolder != null)
 		{			
 			transactionHolder.handleEvent(event.getCurrentItem(), event.getWhoClicked());
 			
 			event.setCancelled(true);
+			return;
+		}
+		
+		final TradeHolder tradeHolder = InventoryHelper.getMenuHolder(inventory, TradeHolder.class);
+	
+		if (tradeHolder != null)
+		{			
+			event.setCancelled(tradeHolder.handleEvent(event.getSlot(), event.getWhoClicked()));
 		}
 	}
 }

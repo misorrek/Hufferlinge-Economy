@@ -47,7 +47,7 @@ public static final String MENU_IDENTIFIER = "menu:economy:interaction";
 			return;
 		}			
 		
-		if (economy.getConfig().equalsValueItem(currentItem))
+		if (currentItem.getType() == economy.getConfig().getValueMaterial())
 		{
 			human.closeInventory();
 			human.openInventory(new TransactionHolder(economy, TransactionKind.WALLET_OTHER, interactionTarget).getInventory());

@@ -13,7 +13,6 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
@@ -61,16 +60,11 @@ public class TradeHolder extends MenuHolder
 	private boolean leftReady = false;
 	private boolean rightReady = false; 
 
-	public boolean handleEvent(@Nullable ItemStack currentItem, @NotNull int clickedSlot, @NotNull HumanEntity human)
+	public boolean handleEvent(@NotNull int clickedSlot, @NotNull HumanEntity human)
 	{
 		Validate.notNull((Object) human, "The human cannot be null.");
 		
 		final boolean isLeftTrader = human.getUniqueId().equals(traderLeft);
-		
-		if (currentItem == null || currentItem.getItemMeta() == null)
-		{
-			return true;
-		} 
 		
 		if (itemPlaceAllowed(isLeftTrader, clickedSlot))
 		{
@@ -104,13 +98,13 @@ public class TradeHolder extends MenuHolder
 		InventoryHelper.setItem(this.getInventory(), 4, 5, borderItem);
 		InventoryHelper.setItem(this.getInventory(), 5, 5, borderItem);
 		
-		InventoryHelper.setItem(this.getInventory(), 1, 1, ItemHelper.getSkullWithMeta(traderLeftPlayer, MessageHelper.getHighlighted(traderLeftPlayer.getName())));	
+		InventoryHelper.setItem(this.getInventory(), 1, 1, ItemHelper.getSkullWithMeta(traderLeftPlayer, MessageHelper.getHighlighted(traderLeftPlayer.getName(), false , false)));	
 		
 	    InventoryHelper.setItem(this.getInventory(), 1, 3, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftValue)))); 
+				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftValue), false , false))); 
 	    InventoryHelper.setItem(this.getInventory(), 1, 7, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-                                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightValue))));	
-	    InventoryHelper.setItem(this.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(traderRightPlayer, MessageHelper.getHighlighted(traderRightPlayer.getName())));
+                                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightValue), false , false)));	
+	    InventoryHelper.setItem(this.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(traderRightPlayer, MessageHelper.getHighlighted(traderRightPlayer.getName(), false , false)));
 		
 		InventoryHelper.setItem(this.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 		InventoryHelper.setItem(this.getInventory(), 6, 5, InventoryHelper.getAbortItem());
@@ -119,8 +113,8 @@ public class TradeHolder extends MenuHolder
 	
 	private void updateValues()
 	{
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftValue)));
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightValue)));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftValue), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightValue), false , false));
 	}
 	
 	private void openInventory()
@@ -168,11 +162,11 @@ public class TradeHolder extends MenuHolder
 			{
 				if (isLeftTrader)
 				{
-					leftValue = (double) params[0];
+					leftValue += (double) params[0];
 				}
 				else
 				{
-					rightValue = (double) params[0];
+					rightValue += (double) params[0];
 				}
 				updateValues();
 			}	

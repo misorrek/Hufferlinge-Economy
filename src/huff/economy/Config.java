@@ -281,7 +281,7 @@ public class Config
 		defaults.put(CFG_BANK_OPEN, 1000);
 		defaults.put(CFG_BANK_CLOSE, 13000);
 		defaults.put(CFG_TRADE_NAME, "Handel");
-		defaults.put(CFG_TRADE_MATERIAL, Material.BARREL);
+		defaults.put(CFG_TRADE_MATERIAL, Material.BARREL.toString());
 		
 		return defaults;
 	}
