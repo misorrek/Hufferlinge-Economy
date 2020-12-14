@@ -31,8 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.economy.menuholders.BankHolder;
-import huff.economy.menuholders.TransactionHolder;
-import huff.economy.menuholders.TransactionKind;
+import huff.economy.menuholders.InteractionHolder;
 import huff.economy.menuholders.WalletHolder;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
@@ -183,8 +182,8 @@ public class EconomyListener implements Listener
 			if (entity instanceof Player)
 			{
 				player.closeInventory();
-				player.openInventory(new TransactionHolder(economy, TransactionKind.WALLET_OTHER, entity.getUniqueId()).getInventory());
-			}		
+				player.openInventory(new InteractionHolder(economy, player.getUniqueId(), entity.getUniqueId()).getInventory());
+			}	
 			return true;
 		}
 		

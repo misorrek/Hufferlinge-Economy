@@ -10,7 +10,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,6 +21,7 @@ import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.IndependencyHelper;
 import huff.lib.helper.StringHelper;
+import huff.lib.interfaces.Action;
 import huff.lib.manager.delayedmessage.DelayType;
 import huff.lib.menuholders.PlayerChooserHolder;
 import huff.lib.various.MenuHolder;
@@ -53,6 +53,15 @@ public class TransactionHolder extends MenuHolder
 		
 		initInventory();
 	}
+
+	public TransactionHolder(@NotNull EconomyInterface economyInterface, @NotNull Action finishAction)
+	{
+		this(economyInterface, TransactionKind.VALUE_CHOOSE, null);
+		
+		Validate.notNull((Object) finishAction);
+		
+		this.finishAction = finishAction;
+	}
 	
 	public TransactionHolder(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind)
 	{
@@ -63,6 +72,7 @@ public class TransactionHolder extends MenuHolder
 	private final TransactionKind transactionKind;
 	private final UUID targetUUID;
 	
+	private Action finishAction;	
 	private double transactionValue;
 	
 	public static void handleTransactionOpen(@NotNull EconomyInterface economy, @NotNull HumanEntity human, @NotNull String currentItemName)
@@ -123,6 +133,10 @@ public class TransactionHolder extends MenuHolder
 			{
 				handleTransactionWalletOut(human);			
 			}
+			else if (transactionKind == TransactionKind.VALUE_CHOOSE && finishAction != null)
+			{
+				finishAction.execute(transactionValue);	
+			}
 			else
 			{
 				human.closeInventory();
@@ -162,13 +176,9 @@ public class TransactionHolder extends MenuHolder
 	
 	private void updateTransactionValue(@NotNull Config economyConfig, double updatedTransactionValue)
 	{	
-		final ItemStack transactionValueItem = InventoryHelper.getItem(this.getInventory(), 2, 5);
-		final ItemMeta transactionValueMeta = transactionValueItem.getItemMeta();
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 2, 5), MessageHelper.getHighlighted(economyConfig.getValueFormatted(transactionValue)));
 		
 		transactionValue = updatedTransactionValue;
-		
-		transactionValueMeta.setDisplayName(MessageHelper.getHighlighted(economyConfig.getValueFormatted(transactionValue)));
-		transactionValueItem.setItemMeta(transactionValueMeta);	
 	}
 	
 	private void handleTransactionValueChange(@NotNull String changeValueString, @NotNull HumanEntity human)

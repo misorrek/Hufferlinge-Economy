@@ -54,8 +54,7 @@ public static final String MENU_IDENTIFIER = "menu:economy:interaction";
 		}
 		else if (economy.getConfig().equalsTradeItem(currentItem))
 		{
-			human.closeInventory();
-			human.openInventory(new TradeHolder(economy, menuViewer, interactionTarget).getInventory());
+			new TradeHolder(economy, menuViewer, interactionTarget);
 		}
 	}
 	

@@ -10,7 +10,8 @@ public enum TransactionKind
 	BANK_OUT("Auszahlen"),
 	BANK_OTHER("Übertragen"), 
 	WALLET_OUT("Herausnehmen"),
-	WALLET_OTHER("Übergeben");
+	WALLET_OTHER("Übergeben"),
+	VALUE_CHOOSE("Auswählen");
 	
 	private TransactionKind(String label)
 	{

@@ -125,7 +125,9 @@ public class InventoryListener implements Listener
 			{				
 				final int cursorItemAmount = inventoryAction == InventoryAction.PLACE_ONE ? 1 : cursorItem.getAmount();
 				final int clickedSlotItemAmount = clickedSlotItem.getAmount();
-				int clickedSlotSpace = clickedSlotItem.getMaxStackSize() - clickedSlotItemAmount; //TODO INV MAX SIZE
+				int clickedSlotSpace = event.getClickedInventory().getMaxStackSize() < clickedSlotItem.getMaxStackSize() ? 
+						               event.getClickedInventory().getMaxStackSize() - clickedSlotItemAmount : 
+						               clickedSlotItem.getMaxStackSize() - clickedSlotItemAmount;
 				
 				Bukkit.getConsoleSender().sendMessage("CursorAmount : " + cursorItemAmount);
 				Bukkit.getConsoleSender().sendMessage("ClickedAmount : " + clickedSlotItemAmount);
