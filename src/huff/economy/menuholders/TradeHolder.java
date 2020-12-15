@@ -13,6 +13,7 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
@@ -20,30 +21,29 @@ import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.interfaces.Action;
 import huff.lib.various.MenuHolder;
-import huff.lib.various.Pair;
 
 public class TradeHolder extends MenuHolder
 {
 	public static final String MENU_IDENTIFIER = "menu:economy:interaction";
 	
+	private static final Integer[] TRADERLEFT_SLOTS = {10,11,12,19,20,21,28,29,30,37,38,39};
+	private static final Integer[] TRADERRIGHT_SLOTS = {14,15,16,23,24,25,32,33,34,41,42,43};
 	private static final String NOTREADY_NAME = "§6Handel ausstehend...";
 	private static final Material NOTREADY_MATERIAL = Material.ORANGE_STAINED_GLASS_PANE;
 	private static final String READY_NAME = "§aHandel akzeptiert";
 	private static final Material READY_MATERIAL = Material.LIME_STAINED_GLASS_PANE;
-	private static final Integer[] TRADERLEFT_SLOTS = {10,11,12,19,20,21,28,29,30,37,38,39};
-	private static final Integer[] TRADERRIGHT_SLOTS = {14,15,16,23,24,25,32,33,34,41,42,43};
 	
-	public TradeHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID traderLeft, @NotNull UUID traderRight)
+	public TradeHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID leftTrader, @NotNull UUID rightTrader)
 	{
 		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_6, economyInterface.getConfig().getTradeInventoryName());
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
-		Validate.notNull((Object) traderLeft, "The left trader cannot be null.");
-		Validate.notNull((Object) traderRight, "The right trader cannot be null.");	
+		Validate.notNull((Object) leftTrader, "The left trader uuid cannot be null.");
+		Validate.notNull((Object) rightTrader, "The right trader uuid cannot be null.");	
 		
 		this.economy = economyInterface;
-		this.traderLeft = traderLeft;
-		this.traderRight = traderRight;
+		this.leftTrader = new Trader(leftTrader);
+		this.rightTrader = new Trader(rightTrader);
 		
 		initInventory();
 		updateValues();
@@ -51,20 +51,15 @@ public class TradeHolder extends MenuHolder
 	}
 
 	private final EconomyInterface economy;
-	private final UUID traderLeft;
-	private final UUID traderRight;
-	private double leftValue = 0;
-	private double rightValue = 0;
-	private int leftItems = 0;
-	private int rightItems = 0;
-	private boolean leftReady = false;
-	private boolean rightReady = false; 
+	private final Trader leftTrader;
+	private final Trader rightTrader;
+	private boolean tradeFinished = false;
 
 	public boolean handleEvent(@NotNull int clickedSlot, @NotNull HumanEntity human)
 	{
 		Validate.notNull((Object) human, "The human cannot be null.");
 		
-		final boolean isLeftTrader = human.getUniqueId().equals(traderLeft);
+		final boolean isLeftTrader = human.getUniqueId().equals(leftTrader.getUUID());
 		
 		if (itemPlaceAllowed(isLeftTrader, clickedSlot))
 		{
@@ -79,18 +74,44 @@ public class TradeHolder extends MenuHolder
 			setTraderReady(isLeftTrader);
 		}
 		
-		if (leftReady && rightReady)
+		if (leftTrader.isReady() && rightTrader.isReady())
 		{
 			finishTrade();
 		}
 		return true;
 	}
+	
+	public void handleClose(@NotNull Player player)
+	{
+		if (tradeFinished)
+		{
+			return;
+		}
+		Validate.notNull((Object) player, "The player cannot be null.");
+		
+		final boolean isLeftTrader = player.getUniqueId().equals(leftTrader.getUUID());
+		
+		if ((isLeftTrader && leftTrader.isValueChoosing()) || (!isLeftTrader && rightTrader.isValueChoosing()))
+		{
+			return;
+		}
+		final HumanEntity otherHuman = Bukkit.getPlayer(isLeftTrader ? rightTrader.getUUID() : leftTrader.getUUID());
+		
+		tradeFinished = true;
+		
+		if (player.isOnline())
+		{
+			player.sendMessage(MessageHelper.PREFIX_HUFF + "Handel §cabgebrochen§7.");
+		}
+		otherHuman.closeInventory();
+		otherHuman.sendMessage(MessageHelper.PREFIX_HUFF + "Handel §cabgebrochen§7.");
+	}
 
 	private void initInventory()
 	{
 		final ItemStack borderItem = InventoryHelper.getBorderItem();
-		final OfflinePlayer traderLeftPlayer = Bukkit.getOfflinePlayer(traderLeft);
-		final OfflinePlayer traderRightPlayer = Bukkit.getOfflinePlayer(traderRight);
+		final OfflinePlayer traderLeftPlayer = Bukkit.getOfflinePlayer(leftTrader.getUUID());
+		final OfflinePlayer traderRightPlayer = Bukkit.getOfflinePlayer(rightTrader.getUUID());
 		
 		InventoryHelper.setBorder(this.getInventory(), borderItem);
 		InventoryHelper.setItem(this.getInventory(), 2, 5, borderItem);
@@ -101,44 +122,48 @@ public class TradeHolder extends MenuHolder
 		InventoryHelper.setItem(this.getInventory(), 1, 1, ItemHelper.getSkullWithMeta(traderLeftPlayer, MessageHelper.getHighlighted(traderLeftPlayer.getName(), false , false)));	
 		
 	    InventoryHelper.setItem(this.getInventory(), 1, 3, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftValue), false , false))); 
+				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false))); 
 	    InventoryHelper.setItem(this.getInventory(), 1, 7, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-                                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightValue), false , false)));	
+                                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false)));	
 	    InventoryHelper.setItem(this.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(traderRightPlayer, MessageHelper.getHighlighted(traderRightPlayer.getName(), false , false)));
 		
 		InventoryHelper.setItem(this.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
-		InventoryHelper.setItem(this.getInventory(), 6, 5, InventoryHelper.getAbortItem());
+		InventoryHelper.setItem(this.getInventory(), 6, 5, InventoryHelper.getCloseItem());
 		InventoryHelper.setItem(this.getInventory(), 6, 7, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 	}
 	
 	private void updateValues()
 	{
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftValue), false , false));
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightValue), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false));
 	}
 	
 	private void openInventory()
 	{
-		final Player leftPlayer = Bukkit.getPlayer(traderLeft);
-		final Player rightPlayer = Bukkit.getPlayer(traderRight);
+		final Player leftPlayer = Bukkit.getPlayer(leftTrader.getUUID());
+		final Player rightPlayer = Bukkit.getPlayer(rightTrader.getUUID());
 		
-		leftPlayer.closeInventory();
-		leftPlayer.openInventory(this.getInventory());
-		
-		rightPlayer.closeInventory();
-		rightPlayer.openInventory(this.getInventory());
+		if (checkPlayerState(leftPlayer) && checkPlayerState(rightPlayer))
+		{
+			leftPlayer.closeInventory();
+			leftPlayer.openInventory(this.getInventory());
+			
+			rightPlayer.closeInventory();
+			rightPlayer.openInventory(this.getInventory());
+		}
+	}
+	
+	private boolean checkPlayerState(@Nullable Player player)
+	{
+		return player != null && player.isOnline() && 
+			   InventoryHelper.isViewer(this.getInventory(), player);
 	}
 	
 	private boolean itemPlaceAllowed(boolean isLeftTrader, int slot)
 	{
-		final Pair<Integer, Integer> rowColumn = InventoryHelper.getRowColumnFromSlot(slot);
-		final boolean leftCase = isLeftTrader && !leftReady && 
-				                 rowColumn.value1 >= 2 && rowColumn.value1 < 6 && 
-				                 rowColumn.value2 >= 2 && rowColumn.value2 < 5;
-				                 
-		final boolean rightCase = !isLeftTrader && !rightReady && 
-				                  rowColumn.value1 >= 2 && rowColumn.value1 < 6 && 
-				                  rowColumn.value2 >= 6 && rowColumn.value2 < 9;
+		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
+		final boolean leftCase = isLeftTrader && !leftTrader.isReady() && tradeSlots.contains(slot);				                 
+		final boolean rightCase = !isLeftTrader && !rightTrader.isReady() && tradeSlots.contains(slot);
 		
 		return leftCase || rightCase;
 	}
@@ -150,8 +175,11 @@ public class TradeHolder extends MenuHolder
 	
 	private void openValueChooser(@NotNull HumanEntity human, boolean isLeftTrader) 
 	{
-		human.closeInventory();
-		human.openInventory(new TransactionHolder(economy, getValueFinishAction(isLeftTrader)).getInventory());	
+		if ((isLeftTrader && !leftTrader.isReady()) || (!isLeftTrader && !rightTrader.isReady()))
+		{
+			human.closeInventory();
+			human.openInventory(new TransactionHolder(economy, getValueFinishAction(isLeftTrader)).getInventory());	
+		}
 	}
 	
 	private Action getValueFinishAction(boolean isLeftTrader)
@@ -162,18 +190,21 @@ public class TradeHolder extends MenuHolder
 			{
 				if (isLeftTrader)
 				{
-					leftValue += (double) params[0];
+					leftTrader.addValue((double) params[0]);
 				}
 				else
 				{
-					rightValue += (double) params[0];
+					rightTrader.addValue((double) params[0]);
 				}
 				updateValues();
 			}	
-			final Player player = Bukkit.getPlayer(isLeftTrader ? traderLeft : traderRight);
+			final Player player = Bukkit.getPlayer(isLeftTrader ? leftTrader.getUUID() : rightTrader.getUUID());
 			
-			player.closeInventory();
-			player.openInventory(getInventory());			
+			if (checkPlayerState(player))
+			{
+				player.closeInventory();
+				player.openInventory(getInventory());	
+			}
 		};
 	}
 	
@@ -191,37 +222,43 @@ public class TradeHolder extends MenuHolder
 		
 		if (isLeftTrader)
 		{
-			leftReady = true;
+			leftTrader.changeReady();
 		}
 		else
 		{
-			rightReady = true;
+			rightTrader.changeReady();
 		}
 	}
 	
 	private void finishTrade()
 	{
-		if (leftValue != 0)
+		tradeFinished = true;
+		
+		final Player leftPlayer = Bukkit.getPlayer(leftTrader.getUUID());
+		final Player rightPlayer = Bukkit.getPlayer(rightTrader.getUUID());
+		
+		if (checkPlayerState(leftPlayer) && checkPlayerState(rightPlayer))
 		{
-			economy.getStorage().updateBalance(traderLeft, leftValue, true, false);
-			economy.getStorage().updateBalance(traderRight, leftValue, false, false);
+			if (leftTrader.getValue() != 0)
+			{
+				economy.getStorage().updateBalance(leftTrader.getUUID(), leftTrader.getValue(), true, false);
+				economy.getStorage().updateBalance(rightTrader.getUUID(), leftTrader.getValue(), false, false);
+			}
+			
+			if (rightTrader.getValue() != 0)
+			{
+				economy.getStorage().updateBalance(rightTrader.getUUID(), rightTrader.getValue(), true, false);
+				economy.getStorage().updateBalance(leftTrader.getUUID(), rightTrader.getValue(), false, false);
+			}
+			
+			leftPlayer.getInventory().addItem(getTradeItems(false).toArray(new ItemStack[0]));
+			leftPlayer.sendMessage(getTradeOverview(rightPlayer.getName(), leftTrader, rightTrader));
+			leftPlayer.closeInventory();
+			
+			rightPlayer.getInventory().addItem(getTradeItems(true).toArray(new ItemStack[0]));
+			rightPlayer.sendMessage(getTradeOverview(leftPlayer.getName(), rightTrader, leftTrader));
+			rightPlayer.closeInventory();
 		}
-		
-		if (rightValue != 0)
-		{
-			economy.getStorage().updateBalance(traderRight, rightValue, true, false);
-			economy.getStorage().updateBalance(traderLeft, rightValue, false, false);
-		}
-		final Player leftPlayer = Bukkit.getPlayer(traderLeft);
-		final Player rightPlayer = Bukkit.getPlayer(traderRight);
-		
-		leftPlayer.getInventory().addItem(getTradeItems(false).toArray(new ItemStack[0]));
-		leftPlayer.sendMessage(getTradeOverview(rightPlayer.getName(), leftValue, rightValue, leftItems, rightItems));
-		leftPlayer.closeInventory();
-		
-		rightPlayer.getInventory().addItem(getTradeItems(true).toArray(new ItemStack[0]));
-		rightPlayer.sendMessage(getTradeOverview(leftPlayer.getName(), rightValue, leftValue, rightItems, leftItems));
-		rightPlayer.closeInventory();
 	}
 	
 	private List<ItemStack> getTradeItems(boolean isLeftTrader)
@@ -240,18 +277,18 @@ public class TradeHolder extends MenuHolder
 				
 				if (isLeftTrader)
 				{
-					leftItems += currentItem.getAmount();
+					leftTrader.addItems(currentItem.getAmount());
 				}
 				else
 				{
-					rightItems += currentItem.getAmount();
+					rightTrader.addItems(currentItem.getAmount());
 				}
 			}
 		}
 		return tradeItems;
 	}
 	
-	private String getTradeOverview(@NotNull String partnerName, double valueOut, double valueIn, int itemsOut, int itemsIn)
+	private String getTradeOverview(@NotNull String partnerName, @NotNull Trader traderSelf, @NotNull Trader traderOther)
 	{
 		return String.format("§8☰ §7Handel §aabgeschlossen - Übersicht\n\n" +
 	                         "§8☷ §7Verhandlungspartner: §9%s\n" +
@@ -259,6 +296,8 @@ public class TradeHolder extends MenuHolder
 	                         "§8☷ §7%2$s bekommen: §9%.0f\n" +
 	                         "§8☷ §7Güter abgegeben: §9%d\n" +
 	                         "§8☷ §7Güter bekommen: §9%d", 
-	                         partnerName, economy.getConfig().getValueName(), valueOut, valueIn, itemsOut, itemsIn);
+	                         partnerName, economy.getConfig().getValueName(), 
+	                         traderSelf.getValue(), traderOther.getValue(), 
+	                         traderSelf.getItems(), traderOther.getItems());
 	}
 }

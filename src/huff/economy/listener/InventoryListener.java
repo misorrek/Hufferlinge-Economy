@@ -16,9 +16,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -296,13 +296,19 @@ public class InventoryListener implements Listener
 	}
 	
 	@EventHandler
-	public void onEconomyStorageInventoryClick(InventoryClickEvent event)
+	public void onEconomyInventoryClick(InventoryClickEvent event)
 	{
 		final InventoryHolder inventoryHolder = event.getInventory().getHolder();
 		final HumanEntity human = event.getWhoClicked();
 		final ItemStack currentItem = event.getCurrentItem();
 		
-		if (inventoryHolder instanceof WalletHolder)
+		if (inventoryHolder instanceof InteractionHolder)
+		{
+			((InteractionHolder) inventoryHolder).handleEvent(currentItem, human);
+			
+			event.setCancelled(true);
+		}
+		else if (inventoryHolder instanceof WalletHolder)
 		{
 			((WalletHolder) inventoryHolder).handleEvent(currentItem, human);
 			
@@ -313,6 +319,16 @@ public class InventoryListener implements Listener
 			((BankHolder) inventoryHolder).handleEvent(currentItem, human);
 			
 			event.setCancelled(true);
+		}
+		else if (inventoryHolder instanceof TransactionHolder)
+		{
+			((TransactionHolder) inventoryHolder).handleEvent(currentItem, human);
+			
+			event.setCancelled(true);
+		}
+		else if (inventoryHolder instanceof TradeHolder)
+		{
+			event.setCancelled(((TradeHolder) inventoryHolder).handleEvent(event.getSlot(), human));
 		}
 	}
 
@@ -336,35 +352,17 @@ public class InventoryListener implements Listener
 	}
 	
 	@EventHandler
-	public void onTransactionInventoryClick(InventoryClickEvent event)
+	public void onEconomyInventoryClose(InventoryCloseEvent event)
 	{
-		final Inventory inventory = event.getClickedInventory();
+		final InventoryHolder inventoryHolder = event.getInventory().getHolder();
 		
-		final InteractionHolder interactionHolder = InventoryHelper.getMenuHolder(inventory, InteractionHolder.class);
-		
-		if (interactionHolder != null)
-		{			
-			interactionHolder.handleEvent(event.getCurrentItem(), event.getWhoClicked());
-			
-			event.setCancelled(true);
-			return;
+		if (inventoryHolder instanceof TradeHolder)
+		{
+			((TradeHolder) inventoryHolder).handleClose((Player) event.getPlayer());
 		}
-		
-		final TransactionHolder transactionHolder = InventoryHelper.getMenuHolder(inventory, TransactionHolder.class);
-		
-		if (transactionHolder != null)
-		{			
-			transactionHolder.handleEvent(event.getCurrentItem(), event.getWhoClicked());
+		else if (inventoryHolder instanceof TransactionHolder)
+		{
 			
-			event.setCancelled(true);
-			return;
-		}
-		
-		final TradeHolder tradeHolder = InventoryHelper.getMenuHolder(inventory, TradeHolder.class);
-	
-		if (tradeHolder != null)
-		{			
-			event.setCancelled(tradeHolder.handleEvent(event.getSlot(), event.getWhoClicked()));
 		}
 	}
 }
