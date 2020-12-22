@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.menuholders.TransactionKind;
+import huff.economy.menuholder.TransactionKind;
 import huff.lib.helper.FileHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.StringHelper;
@@ -192,7 +192,7 @@ public class Config
 	
 	public @NotNull String getBankEntityName()
 	{
-		return "§e" + getBankName();
+		return "§e§l" + getBankName();
 	}
 	
 	public @NotNull String getBankInventoryName()
@@ -250,11 +250,6 @@ public class Config
 	public Material getTradeMaterial()
 	{
 		return tradeMaterial;
-	}
-	
-	public boolean equalsTradeItem(@Nullable ItemStack item)
-	{
-		return item != null && item.getType().equals(getTradeMaterial()) && item.getItemMeta().getDisplayName().equals(getTradeInventoryName());
 	}
 	
 	// O T H E R

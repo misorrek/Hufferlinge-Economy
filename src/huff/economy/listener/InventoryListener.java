@@ -24,18 +24,13 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
-import huff.economy.menuholders.BankHolder;
-import huff.economy.menuholders.InteractionHolder;
-import huff.economy.menuholders.TradeHolder;
-import huff.economy.menuholders.TransactionHolder;
-import huff.economy.menuholders.TransactionKind;
-import huff.economy.menuholders.WalletHolder;
+import huff.economy.menuholder.TradeHolder;
 import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.menuholders.PlayerChooserHolder;
+import huff.lib.menuholder.MenuHolder;
 
 public class InventoryListener implements Listener
 {
@@ -80,8 +75,8 @@ public class InventoryListener implements Listener
 		//Bukkit.getConsoleSender().sendMessage("CurrentItem: " + currentItem.toString());
 		//Bukkit.getConsoleSender().sendMessage("CursorItem: " + cursorItem.toString());
 		//Bukkit.getConsoleSender().sendMessage("InventoryTyp: " + inventoryType.toString());
-		Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
-		Bukkit.getConsoleSender().sendMessage("ClickType: " + event.getClick().toString());		
+		//Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
+		//Bukkit.getConsoleSender().sendMessage("ClickType: " + event.getClick().toString());		
 			
 		if (InventoryHelper.isPickupAction(inventoryAction) && (economy.getConfig().equalsWalletItem(currentItem) || 
 				                                                economy.getConfig().equalsValueItem(currentItem)))
@@ -132,9 +127,9 @@ public class InventoryListener implements Listener
 						               event.getClickedInventory().getMaxStackSize() - clickedSlotItemAmount : 
 						               clickedSlotItem.getMaxStackSize() - clickedSlotItemAmount;
 				
-				Bukkit.getConsoleSender().sendMessage("CursorAmount : " + cursorItemAmount);
-				Bukkit.getConsoleSender().sendMessage("ClickedAmount : " + clickedSlotItemAmount);
-				Bukkit.getConsoleSender().sendMessage("ClickedSlotSpace : " + clickedSlotSpace);
+				//Bukkit.getConsoleSender().sendMessage("CursorAmount : " + cursorItemAmount);
+				//Bukkit.getConsoleSender().sendMessage("ClickedAmount : " + clickedSlotItemAmount);
+				//Bukkit.getConsoleSender().sendMessage("ClickedSlotSpace : " + clickedSlotSpace);
 				
 				if (cursorItemAmount < clickedSlotSpace)
 				{
@@ -152,9 +147,9 @@ public class InventoryListener implements Listener
 				{
 					clickedSignatureValueAmount = clickedSlotItemAmount;
 				}			
-				Bukkit.getConsoleSender().sendMessage("ClickedSlotSpaceUpdated : " + clickedSlotSpace);
-				Bukkit.getConsoleSender().sendMessage("CursorSig : " + cursorSignatureValueAmount);
-				Bukkit.getConsoleSender().sendMessage("ClickedSig : " + clickedSignatureValueAmount);
+				//Bukkit.getConsoleSender().sendMessage("ClickedSlotSpaceUpdated : " + clickedSlotSpace);
+				//Bukkit.getConsoleSender().sendMessage("CursorSig : " + cursorSignatureValueAmount);
+				//sBukkit.getConsoleSender().sendMessage("ClickedSig : " + clickedSignatureValueAmount);
 				
 				if (cursorSignatureValueAmount == -1)
 				{
@@ -206,9 +201,11 @@ public class InventoryListener implements Listener
 		
 		if (economy.getConfig().equalsWalletItem(oldCursorItem) || economy.getConfig().equalsValueItem(oldCursorItem))
 		{
+			final int inventorySize = event.getView().getTopInventory().getSize();
+			
 			for (int slot : event.getNewItems().keySet())
 			{
-				if (slot < event.getView().getTopInventory().getSize())
+				if (slot < inventorySize)
 				{		
 					event.setCancelled(true);				
 				}
@@ -298,59 +295,41 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onEconomyInventoryClick(InventoryClickEvent event)
 	{
-		final InventoryHolder inventoryHolder = event.getInventory().getHolder();
-		final HumanEntity human = event.getWhoClicked();
-		final ItemStack currentItem = event.getCurrentItem();
-		
-		if (inventoryHolder instanceof InteractionHolder)
+		if (event.getClickedInventory() != null)
 		{
-			((InteractionHolder) inventoryHolder).handleEvent(currentItem, human);
-			
-			event.setCancelled(true);
-		}
-		else if (inventoryHolder instanceof WalletHolder)
-		{
-			((WalletHolder) inventoryHolder).handleEvent(currentItem, human);
-			
-			event.setCancelled(true);
-		}
-		else if (inventoryHolder instanceof BankHolder)
-		{
-			((BankHolder) inventoryHolder).handleEvent(currentItem, human);
-			
-			event.setCancelled(true);
-		}
-		else if (inventoryHolder instanceof TransactionHolder)
-		{
-			((TransactionHolder) inventoryHolder).handleEvent(currentItem, human);
-			
-			event.setCancelled(true);
-		}
-		else if (inventoryHolder instanceof TradeHolder)
-		{
-			event.setCancelled(((TradeHolder) inventoryHolder).handleEvent(event.getSlot(), human));
-		}
-	}
+			final InventoryHolder inventoryHolder = event.getClickedInventory().getHolder();
 
-	@EventHandler
-	public void onPlayerChooserInventoryClick(InventoryClickEvent event)
-	{
-		final PlayerChooserHolder playerChooserHolder = InventoryHelper.getMenuHolder(event.getClickedInventory(), PlayerChooserHolder.class);
-		
-		if (playerChooserHolder != null && playerChooserHolder.getKey().equals(TransactionHolder.CHOOSER_KEY))
-		{
-			final HumanEntity human = event.getWhoClicked();
-			final UUID currentUUID = playerChooserHolder.handleEvent(event.getCurrentItem());
-						
-			if (currentUUID != null)
+			if (inventoryHolder instanceof MenuHolder)
 			{
-				human.closeInventory();
-				human.openInventory(new TransactionHolder(economy, TransactionKind.BANK_OTHER, currentUUID).getInventory());			
+				event.setCancelled(((MenuHolder) inventoryHolder).handleClick(event));
 			}
+		}
+		
+		/*
+		if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || event.getAction() == InventoryAction.COLLECT_TO_CURSOR)
+		{
 			event.setCancelled(true);
 		}
+		else if (event.getClickedInventory().getType() == InventoryType.PLAYER)
+		{
+			event.setCancelled(false);
+		}
+		*/
 	}
 	
+	@EventHandler
+	public void onEconomyInventoryDrag(InventoryDragEvent event)
+	{	
+		final InventoryHolder inventoryHolder = event.getView().getTopInventory().getHolder();
+		
+		if (inventoryHolder instanceof TradeHolder)
+		{
+			event.setCancelled(((TradeHolder) inventoryHolder).handleDrag(event.getWhoClicked().getUniqueId(), 
+					                                                      event.getView(), 
+					                                                      event.getNewItems().keySet()));
+		}	
+	}
+
 	@EventHandler
 	public void onEconomyInventoryClose(InventoryCloseEvent event)
 	{
@@ -359,10 +338,6 @@ public class InventoryListener implements Listener
 		if (inventoryHolder instanceof TradeHolder)
 		{
 			((TradeHolder) inventoryHolder).handleClose((Player) event.getPlayer());
-		}
-		else if (inventoryHolder instanceof TransactionHolder)
-		{
-			
 		}
 	}
 }

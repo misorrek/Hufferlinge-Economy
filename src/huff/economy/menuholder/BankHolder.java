@@ -1,4 +1,4 @@
-package huff.economy.menuholders;
+package huff.economy.menuholder;
 
 import java.util.UUID;
 
@@ -6,16 +6,17 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.various.MenuHolder;
+import huff.lib.menuholder.MenuExitType;
+import huff.lib.menuholder.MenuHolder;
 
 public class BankHolder extends MenuHolder
 {
@@ -23,7 +24,7 @@ public class BankHolder extends MenuHolder
 	
 	public BankHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer, @NotNull Location bankLocation)
 	{
-		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_4, economyInterface.getConfig().getBankInventoryName());
+		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_4, economyInterface.getConfig().getBankInventoryName(), MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.notNull((Object) menuViewer, "The menu-viewer cannot be null.");
@@ -40,29 +41,33 @@ public class BankHolder extends MenuHolder
 	private final UUID menuViewer;
 	private final Location bankLocation;
 	
-	public void handleEvent(@Nullable ItemStack currentItem, @NotNull HumanEntity human)
+	@Override
+	public boolean handleClick(@NotNull InventoryClickEvent event)
 	{
-		Validate.notNull((Object) human, "The human cannot be null.");
+		Validate.notNull((Object) event, "The inventory click event cannot be null.");
 		
-		if (currentItem == null || currentItem.getItemMeta() == null)
-		{
-			return;
-		}	
-		final String currentItemName = currentItem.getItemMeta().getDisplayName();
+		final HumanEntity human = event.getWhoClicked();
+		final ItemStack currentItem = event.getCurrentItem();
 		
-		if (economy.getConfig().getBankRemoveName().equals(currentItemName))
+		if (ItemHelper.hasMeta(currentItem))
 		{
-			economy.getBank().removeBank(bankLocation);			
-			economy.removeBankEntity(bankLocation, true);
+			final String currentItemName = currentItem.getItemMeta().getDisplayName();
 			
-			human.closeInventory();
-			human.getInventory().addItem(economy.getConfig().getBankSpawnItem());
-			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt. Item zum Neuerstellen in das Inventar gelegt."));
-		}
-		else
-		{
-			TransactionHolder.handleTransactionOpen(economy, human, currentItemName);
-		}
+			if (economy.getConfig().getBankRemoveName().equals(currentItemName))
+			{
+				economy.getBank().removeBank(bankLocation);			
+				economy.tryRemoveBankEntity(bankLocation);
+				
+				MenuHolder.close(human);
+				human.getInventory().addItem(economy.getConfig().getBankSpawnItem());
+				human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt. Item zum Neuerstellen in das Inventar gelegt."));
+			}
+			else
+			{
+				TransactionHolder.handleTransactionOpen(economy, human, currentItemName);
+			}
+		}	
+		return true;
 	}
 	
 	private void initInventory()
@@ -81,11 +86,11 @@ public class BankHolder extends MenuHolder
 		InventoryHelper.setItem(this.getInventory(), 2, 8, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), "§7" + economy.getConfig().getWalletName() + " : " + 
 																                MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getWallet(menuViewer)), 
 																                false , false)));
-		InventoryHelper.setItem(this.getInventory(), 4, 5, InventoryHelper.getCloseItem());
-					
+		
 		if (economy.getBank().isOwner(menuViewer, bankLocation))
 		{
 			InventoryHelper.setItem(this.getInventory(), 4, 9, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, economy.getConfig().getBankRemoveName()));
 		}
+		this.setMenuExitItem();
 	}
 }

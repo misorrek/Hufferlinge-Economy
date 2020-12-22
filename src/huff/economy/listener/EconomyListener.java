@@ -23,21 +23,26 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
-import huff.economy.menuholders.BankHolder;
-import huff.economy.menuholders.InteractionHolder;
-import huff.economy.menuholders.WalletHolder;
+import huff.economy.menuholder.BankHolder;
+import huff.economy.menuholder.InteractionHolder;
+import huff.economy.menuholder.TradeHolder;
+import huff.economy.menuholder.WalletHolder;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
+import huff.lib.menuholder.MenuHolder;
 
 public class EconomyListener implements Listener
 {
@@ -157,6 +162,21 @@ public class EconomyListener implements Listener
 		}		
 	}
 	
+	@EventHandler
+	public void onPlayerMove(PlayerMoveEvent event)
+	{
+		final Player player = event.getPlayer();
+		final String bankEntityName = economy.getConfig().getBankEntityName();
+		
+		for (Entity curEntity : player.getLocation().getWorld().getNearbyEntities(player.getLocation(), 5, 5, 5))
+		{
+			if (bankEntityName.equals(curEntity.getCustomName()))
+			{
+				curEntity.teleport(curEntity.getLocation().setDirection(player.getLocation().subtract(curEntity.getLocation()).toVector()));
+			}
+		}
+	}
+	
 	// E N T I T Y - I N T E R A C T
 	
 	@EventHandler 
@@ -181,18 +201,17 @@ public class EconomyListener implements Listener
 		{
 			if (entity instanceof Player)
 			{
-				player.closeInventory();
-				player.openInventory(new InteractionHolder(economy, player.getUniqueId(), entity.getUniqueId()).getInventory());
+				MenuHolder.open(player, new InteractionHolder(economy, player.getUniqueId(), entity.getUniqueId()));
 			}	
 			return true;
 		}
 		
 		if (entity instanceof Villager &&
-			entity.getCustomName().equals(economy.getConfig().getBankEntityName()))
+			economy.getConfig().getBankEntityName().equals(entity.getCustomName()))
 		{
 			final UUID playerUUID = player.getUniqueId();
 			
-			player.openInventory(new BankHolder(economy, playerUUID, entity.getLocation()).getInventory());
+			MenuHolder.open(player, new BankHolder(economy, playerUUID, entity.getLocation()));
 			return true;
 		}	
 		return false;
@@ -217,28 +236,43 @@ public class EconomyListener implements Listener
 		final ItemStack playerMainItem = player.getInventory().getItemInMainHand();
 		
 		if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) &&
-			economy.getConfig().equalsWalletItem(playerMainItem))
+			economy.getConfig().equalsWalletItem(playerMainItem) && !(player.getOpenInventory().getTopInventory().getHolder() instanceof MenuHolder))
 		{
-			player.openInventory(new WalletHolder(economy, player.getUniqueId()).getInventory());
+			MenuHolder.open(player, new WalletHolder(economy, player.getUniqueId()));
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}
 		else if (action == Action.RIGHT_CLICK_BLOCK && 
 				 economy.getConfig().equalsBankSpawnItem(playerMainItem))
 		{
-			if (economy.getBank().handleBankAdd(event.getClickedBlock().getLocation(), player.getUniqueId(), economy.getConfig()) == Bank.CODE_SUCCESS)
+			final Location blockLocation = event.getClickedBlock().getLocation();
+			final Location bankLocation = new Location(blockLocation.getWorld(), blockLocation.getBlockX() + 0.5, blockLocation.getBlockY() + 1.0, blockLocation.getBlockZ() + 0.5);			
+			
+			if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 			{
+				economy.trySpawnBankEntity(bankLocation);
+				player.getInventory().getItemInMainHand().setAmount(playerMainItem.getAmount() -1);
 				player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " platziert.\n",
                                                       MessageHelper.PREFIX_HUFF, "Denke an die Öffnungszeiten von ", MessageHelper.getTimeLabel(economy.getConfig().getBankOpen()),
                                                                                  " bis ", MessageHelper.getTimeLabel(economy.getConfig().getBankClose()), "."));
-							
-				player.getInventory().getItemInMainHand().setAmount(playerMainItem.getAmount() -1);
 			}
 			else
 			{
 				player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economy.getConfig().getBankName(), "."));
 			}
 			event.setCancelled(true);
+		}
+	}
+	
+	@EventHandler
+    public void onQuit(PlayerQuitEvent event)
+	{
+		final Player player = event.getPlayer();
+		final InventoryHolder inventoryHolder = player.getOpenInventory().getTopInventory().getHolder();
+		
+		if (inventoryHolder instanceof TradeHolder)
+		{
+			((TradeHolder) inventoryHolder).handleClose(player);
 		}
 	}
 }

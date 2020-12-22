@@ -2,21 +2,23 @@ package huff.economy.storage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.Config;
 import huff.lib.helper.DataHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
+import redis.clients.jedis.Jedis;
 
 public class Bank
 {
@@ -37,7 +39,7 @@ public class Bank
 		this.redisManager = redisManager;
 	}
 	
-	private RedisManager redisManager;
+	private final RedisManager redisManager;
 		
 	public boolean isBankAtLocation(@NotNull Location location, double tolerance)
 	{
@@ -102,61 +104,27 @@ public class Bank
 	
 	public int addBank(@NotNull Location location, @Nullable UUID ownerUUID)
 	{
-		Validate.notNull((Object) location, "The bank-location cannot be null.");	
+		Validate.notNull((Object) location, "The bank location cannot be null.");	
 		
-		if (isBankAtLocation(location, 2))
+		if (isBankAtLocation(location, 1.5))
 		{
 			return CODE_DUPLICATE;
 		}
 		redisManager.addMap(getNewPatternKey(), getFieldValuePairs(location, ownerUUID));
+		
 		return CODE_SUCCESS;
-	}	
-	
-	public int handleBankAdd(@NotNull Player player, @NotNull Config economyConfig)
-	{
-		Validate.notNull((Object) player, "The player cannot be null.");
-		
-		final Location playerLocation = player.getLocation();
-		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5);
-		
-		if (addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
-		{
-			bankLocation.subtract(0, 1, 0).getBlock().setType(economyConfig.getBankMaterial());
-			return CODE_SUCCESS;
-		}
-		else
-		{
-			return CODE_DUPLICATE;
-		}	
 	}
-	
-	public int handleBankAdd(@NotNull Location location, @Nullable UUID ownerUUID, @NotNull Config economyConfig)
-	{		
-		Validate.notNull((Object) location, "The bank-place-location cannot be null.");	
-		
-		final Location bankLocation = new Location(location.getWorld(), location.getBlockX() + 0.5, location.getBlockY() + 1, location.getBlockZ() + 0.5);
-		
-		if (addBank(bankLocation, ownerUUID) == Bank.CODE_SUCCESS)
-		{
-			bankLocation.subtract(0, 1, 0).getBlock().setType(economyConfig.getBankMaterial());
-			return CODE_SUCCESS;
-		}
-		else
-		{
-			return CODE_DUPLICATE;
-		}	
-	}
-	
 	
 	public int removeBank(@NotNull Location location)
 	{
-		Validate.notNull((Object) location, "The bank-location cannot be null.");	
+		Validate.notNull((Object) location, "The bank location cannot be null.");	
 		
 		final String bankKey = getBankAtLocation(location, REMOVE_DISTANCE);
 		
 		if (bankKey != null)
 		{
-			redisManager.getJedis().del(bankKey);
+			redisManager.deleteKey(bankKey);
+	
 			return CODE_SUCCESS;
 		}
 		return CODE_NOBANK;
@@ -164,7 +132,15 @@ public class Bank
 	
 	private @NotNull Set<String> getKeys()
 	{
-		return redisManager.getJedis().keys(StringHelper.build('*', PATTERN_BANK, '*'));
+		try (final Jedis jedis = redisManager.getJedis())
+		{
+			return jedis.keys(StringHelper.build('*', PATTERN_BANK, '*'));
+		}
+		catch (Exception exception) 
+		{
+			Bukkit.getLogger().log(Level.SEVERE	, "Redis statement cannot be executed.", exception);
+		}
+		return new HashSet<>();
 	}
 	
 	private @NotNull String getPatternKey(@NotNull String key)

@@ -224,7 +224,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private @NotNull String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = (isBalance ? economy.getStorage().updateBalance(targetUUID, value, isRemove, false) : economy.getStorage().updateWallet(targetUUID, value, isRemove));
+		final int feedbackCode = (economy.getStorage().updateValue(targetUUID, value, isRemove, isBalance));
 		
 		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, targetName, targetUUID);
 	}
@@ -373,8 +373,12 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	
 	private void executeBankAdd(Player player)
 	{
-		if (economy.getBank().handleBankAdd(player, economy.getConfig()) == Bank.CODE_SUCCESS)
+		final Location playerLocation = player.getLocation();
+		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5);		
+		
+		if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 		{
+			economy.trySpawnBankEntity(bankLocation);
 			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " platziert.\n"));
 		}
 		else
@@ -387,7 +391,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	{
 		if (economy.getBank().removeBank(player.getLocation()) == Bank.CODE_SUCCESS)
 		{
-			
+			economy.tryRemoveBankEntity(player.getLocation());
 			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt."));
 		}
 		else

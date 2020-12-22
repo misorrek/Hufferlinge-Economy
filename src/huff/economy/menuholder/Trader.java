@@ -1,4 +1,4 @@
-package huff.economy.menuholders;
+package huff.economy.menuholder;
 
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package huff.economy.menuholders;
+package huff.economy.menuholder;
 
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -9,9 +9,10 @@ public enum TransactionKind
 	BANK_IN("Einzahlen"),
 	BANK_OUT("Auszahlen"),
 	BANK_OTHER("Übertragen"), 
+	BANK_CHOOSE("Hinzufügen"),
 	WALLET_OUT("Herausnehmen"),
 	WALLET_OTHER("Übergeben"),
-	VALUE_CHOOSE("Auswählen");
+	WALLET_CHOOSE("Hinzufügen");
 	
 	private TransactionKind(String label)
 	{
@@ -49,16 +50,26 @@ public enum TransactionKind
 	
 	public boolean isBankTransaction()
 	{
-		return this == BANK_OUT || this == BANK_OTHER;
+		return this == BANK_OUT || this == BANK_OTHER || this == BANK_CHOOSE;
 	}
 	
 	public boolean isWalletTransaction()
 	{
-		return this == WALLET_OUT || this == WALLET_OTHER || this == BANK_IN;
+		return this == WALLET_OUT || this == WALLET_OTHER || this == WALLET_CHOOSE || this == BANK_IN;
 	}
 	
 	public boolean isHumanTransaction()
 	{
 		return this == BANK_OTHER || this == WALLET_OTHER;
+	}
+	
+	public boolean isChooseTransaction()
+	{
+		return this == BANK_CHOOSE || this == WALLET_CHOOSE;
+	}
+	
+	public boolean isItemTransaction()
+	{
+		return this == WALLET_OUT;
 	}
 }

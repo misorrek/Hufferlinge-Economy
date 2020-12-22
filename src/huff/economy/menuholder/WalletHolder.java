@@ -1,19 +1,20 @@
-package huff.economy.menuholders;
+package huff.economy.menuholder;
 
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
-import huff.lib.various.MenuHolder;
+import huff.lib.menuholder.MenuExitType;
+import huff.lib.menuholder.MenuHolder;
 
 public class WalletHolder extends MenuHolder
 {
@@ -21,7 +22,7 @@ public class WalletHolder extends MenuHolder
 	
 	public WalletHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer)
 	{
-		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_3, economyInterface.getConfig().getWalletInventoryName());
+		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_3, economyInterface.getConfig().getWalletInventoryName(), MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.notNull((Object) menuViewer, "The menu-viewer cannot be null.");
@@ -35,15 +36,19 @@ public class WalletHolder extends MenuHolder
 	private final EconomyInterface economy;
 	private final UUID menuViewer;
 	
-	public void handleEvent(@Nullable ItemStack currentItem, @NotNull HumanEntity human)
+	@Override
+	public boolean handleClick(@NotNull InventoryClickEvent event)
 	{
-		Validate.notNull((Object) human, "The human cannot be null.");
+		Validate.notNull((Object) event, "The inventory click event cannot be null.");
 		
-		if (currentItem == null || currentItem.getItemMeta() == null)
+		final HumanEntity human = event.getWhoClicked();
+		final ItemStack currentItem = event.getCurrentItem();
+		
+		if (ItemHelper.hasMeta(currentItem))
 		{
-			return;
+			TransactionHolder.handleTransactionOpen(economy, human,  currentItem.getItemMeta().getDisplayName());
 		}			
-		TransactionHolder.handleTransactionOpen(economy, human,  currentItem.getItemMeta().getDisplayName());
+		return true;
 	}
 	
 	private void initInventory()
@@ -56,6 +61,6 @@ public class WalletHolder extends MenuHolder
 						                                                          false , false)));
 		InventoryHelper.setItem(this.getInventory(), 2, 8, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
 																				  economy.getConfig().getTransactionInventoryName(TransactionKind.WALLET_OUT)));
-		InventoryHelper.setItem(this.getInventory(), 3, 5, InventoryHelper.getCloseItem());
+		this.setMenuExitItem();
 	}
 }

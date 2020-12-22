@@ -27,7 +27,8 @@ public class EconomyModule
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
 		
 		this.plugin = plugin;	
-		this.economyInterface = new EconomyInterface(new Config(plugin.getDataFolder().getAbsolutePath()), 
+		this.economyInterface = new EconomyInterface(plugin,
+				                                     new Config(plugin.getDataFolder().getAbsolutePath()), 
 				                                     new Storage(redisManager), 
 				                                     new Signature(redisManager), 
 				                                     new Bank(redisManager),
@@ -36,8 +37,6 @@ public class EconomyModule
 	
 	private final JavaPlugin plugin;	
 	private final EconomyInterface economyInterface;
-	
-	private boolean bankOpen = false;
 	
 	public void registerCommands()
 	{
@@ -58,32 +57,17 @@ public class EconomyModule
 		pluginManager.registerEvents(new JoinListener(economyInterface), plugin);
 		pluginManager.registerEvents(new EconomyListener(economyInterface), plugin);
 		pluginManager.registerEvents(new InventoryListener(economyInterface), plugin);
-		pluginManager.registerEvents(new MenuInventoryListener(), plugin);
+		pluginManager.registerEvents(new MenuInventoryListener(plugin), plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)
-	{	
-		if (worldTime >= economyInterface.getConfig().getBankOpen() && worldTime < economyInterface.getConfig().getBankClose())
+	{		
+		if (worldTime % 1000 == 0)
 		{
-			if (!bankOpen)
+			for (Location bankLocation : economyInterface.getBank().getBankLocations())
 			{
-				for (Location bankLocation : economyInterface.getBank().getBankLocations())
-				{
-					economyInterface.spawnBankEntity(bankLocation);
-				}	
-				bankOpen = true;	
-			}			
-		}
-		else
-		{
-			if (bankOpen)
-			{
-				for (Location bankLocation : economyInterface.getBank().getBankLocations())
-				{
-					economyInterface.removeBankEntity(bankLocation, false);
-				}			
-				bankOpen = false;
-			}		
+				economyInterface.trySpawnBankEntity(bankLocation);
+			}
 		}
 	}
 }

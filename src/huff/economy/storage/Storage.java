@@ -2,6 +2,7 @@ package huff.economy.storage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 
 public class Storage
 {
@@ -72,95 +75,129 @@ public class Storage
 		return parseDouble(redisManager.getFieldValue(getPatternKey(uuid), FIELD_BALANCE));
 	}
 	
-	public int setBalance(@NotNull UUID uuid, double value)
-	{
-		if (existUser(uuid))
-		{
-			redisManager.updateFieldValue(getPatternKey(uuid), FIELD_BALANCE, Double.toString(value));
-			return CODE_SUCCESS;
-		}
-		return CODE_NOUSER;
-	}
-	
 	public double getWallet(@NotNull UUID uuid)
 	{
 		return parseDouble(redisManager.getFieldValue(getPatternKey(uuid), FIELD_WALLET));
 	}
 	
-	public int setWallet(@NotNull UUID uuid, double value)
+	public int setValue(@NotNull UUID uuid, double value, boolean isBalanceTransaction)
 	{
 		if (existUser(uuid))
 		{
-			redisManager.updateFieldValue(getPatternKey(uuid), FIELD_WALLET, Double.toString(value));
+			redisManager.setFieldValue(getPatternKey(uuid), isBalanceTransaction ? FIELD_BALANCE : FIELD_WALLET, 
+					                   Double.toString(value));
 			return CODE_SUCCESS;
 		}
 		return CODE_NOUSER;
 	}
 	
-	public int updateBalance(@NotNull UUID uuid, double value, boolean remove, boolean withWallet)
+	public int setBalance(@NotNull UUID uuid, double value)
 	{
-		final double currentBalance = getBalance(uuid);
+		return setValue(uuid, value, true);
+	}
+	
+	public int setWallet(@NotNull UUID uuid, double value)
+	{
+		return setValue(uuid, value, false);
+	}
+	
+	public int updateValue(@NotNull UUID uuid, double value, boolean remove, boolean isBalanceTransaction)
+	{
+		final double currentValue = isBalanceTransaction ? getBalance(uuid) : getWallet(uuid);
 		
-		if (currentBalance == CODE_NOUSER)
+		if (currentValue == CODE_NOUSER)
 		{
 			return CODE_NOUSER;
 		}
 		
-		if (remove && currentBalance < value)
+		if (remove && currentValue < value)
 		{
 			return CODE_NOTENOUGHVALUE;
 		}
-		
-		if (withWallet)
-		{
-			updateWallet(uuid, value, !remove);
-		}
-		setBalance(uuid, currentBalance + (remove ? value * -1 : value));
+		setValue(uuid, currentValue + (remove ? value * -1 : value), isBalanceTransaction);
 		return CODE_SUCCESS;
+	}
+
+	public int updateBalance(@NotNull UUID uuid, double value, boolean remove)
+	{
+		return updateValue(uuid, value, remove, true);
 	}
 	
 	public int updateWallet(@NotNull UUID uuid, double value, boolean remove)
 	{
-		final double currentWallet = getWallet(uuid);
-		
-		if (currentWallet == -1)
-		{
-			return CODE_NOUSER;
-		}
-		
-		if (remove && currentWallet < value)
-		{
-			return CODE_NOTENOUGHVALUE;
-		}
-		setWallet(uuid, currentWallet + (remove ? value * -1 : value));	
-		return CODE_SUCCESS;
+		return updateValue(uuid, value, remove, false);
 	}
 	
-	public @NotNull List<String> getEconomyOverview()
+	public boolean runTransaction(@NotNull UUID uuidFrom, @NotNull UUID uuidTo, double value, boolean isBalanceTransaction)
+	{
+		final double currentFrom = isBalanceTransaction ? getBalance(uuidFrom) : getWallet(uuidFrom);
+		final double currentTo = isBalanceTransaction ? getBalance(uuidTo) : getWallet(uuidTo);
+		
+		if (currentFrom == -1 || currentTo == -1 || currentFrom < value)
+		{
+			return false;
+		}
+		
+		try (final Jedis jedis = redisManager.getJedis())
+		{
+			final Transaction transaction = jedis.multi();
+			
+			transaction.hset(getPatternKey(uuidFrom), isBalanceTransaction ? FIELD_BALANCE : FIELD_WALLET, 
+					         Double.toString(currentFrom + (value * -1)));
+			transaction.hset(getPatternKey(uuidTo), isBalanceTransaction ? FIELD_BALANCE : FIELD_WALLET, 
+					         Double.toString(currentTo + value));
+			transaction.exec();
+		}
+		return true;
+	}
+	
+	public boolean runTransaction(@NotNull UUID uuid, double value, boolean fromBalanceTransaction)
+	{
+		final double currentValue = fromBalanceTransaction ? getBalance(uuid) : getWallet(uuid);
+		
+		if (currentValue == -1 || currentValue < value)
+		{
+			return false;
+		}
+		
+		try (final Jedis jedis = redisManager.getJedis())
+		{
+			final Transaction transaction = jedis.multi();
+			
+			transaction.hset(getPatternKey(uuid), fromBalanceTransaction ? FIELD_BALANCE : FIELD_WALLET, 
+					         Double.toString(currentValue + (value * -1)));
+			transaction.hset(getPatternKey(uuid), fromBalanceTransaction ? FIELD_WALLET : FIELD_BALANCE, 
+					         Double.toString(currentValue + value));
+			transaction.exec();
+		}
+		return true;
+	}
+	
+	public @NotNull List<String> getEconomyOverview() //TODO Paging
 	{
 		final List<String> economyOverview = new ArrayList<>();	
 		final String rankKey = "rank";
 		
-		try
+		try (final Jedis jedis = redisManager.getJedis())
 		{
-			for (String key : redisManager.getJedis().keys(StringHelper.build('*', PATTERN_USER, '*')))
+			for (String key : getKeys())
 			{
-				final double balance = parseDouble(redisManager.getFieldValue(key, FIELD_BALANCE));
-				final double wallet = parseDouble(redisManager.getFieldValue(key, FIELD_WALLET));
+				final double balance = parseDouble(jedis.hget(key, FIELD_BALANCE));
+				final double wallet = parseDouble(jedis.hget(key, FIELD_WALLET));
 				final double sum = balance + wallet;
 				
 				redisManager.getJedis().zadd(rankKey, sum * -1, key);			
 			}
 			int position = 1;
 			
-			for (String key : redisManager.getJedis().zrange(rankKey, 0, -1))
+			for (String key : jedis.zrange(rankKey, 0, -1))
 			{
 				final OfflinePlayer player = Bukkit.getOfflinePlayer(getUUIDFromKey(key));
 				
 				if (player != null)
 				{
-					final double balance = parseDouble(redisManager.getFieldValue(key, FIELD_BALANCE));
-					final double wallet = parseDouble(redisManager.getFieldValue(key, FIELD_WALLET));
+					final double balance = parseDouble(jedis.hget(key, FIELD_BALANCE));
+					final double wallet = parseDouble(jedis.hget(key, FIELD_WALLET));
 					final double sum = balance + wallet;
 					
 					economyOverview.add(String.format("§8☰ §a%d §8- §9%s\n" +
@@ -168,7 +205,7 @@ public class Storage
 					position++;
 				}		
 			}			
-			redisManager.getJedis().del(rankKey);			
+			jedis.del(rankKey);			
 		}
 		catch (Exception exception) 
 		{
@@ -179,7 +216,15 @@ public class Storage
 	
 	private @NotNull Set<String> getKeys()
 	{
-		return redisManager.getJedis().keys(StringHelper.build('*', PATTERN_USER, '*'));
+		try (final Jedis jedis = redisManager.getJedis())
+		{
+			return jedis.keys(StringHelper.build('*', PATTERN_USER, '*'));
+		}
+		catch (Exception exception) 
+		{
+			Bukkit.getLogger().log(Level.SEVERE	, "Redis-Statement cannot be executed.", exception);
+		}
+		return new HashSet<>();
 	}
 	
 	private @NotNull String getPatternKey(@NotNull UUID uuid)

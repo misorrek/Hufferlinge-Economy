@@ -2,14 +2,17 @@ package huff.economy.storage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
+import redis.clients.jedis.Jedis;
 
 public class Signature
 {
@@ -23,12 +26,12 @@ public class Signature
 		this.redisManager = redisManager;
 	}
 	
-	private RedisManager redisManager;
+	private final RedisManager redisManager;
 	
 	public @NotNull List<String> createSignatureLore(int valueAmount)
 	{
 		final List<String> signatureLore = new ArrayList<>();
-		final String signature = redisManager.isConnected() ? createSignature(valueAmount) : OFFLINE_SIGNATURE;
+		final String signature = createSignature(valueAmount);
 		
 		signatureLore.add("§8Prägung");
 		signatureLore.add("§8" + signature);
@@ -53,21 +56,30 @@ public class Signature
 			return wantedValueAmount;
 		}
 		final String patternKey = getPatternKey(loreSignature);
-		final String storedValue = redisManager.getJedis().get(patternKey);
+		int signatureValueAmount = 0;
 		
-		if (StringHelper.isNullOrEmpty(storedValue))
+		try (final Jedis jedis = redisManager.getJedis())
 		{
-			return -1;
-		}		
-		final int signatureValueAmount = Integer.parseInt(storedValue);
-		
-		if (signatureValueAmount <= wantedValueAmount)
+			final String storedValue = jedis.get(patternKey);
+			
+			if (StringHelper.isNullOrEmpty(storedValue))
+			{
+				return -1;
+			}		
+			signatureValueAmount = Integer.parseInt(storedValue);
+			
+			if (signatureValueAmount <= wantedValueAmount)
+			{
+				jedis.del(patternKey);
+			}	
+			else
+			{
+				jedis.set(patternKey, Integer.toString(signatureValueAmount - wantedValueAmount));
+			}
+		}
+		catch (Exception exception) 
 		{
-			 redisManager.getJedis().del(patternKey);
-		}	
-		else
-		{
-			 redisManager.getJedis().set(patternKey, Integer.toString(signatureValueAmount - wantedValueAmount));
+			Bukkit.getLogger().log(Level.SEVERE	, "Redis-Statement cannot be executed.", exception);
 		}
 		return signatureValueAmount;
 	}
@@ -81,7 +93,7 @@ public class Signature
 	{
 		final String signatureId = RandomStringUtils.random(12, "0123456789ABCDEF");
 		
-		redisManager.getJedis().set(getPatternKey(signatureId), Integer.toString(valueAmount));
+		redisManager.setValue(getPatternKey(signatureId), Integer.toString(valueAmount));
 		
 		return signatureId;
 	}
