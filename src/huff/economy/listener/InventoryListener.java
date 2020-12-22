@@ -44,6 +44,8 @@ public class InventoryListener implements Listener
 	}
 	private final EconomyInterface economy;
 	
+	// I N V E N T O R Y - D E N Y
+	
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onDenyHumanInventoryClick(InventoryClickEvent event)
 	{
@@ -213,6 +215,8 @@ public class InventoryListener implements Listener
 		}		
 	}	
 
+	// I N V E N T O R Y - H U M A N
+	
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onHumanInverntoryClick(InventoryClickEvent event)
 	{	
@@ -292,29 +296,20 @@ public class InventoryListener implements Listener
 		}
 	}
 	
+	// I N V E N T O R Y - E C O N O M Y
+	
 	@EventHandler
-	public void onEconomyInventoryClick(InventoryClickEvent event)
+	public void onEconomyInventoryClick(InventoryClickEvent event) 
 	{
 		if (event.getClickedInventory() != null)
-		{
-			final InventoryHolder inventoryHolder = event.getClickedInventory().getHolder();
+		{			
+			final InventoryHolder inventoryHolder = event.getView().getTopInventory().getHolder();
 
 			if (inventoryHolder instanceof MenuHolder)
 			{
 				event.setCancelled(((MenuHolder) inventoryHolder).handleClick(event));
 			}
 		}
-		
-		/*
-		if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || event.getAction() == InventoryAction.COLLECT_TO_CURSOR)
-		{
-			event.setCancelled(true);
-		}
-		else if (event.getClickedInventory().getType() == InventoryType.PLAYER)
-		{
-			event.setCancelled(false);
-		}
-		*/
 	}
 	
 	@EventHandler
@@ -328,6 +323,16 @@ public class InventoryListener implements Listener
 					                                                      event.getView(), 
 					                                                      event.getNewItems().keySet()));
 		}	
+	}
+	
+	@EventHandler
+	public void onEconomyPickup(EntityPickupItemEvent event)
+	{
+		if (event.getEntity() instanceof HumanEntity && 
+			((HumanEntity) event.getEntity()).getOpenInventory().getTopInventory().getHolder() instanceof TradeHolder)
+		{
+			((TradeHolder) ((HumanEntity) event.getEntity()).getOpenInventory().getTopInventory().getHolder()).handlePickup();
+		}
 	}
 
 	@EventHandler

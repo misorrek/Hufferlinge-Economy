@@ -15,7 +15,6 @@ import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
@@ -173,7 +172,7 @@ public class Storage
 		return true;
 	}
 	
-	public @NotNull List<String> getEconomyOverview() //TODO Paging
+	public @NotNull List<String> getEconomyOverview()
 	{
 		final List<String> economyOverview = new ArrayList<>();	
 		final String rankKey = "rank";
@@ -218,7 +217,7 @@ public class Storage
 	{
 		try (final Jedis jedis = redisManager.getJedis())
 		{
-			return jedis.keys(StringHelper.build('*', PATTERN_USER, '*'));
+			return jedis.keys('*' + PATTERN_USER + '*');
 		}
 		catch (Exception exception) 
 		{

@@ -96,7 +96,7 @@ public class TransactionHolder extends MenuHolder
 			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				MenuHolder.open(human, new PlayerChooserHolder(economy.getStorage().getUsers(human.getUniqueId()), 
+				MenuHolder.open(human, new PlayerChooserHolder(economy.getPlugin(), economy.getStorage().getUsers(human.getUniqueId()), 
 						                                       InventoryHelper.INV_SIZE_6, null, MenuExitType.BACK,
 						                                       params -> 
 				{
@@ -123,7 +123,7 @@ public class TransactionHolder extends MenuHolder
 		final HumanEntity human = event.getWhoClicked();
 		final ItemStack currentItem = event.getCurrentItem();
 		
-		if (ItemHelper.hasMeta(currentItem))
+		if (!ItemHelper.hasMeta(currentItem))
 		{
 			return true;
 		}			
@@ -279,7 +279,8 @@ public class TransactionHolder extends MenuHolder
 		
 		if (!transactionKind.isBankTransaction() && !targetPlayer.isOnline())
 		{
-			human.sendMessage(MessageHelper.PREFIX_HUFF + MessageHelper.getHighlighted(human.getName(), false, true) + "ist nicht mehr da.");
+			MenuHolder.close(human);
+			human.sendMessage(MessageHelper.PREFIX_HUFF + MessageHelper.getHighlighted(targetPlayer.getName(), false, true) + "ist nicht mehr da.");
 		}
 		else if (economy.getStorage().runTransaction(human.getUniqueId(), target, transactionValue, transactionKind.isBankTransaction()))
 		{

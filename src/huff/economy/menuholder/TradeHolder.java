@@ -9,9 +9,12 @@ import java.util.UUID;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +32,6 @@ public class TradeHolder extends MenuHolder
 {
 	public static final String MENU_IDENTIFIER = "menu:economy:interaction";
 	
-	private static final int TRADER_SLOTCOUNT = 12;
 	private static final Integer[] TRADERLEFT_SLOTS = {10,11,12,19,20,21,28,29,30,37,38,39};
 	private static final Integer[] TRADERRIGHT_SLOTS = {14,15,16,23,24,25,32,33,34,41,42,43};
 	private static final String NOTREADY_NAME = "§6Handel ausstehend...";
@@ -68,8 +70,9 @@ public class TradeHolder extends MenuHolder
 		final int clickedSlot = event.getSlot();
 		final boolean isLeftTrader = human.getUniqueId().equals(leftTrader.getUUID());
 		
-		if (itemPlaceAllowed(isLeftTrader, clickedSlot))
+		if (slotActionAllowed(isLeftTrader, event.getClickedInventory(), clickedSlot)) //TODO RESET READY STATE
 		{
+			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), this::setTraderSlots, 1);
 			return false;
 		}
 		else if (isValueSlot(clickedSlot, isLeftTrader))
@@ -132,19 +135,21 @@ public class TradeHolder extends MenuHolder
 				return true;				
 			}
 		}
+		Bukkit.getScheduler().runTaskLater(economy.getPlugin(), this::setTraderSlots, 1);
 		return false;
+	}
+	
+	public void handlePickup()
+	{
+		Bukkit.getScheduler().runTaskLater(economy.getPlugin(), this::setTraderSlots, 1);
 	}
 
 	private void initInventory()
 	{
 		final ItemStack borderItem = InventoryHelper.getBorderItem();
-		final Player leftPlayer = Bukkit.getPlayer(leftTrader.getUUID());
-		final Player rightPlayer = Bukkit.getPlayer(rightTrader.getUUID());
+		final OfflinePlayer leftPlayer = Bukkit.getOfflinePlayer(leftTrader.getUUID());
+		final OfflinePlayer rightPlayer = Bukkit.getOfflinePlayer(rightTrader.getUUID());
 		
-		if (leftPlayer == null || rightPlayer == null)
-		{
-			return;
-		}
 		InventoryHelper.setBorder(this.getInventory(), borderItem);
 		InventoryHelper.setItem(this.getInventory(), 2, 5, borderItem);
 		InventoryHelper.setItem(this.getInventory(), 3, 5, borderItem);
@@ -158,34 +163,75 @@ public class TradeHolder extends MenuHolder
 	    InventoryHelper.setItem(this.getInventory(), 1, 7, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
                                                                                       MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false)));	
 	    InventoryHelper.setItem(this.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(rightPlayer, MessageHelper.getHighlighted(rightPlayer.getName(), false , false)));
-		
-	    initTradeSlots(leftPlayer, TRADERRIGHT_SLOTS);
-	    initTradeSlots(rightPlayer, TRADERLEFT_SLOTS);
 	    
 		InventoryHelper.setItem(this.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 		InventoryHelper.setItem(this.getInventory(), 6, 7, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 		
+		setTraderSlots();
 		this.setMenuExitItem();
 	}
 	
-	private void initTradeSlots(@NotNull Player player, @NotNull Integer[] tradeSlots)
+	private void setTraderSlots()
 	{
-		final int freeSlots = InventoryHelper.getFreeSlots(player.getInventory());
+		final Player leftPlayer = Bukkit.getPlayer(leftTrader.getUUID());
+		final Player rightPlayer = Bukkit.getPlayer(rightTrader.getUUID());
 		
-		if (freeSlots < TRADER_SLOTCOUNT && tradeSlots.length == TRADER_SLOTCOUNT)
+		if (checkPlayerState(leftPlayer, true) && checkPlayerState(rightPlayer, true))
 		{
-			final ItemStack slotBlockItem = getSlotBlocker();
+			checkTradeSlots(leftPlayer, rightPlayer, TRADERRIGHT_SLOTS);
+			checkTradeSlots(rightPlayer, leftPlayer, TRADERLEFT_SLOTS);
+		}
+	}
+	
+	private void checkTradeSlots(@NotNull Player player, @NotNull Player otherPlayer, @NotNull Integer[] tradeSlots)
+	{
+		final ItemStack slotBlockItem = getSlotBlocker();
+		int freeSlots = InventoryHelper.getFreeSlots(player.getInventory());
+		
+		Bukkit.getConsoleSender().sendMessage("FREE SLOTS : " + freeSlots);
+		
+		for (int i = 0; i < tradeSlots.length; i++)
+		{
+			final int slot = tradeSlots[i];
+			final ItemStack currentItem = this.getInventory().getItem(slot);
 			
-			for (int i = freeSlots; i < TRADER_SLOTCOUNT; i++)
+			Bukkit.getConsoleSender().sendMessage("UPDATED FREE SLOTS : " + freeSlots);
+			Bukkit.getConsoleSender().sendMessage("CURRENT ITEM : " + currentItem);
+			
+			if (freeSlots > 0)
 			{
-				this.getInventory().setItem(tradeSlots[i], slotBlockItem);
+				if (currentItem != null && currentItem.equals(slotBlockItem))
+				{
+					Bukkit.getConsoleSender().sendMessage("CLEAR SLOT");
+					this.getInventory().setItem(slot, null);
+				}
+				freeSlots--;
+			}
+			else
+			{
+				if (currentItem != null && currentItem.getType() != Material.AIR && !currentItem.equals(slotBlockItem))
+				{
+					Bukkit.getConsoleSender().sendMessage("GET SLOT");
+					otherPlayer.getInventory().addItem(currentItem);
+				}
+				
+				if (currentItem == null || !currentItem.equals(slotBlockItem))
+				{
+					Bukkit.getConsoleSender().sendMessage("BLOCK SLOT");
+					this.getInventory().setItem(slot, slotBlockItem);
+				}
 			}
 		}
 	}
 	
 	private @NotNull ItemStack getSlotBlocker()
 	{
-		return ItemHelper.getItemWithMeta(InventoryHelper.MATERIAL_FILL, "§7Der Verhandlungsparnter hat nicht ausreichend Platz.");
+		final List<String> lore = new ArrayList<>();
+		
+		lore.add("§7Der Verhandlungspartner hat");
+		lore.add("§7nicht aussreichend Platz.");
+		
+		return ItemHelper.getItemWithMeta(InventoryHelper.MATERIAL_FILL, "§7§lBlockiert", lore);
 	}
 	
 	private void updateValues()
@@ -212,8 +258,12 @@ public class TradeHolder extends MenuHolder
 			   (withoutViewing || InventoryHelper.isViewer(this.getInventory(), player));
 	}
 	
-	private boolean itemPlaceAllowed(boolean isLeftTrader, int slot)
+	private boolean slotActionAllowed(boolean isLeftTrader, Inventory inventory, int slot)
 	{
+		if (inventory.getType() == InventoryType.PLAYER)
+		{
+			return true;
+		}
 		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
 		final boolean blockCase = getSlotBlocker().equals(this.getInventory().getItem(slot));
 		final boolean leftCase = isLeftTrader && !leftTrader.isReady() && tradeSlots.contains(slot);				                 
