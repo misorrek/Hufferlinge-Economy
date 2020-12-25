@@ -32,8 +32,6 @@ import huff.lib.menuholder.PlayerChooserHolder;
 
 public class TransactionHolder extends MenuHolder
 {
-	public static final String MENU_IDENTIFIER = "menu:economy:transaction";
-	
 	private static final String NBT_KEY = "changeamount";
 	private static final int AMOUNT_1 = 1;
 	private static final int AMOUNT_2 = 5;
@@ -43,7 +41,7 @@ public class TransactionHolder extends MenuHolder
 	
 	private TransactionHolder(@NotNull EconomyInterface economyInterface, TransactionKind transactionKind, @NotNull UUID viewer, @Nullable UUID target, double transactionValue)
 	{
-		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_4, transactionKind.getLabel(), MenuExitType.ABORT);
+		super("economy:transaction", InventoryHelper.INV_SIZE_4, transactionKind.getLabel(), MenuExitType.ABORT);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		

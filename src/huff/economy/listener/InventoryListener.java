@@ -16,21 +16,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
-import huff.economy.menuholder.TradeHolder;
 import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.menuholder.MenuHolder;
 
 public class InventoryListener implements Listener
 {
@@ -51,8 +47,6 @@ public class InventoryListener implements Listener
 	{
 		if (event.getClickedInventory() == null)
 		{
-			Bukkit.getConsoleSender().sendMessage("EMPTY");
-			
 			if (pickedUpSlot.containsKey(event.getView().getPlayer().getUniqueId()))
 			{
 				pickedUpSlot.remove(event.getView().getPlayer().getUniqueId());
@@ -293,56 +287,6 @@ public class InventoryListener implements Listener
 			{
 				human.getInventory().remove(currentItemStack);			
 			}
-		}
-	}
-	
-	// I N V E N T O R Y - E C O N O M Y
-	
-	@EventHandler
-	public void onEconomyInventoryClick(InventoryClickEvent event) 
-	{
-		if (event.getClickedInventory() != null)
-		{			
-			final InventoryHolder inventoryHolder = event.getView().getTopInventory().getHolder();
-
-			if (inventoryHolder instanceof MenuHolder)
-			{
-				event.setCancelled(((MenuHolder) inventoryHolder).handleClick(event));
-			}
-		}
-	}
-	
-	@EventHandler
-	public void onEconomyInventoryDrag(InventoryDragEvent event)
-	{	
-		final InventoryHolder inventoryHolder = event.getView().getTopInventory().getHolder();
-		
-		if (inventoryHolder instanceof TradeHolder)
-		{
-			event.setCancelled(((TradeHolder) inventoryHolder).handleDrag(event.getWhoClicked().getUniqueId(), 
-					                                                      event.getView(), 
-					                                                      event.getNewItems().keySet()));
-		}	
-	}
-	
-	@EventHandler
-	public void onEconomyPickup(EntityPickupItemEvent event)
-	{
-		if (event.getEntity() instanceof HumanEntity && 
-			((HumanEntity) event.getEntity()).getOpenInventory().getTopInventory().getHolder() instanceof TradeHolder)
-		{
-			((TradeHolder) ((HumanEntity) event.getEntity()).getOpenInventory().getTopInventory().getHolder()).handlePickup();
-		}
-	}
-
-	@EventHandler
-	public void onEconomyInventoryClose(InventoryCloseEvent event)
-	{
-		final InventoryHolder inventoryHolder = event.getInventory().getHolder();
-		
-		if (inventoryHolder instanceof TradeHolder)
-		{
-			((TradeHolder) inventoryHolder).handleClose((Player) event.getPlayer());
 		}
 	}
 }

@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
@@ -19,6 +20,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
@@ -228,6 +230,16 @@ public class EconomyListener implements Listener
 		}
 	}
 	
+	@EventHandler
+	public void onPickup(EntityPickupItemEvent event)
+	{
+		if (event.getEntity() instanceof HumanEntity && 
+			((HumanEntity) event.getEntity()).getOpenInventory().getTopInventory().getHolder() instanceof TradeHolder)
+		{
+			((TradeHolder) ((HumanEntity) event.getEntity()).getOpenInventory().getTopInventory().getHolder()).handlePickup();
+		}
+	}
+	
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onInteract(PlayerInteractEvent event)
 	{
@@ -272,7 +284,7 @@ public class EconomyListener implements Listener
 		
 		if (inventoryHolder instanceof TradeHolder)
 		{
-			((TradeHolder) inventoryHolder).handleClose(player);
+			((TradeHolder) inventoryHolder).handleAbort(player);
 		}
 	}
 }

@@ -20,11 +20,9 @@ import huff.lib.menuholder.MenuHolder;
 
 public class BankHolder extends MenuHolder
 {
-	public static final String MENU_IDENTIFIER = "menu:economy:bank";
-	
 	public BankHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer, @NotNull Location bankLocation)
 	{
-		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_4, economyInterface.getConfig().getBankInventoryName(), MenuExitType.CLOSE);
+		super("economy:bank", InventoryHelper.INV_SIZE_4, economyInterface.getConfig().getBankInventoryName(), MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.notNull((Object) menuViewer, "The menu-viewer cannot be null.");

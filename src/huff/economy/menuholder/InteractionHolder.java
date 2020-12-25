@@ -18,11 +18,9 @@ import huff.lib.menuholder.MenuHolder;
 
 public class InteractionHolder extends MenuHolder
 {
-public static final String MENU_IDENTIFIER = "menu:economy:interaction";
-	
 	public InteractionHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer, @NotNull UUID interactionTarget)
 	{
-		super(MENU_IDENTIFIER, InventoryHelper.INV_SIZE_3, "§8Interaktion wählen", MenuExitType.CLOSE);
+		super("economy:interaction", InventoryHelper.INV_SIZE_3, "§8Interaktion wählen", MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.notNull((Object) menuViewer, "The menu-viewer cannot be null.");
