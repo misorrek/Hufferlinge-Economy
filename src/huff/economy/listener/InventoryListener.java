@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.HumanEntity;
@@ -59,6 +58,13 @@ public class InventoryListener implements Listener
 		final ItemStack cursorItem = event.getCursor();		
 		final HumanEntity human = event.getView().getPlayer();
 		
+		if (InventoryHelper.isPickupAction(inventoryAction) && (economy.getConfig().equalsWalletItem(currentItem) || 
+                                                                economy.getConfig().equalsValueItem(currentItem)))
+		{
+			pickedUpSlot.remove(human.getUniqueId());
+			pickedUpSlot.put(human.getUniqueId(), event.getRawSlot());
+			return;
+		}
 		final boolean isWalletItemCase = (economy.getConfig().equalsWalletItem(cursorItem) && inventoryType != InventoryType.PLAYER) || 
 										 (economy.getConfig().equalsWalletItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
 					                      event.getView().countSlots() > human.getInventory().getSize());
@@ -73,17 +79,6 @@ public class InventoryListener implements Listener
 		//Bukkit.getConsoleSender().sendMessage("InventoryTyp: " + inventoryType.toString());
 		//Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
 		//Bukkit.getConsoleSender().sendMessage("ClickType: " + event.getClick().toString());		
-			
-		if (InventoryHelper.isPickupAction(inventoryAction) && (economy.getConfig().equalsWalletItem(currentItem) || 
-				                                                economy.getConfig().equalsValueItem(currentItem)))
-		{
-			if (pickedUpSlot.containsKey(human.getUniqueId()))
-			{
-				pickedUpSlot.remove(human.getUniqueId());
-			}
-			pickedUpSlot.put(human.getUniqueId(), event.getRawSlot());
-			return;
-		}
 		
 		if (isWalletItemCase || isValueItemCase)			
 		{		
@@ -93,7 +88,7 @@ public class InventoryListener implements Listener
 				final ItemStack rawPickedUpSlotItem = event.getView().getItem(rawPickedUpSlot);
 				final ItemStack replaceItem = inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY ? currentItem : cursorItem;
 				
-				if (rawPickedUpSlotItem.isSimilar(replaceItem))
+				if (replaceItem.isSimilar(rawPickedUpSlotItem))
 				{
 					cursorItem.setAmount(replaceItem.getAmount() + rawPickedUpSlotItem.getAmount());
 					event.getView().setItem(rawPickedUpSlot, replaceItem);	

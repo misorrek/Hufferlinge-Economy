@@ -22,6 +22,8 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.VillagerAcquireTradeEvent;
+import org.bukkit.event.entity.VillagerCareerChangeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -177,6 +179,18 @@ public class EconomyListener implements Listener
 				curEntity.teleport(curEntity.getLocation().setDirection(player.getLocation().subtract(curEntity.getLocation()).toVector()));
 			}
 		}
+	}
+	
+	@EventHandler
+	public void onVillagerTrade(VillagerAcquireTradeEvent event)
+	{
+		//TODO Check Villager
+	}
+	
+	@EventHandler
+	public void onVillagerTrade(VillagerCareerChangeEvent event)
+	{
+		//TODO Check Villager
 	}
 	
 	// E N T I T Y - I N T E R A C T

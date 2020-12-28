@@ -62,6 +62,6 @@ public class Trader
 
 	public void changeReady() 
 	{
-		this.ready = !this.ready;
+		ready = !ready;
 	}
 }

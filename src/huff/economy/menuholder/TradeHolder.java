@@ -11,11 +11,12 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -68,9 +69,9 @@ public class TradeHolder extends MenuHolder
 		final int clickedSlot = event.getSlot();
 		final boolean isLeftTrader = human.getUniqueId().equals(leftTrader.getUUID());
 		
-		if (slotActionAllowed(isLeftTrader, event.getClickedInventory(), clickedSlot)) //TODO RESET READY STATE
+		if (!event.isCancelled() && slotActionAllowed(isLeftTrader, event))
 		{
-			setTraderSlots();
+			updateTraderSlots();
 			return false;
 		}
 		else if (isValueSlot(clickedSlot, isLeftTrader))
@@ -79,7 +80,7 @@ public class TradeHolder extends MenuHolder
 		}
 		else if (isStatusSlot(clickedSlot, isLeftTrader))
 		{
-			setTraderReady(isLeftTrader);
+			changeTraderState(isLeftTrader);
 		}
 		
 		if (leftTrader.isReady() && rightTrader.isReady())
@@ -94,17 +95,31 @@ public class TradeHolder extends MenuHolder
 	{
 		Validate.notNull((Object) event, "The inventory drag event cannot be null.");
 		
+		final boolean isLeftTrader = event.getWhoClicked().getUniqueId().equals(leftTrader.getUUID());
 		final int inventorySize = event.getView().getTopInventory().getSize();
-		final List<Integer> tradeSlots = Arrays.asList(event.getWhoClicked().getUniqueId().equals(leftTrader.getUUID()) ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
+		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
+		boolean tradeInventoryChange = false;
 		
 		for (int slot : event.getNewItems().keySet())
 		{
-			if (slot < inventorySize && !tradeSlots.contains(slot))
+			if (slot < inventorySize)
 			{		
-				return true;				
+				if (!tradeSlots.contains(slot))
+				{
+					return true;
+				}
+				else if (!tradeInventoryChange)
+				{
+					tradeInventoryChange = true;
+				}			
 			}
 		}
-		setTraderSlots();
+		
+		if (tradeInventoryChange)
+		{
+			revokeTraderReady(isLeftTrader);
+		}	
+		updateTraderSlots();
 		return false;
 	}
 	
@@ -144,7 +159,7 @@ public class TradeHolder extends MenuHolder
 	
 	public void handlePickup()
 	{
-		setTraderSlots();
+		updateTraderSlots();
 	}
 
 	private void initInventory()
@@ -170,7 +185,7 @@ public class TradeHolder extends MenuHolder
 		InventoryHelper.setItem(this.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 		InventoryHelper.setItem(this.getInventory(), 6, 7, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 		
-		setTraderSlots();
+		updateTraderSlots();
 		this.setMenuExitItem();
 	}
 	
@@ -192,7 +207,7 @@ public class TradeHolder extends MenuHolder
 		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false));
 	}
 	
-	private void setTraderSlots()
+	private void updateTraderSlots()
 	{
 		Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () ->
 		{
@@ -256,18 +271,125 @@ public class TradeHolder extends MenuHolder
 			   (withoutViewing || InventoryHelper.isViewer(this.getInventory(), player));
 	}
 	
-	private boolean slotActionAllowed(boolean isLeftTrader, Inventory inventory, int slot)
+	private boolean slotActionAllowed(boolean isLeftTrader, @NotNull InventoryClickEvent event)
 	{
-		if (inventory.getType() == InventoryType.PLAYER)
+		final InventoryAction action = event.getAction();
+		final ItemStack currentItem = event.getCurrentItem();
+		final ItemStack cursorItem = event.getCursor();
+		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
+		
+		if (action == InventoryAction.COLLECT_TO_CURSOR && cursorItem != null)
+		{		
+			if (handleCollectToCursor(event.getView(), tradeSlots, cursorItem))
+			{
+				revokeTraderReady(isLeftTrader);
+			}
+			return false;
+		}
+		
+		if (event.getClickedInventory().getType() == InventoryType.PLAYER)
 		{
+			if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && currentItem != null)
+			{
+				handleMoveToOtherInventory(tradeSlots, currentItem);
+				revokeTraderReady(isLeftTrader);
+				return false;
+			}
 			return true;
 		}
-		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
+		final int slot = event.getSlot();
 		final boolean blockCase = getSlotBlocker().equals(this.getInventory().getItem(slot));
-		final boolean leftCase = isLeftTrader && !leftTrader.isReady() && tradeSlots.contains(slot);				                 
-		final boolean rightCase = !isLeftTrader && !rightTrader.isReady() && tradeSlots.contains(slot);
+		final boolean leftCase = isLeftTrader && tradeSlots.contains(slot);				                 
+		final boolean rightCase = !isLeftTrader && tradeSlots.contains(slot);
 		
-		return !blockCase && (leftCase || rightCase);
+		if (blockCase || (!leftCase && !rightCase))
+		{
+			return false;
+		}
+		revokeTraderReady(isLeftTrader);
+		return true;
+	}
+	
+	private boolean handleCollectToCursor(InventoryView view, List<Integer> tradeSlots, ItemStack collectItem)
+	{
+		final int slotCount = view.countSlots();
+		final int inventorySize = this.getInventory().getSize();
+		final int maxStackSize = collectItem.getMaxStackSize();
+		int openAmount = maxStackSize - collectItem.getAmount();
+		boolean changedTradeSlot = false;
+		
+		for (int i = 0; i < slotCount && openAmount > 0; i++)
+		{
+			boolean isTradeSlot = tradeSlots.contains(i);
+			
+			if (i < inventorySize && !isTradeSlot)
+			{
+				continue;
+			}
+			final ItemStack currentItem = view.getItem(i);
+			
+			if (collectItem.isSimilar(currentItem))
+			{
+				int currentAmount = currentItem.getAmount();
+				
+				if (openAmount < currentAmount)
+				{
+					currentItem.setAmount(currentAmount - openAmount);
+					openAmount = 0;
+				}
+				else
+				{
+					currentItem.setAmount(0);
+					openAmount -= currentAmount;
+				}
+				
+				if (isTradeSlot && !changedTradeSlot)
+				{
+					changedTradeSlot = true;
+				}
+			}
+		}
+		collectItem.setAmount(maxStackSize - openAmount);
+		return changedTradeSlot;
+	}
+	
+	private void handleMoveToOtherInventory(List<Integer> tradeSlots, ItemStack moveItem)
+	{
+		int openAmount = moveItem.getAmount();
+		
+		for (int i = 0; i < tradeSlots.size() && openAmount > 0; i++)
+		{
+			final ItemStack tradeItem = this.getInventory().getItem(tradeSlots.get(i));
+			
+			if (tradeItem == null)
+			{
+				final ItemStack moveItemCopy = moveItem.clone();
+				
+				moveItemCopy.setAmount(openAmount);
+				this.getInventory().setItem(tradeSlots.get(i), moveItemCopy);
+				openAmount = 0;
+				break;
+			}
+			final int currentAmount = tradeItem.getAmount();
+			final int maxStackSize = tradeItem.getMaxStackSize();
+			
+			if (currentAmount < maxStackSize && tradeItem.isSimilar(moveItem))
+			{
+				int possibleAmount = maxStackSize - currentAmount;
+				
+				if (openAmount < possibleAmount)
+				{
+					tradeItem.setAmount(currentAmount + openAmount);
+					openAmount = 0;
+				}
+				else
+				{
+					tradeItem.setAmount(maxStackSize);
+					openAmount -= possibleAmount;
+				}
+			}
+		}
+		moveItem.setAmount(openAmount);
 	}
 	
 	private boolean isValueSlot(int slot, boolean expectLeft)
@@ -334,13 +456,16 @@ public class TradeHolder extends MenuHolder
 		return slot == InventoryHelper.getSlotFromRowColumn(this.getInventory().getSize(), 6, expectLeft ? 3 : 7);
 	}
 	
-	private void setTraderReady(boolean isLeftTrader) 
+	private void revokeTraderReady(boolean isLeftTrader)
 	{
-		final ItemStack statusItem = InventoryHelper.getItem(this.getInventory(), 6, isLeftTrader ? 3 : 7);
-		
-		statusItem.setType(READY_MATERIAL);
-		ItemHelper.updateItemWithMeta(statusItem, READY_NAME);
-		
+		if (isLeftTrader ? leftTrader.isReady() : rightTrader.isReady())
+		{
+			changeTraderState(isLeftTrader);		
+		}
+	}
+	
+	private void changeTraderState(boolean isLeftTrader) 
+	{	
 		if (isLeftTrader)
 		{
 			leftTrader.changeReady();
@@ -348,6 +473,24 @@ public class TradeHolder extends MenuHolder
 		else
 		{
 			rightTrader.changeReady();
+		}
+		final ItemStack statusItem = InventoryHelper.getItem(this.getInventory(), 6, isLeftTrader ? 3 : 7);
+		
+		if (isLeftTrader ? leftTrader.isReady() : rightTrader.isReady())
+		{
+			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () ->
+			{
+				statusItem.setType(READY_MATERIAL);
+				ItemHelper.updateItemWithMeta(statusItem, READY_NAME);
+			}, 1);
+		}
+		else
+		{
+			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () ->
+			{
+				statusItem.setType(NOTREADY_MATERIAL);
+				ItemHelper.updateItemWithMeta(statusItem, NOTREADY_NAME);
+			}, 1);
 		}
 	}
 	
