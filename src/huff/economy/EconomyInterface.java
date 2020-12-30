@@ -15,26 +15,26 @@ import org.jetbrains.annotations.Nullable;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
 import huff.economy.storage.Storage;
-import huff.lib.manager.delayedmessage.DelayedMessagesManager;
+import huff.lib.manager.delaymessage.DelayMessageManager;
 
 public class EconomyInterface
 {
 	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull Config config, @NotNull Storage storage, @NotNull Signature signature, 
-			                @NotNull Bank bank, @NotNull DelayedMessagesManager delayedMessageManager)
+			                @NotNull Bank bank, @NotNull DelayMessageManager delayMessageManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin instance cannot be null.");
-		Validate.notNull((Object) config, "The economy-config cannot be null.");
-		Validate.notNull((Object) storage, "The economy-storage cannot be null.");
-		Validate.notNull((Object) signature, "The economy-signature cannot be null");
-		Validate.notNull((Object) bank, "The economy-bank cannot be null");
-		Validate.notNull((Object) delayedMessageManager, "The delayed-message-manager cannot be null.");
+		Validate.notNull((Object) config, "The economy config cannot be null.");
+		Validate.notNull((Object) storage, "The economy storage cannot be null.");
+		Validate.notNull((Object) signature, "The economy signature cannot be null");
+		Validate.notNull((Object) bank, "The economy bank cannot be null");
+		Validate.notNull((Object) delayMessageManager, "The delay message manager cannot be null.");
 		
 		this.plugin = plugin;
 		this.config = config;
 		this.storage = storage;
 		this.signature = signature;
 		this.bank = bank;
-		this.delayedMessageManager = delayedMessageManager;
+		this.delayMessageManager = delayMessageManager;
 	}
 	
 	private final JavaPlugin plugin;
@@ -42,7 +42,7 @@ public class EconomyInterface
 	private final Storage storage;
 	private final Signature signature;
 	private final Bank bank;
-	private final DelayedMessagesManager delayedMessageManager;
+	private final DelayMessageManager delayMessageManager;
 	
 	public @NotNull JavaPlugin getPlugin()
 	{
@@ -69,9 +69,9 @@ public class EconomyInterface
 		return bank;
 	}
 	
-	public @NotNull DelayedMessagesManager getDelayedMessageManager()
+	public @NotNull DelayMessageManager getDelayMessageManager()
 	{
-		return delayedMessageManager;
+		return delayMessageManager;
 	}
 	
 	public void trySpawnBankEntity(@NotNull Location location)

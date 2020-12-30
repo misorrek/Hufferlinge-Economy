@@ -225,7 +225,7 @@ public class TradeHolder extends MenuHolder
 	private void checkTradeSlots(@NotNull Player player, @NotNull Player otherPlayer, @NotNull Integer[] tradeSlots)
 	{
 		final ItemStack slotBlockItem = getSlotBlocker();
-		int freeSlots = InventoryHelper.getFreeSlots(otherPlayer.getInventory());
+		int freeSlots = InventoryHelper.getFreeSlotCount(otherPlayer.getInventory());
 
 		for (int i = 0; i < tradeSlots.length; i++)
 		{
@@ -283,6 +283,7 @@ public class TradeHolder extends MenuHolder
 			if (handleCollectToCursor(event.getView(), tradeSlots, cursorItem))
 			{
 				revokeTraderReady(isLeftTrader);
+				updateTraderSlots();
 			}
 			return false;
 		}
@@ -291,8 +292,9 @@ public class TradeHolder extends MenuHolder
 		{
 			if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && currentItem != null)
 			{
-				handleMoveToOtherInventory(tradeSlots, currentItem);
+				currentItem.setAmount(InventoryHelper.addToInventorySlots(this.getInventory(), tradeSlots, currentItem));
 				revokeTraderReady(isLeftTrader);
+				updateTraderSlots();
 				return false;
 			}
 			return true;
@@ -351,45 +353,6 @@ public class TradeHolder extends MenuHolder
 		}
 		collectItem.setAmount(maxStackSize - openAmount);
 		return changedTradeSlot;
-	}
-	
-	private void handleMoveToOtherInventory(List<Integer> tradeSlots, ItemStack moveItem)
-	{
-		int openAmount = moveItem.getAmount();
-		
-		for (int i = 0; i < tradeSlots.size() && openAmount > 0; i++)
-		{
-			final ItemStack tradeItem = this.getInventory().getItem(tradeSlots.get(i));
-			
-			if (tradeItem == null)
-			{
-				final ItemStack moveItemCopy = moveItem.clone();
-				
-				moveItemCopy.setAmount(openAmount);
-				this.getInventory().setItem(tradeSlots.get(i), moveItemCopy);
-				openAmount = 0;
-				break;
-			}
-			final int currentAmount = tradeItem.getAmount();
-			final int maxStackSize = tradeItem.getMaxStackSize();
-			
-			if (currentAmount < maxStackSize && tradeItem.isSimilar(moveItem))
-			{
-				int possibleAmount = maxStackSize - currentAmount;
-				
-				if (openAmount < possibleAmount)
-				{
-					tradeItem.setAmount(currentAmount + openAmount);
-					openAmount = 0;
-				}
-				else
-				{
-					tradeItem.setAmount(maxStackSize);
-					openAmount -= possibleAmount;
-				}
-			}
-		}
-		moveItem.setAmount(openAmount);
 	}
 	
 	private boolean isValueSlot(int slot, boolean expectLeft)

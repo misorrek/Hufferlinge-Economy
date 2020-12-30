@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
 import redis.clients.jedis.Jedis;
 
@@ -47,7 +47,7 @@ public class Signature
 		}
 		final String loreSignature = signatureLore.get(1).substring(2);
 		
-		if (StringHelper.isNullOrEmpty(loreSignature))
+		if (StringUtils.isNotEmpty(loreSignature))
 		{
 			return -1;
 		}
@@ -62,7 +62,7 @@ public class Signature
 		{
 			final String storedValue = jedis.get(patternKey);
 			
-			if (StringHelper.isNullOrEmpty(storedValue))
+			if (StringUtils.isNotEmpty(storedValue))
 			{
 				return -1;
 			}		

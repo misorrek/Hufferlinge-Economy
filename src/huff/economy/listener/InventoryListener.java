@@ -1,12 +1,15 @@
 package huff.economy.listener;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,7 +20,9 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
@@ -174,8 +179,43 @@ public class InventoryListener implements Listener
 	@EventHandler
 	public void onDenyHumanInventoryPickup(EntityPickupItemEvent event)
 	{
-		if (pickedUpSlot.containsKey(event.getEntity().getUniqueId()) && InventoryHelper.getFreeSlotsAfterAdding(((Player) event.getEntity()).getInventory(), event.getItem().getItemStack()) < 1)
-		{			
+		if (event.getEntityType() != EntityType.PLAYER)
+		{
+			return;
+		}
+		final Player player = (Player) event.getEntity();
+		
+		if (pickedUpSlot.containsKey(player.getUniqueId()))
+		{		
+			final InventoryView view = player.getOpenInventory();
+		    final ItemStack item = event.getItem().getItemStack();
+			final List<Integer> freeSlots = InventoryHelper.getFreeSlots(view, false, item);
+	
+			freeSlots.remove(view.convertSlot(pickedUpSlot.get(player.getUniqueId())));
+			
+			Bukkit.getConsoleSender().sendMessage("-----------------------");
+			
+			final int openAmount = InventoryHelper.addToInventorySlots(view.getBottomInventory(), freeSlots, item);
+					
+			Bukkit.getConsoleSender().sendMessage("OPEN AMOUNT : " + openAmount);
+			Bukkit.getConsoleSender().sendMessage("VIEW SLOT COUNT : " + view.countSlots());
+			Bukkit.getConsoleSender().sendMessage("BLOCKED SLOT : " + pickedUpSlot.get(player.getUniqueId()));
+			Bukkit.getConsoleSender().sendMessage("FREE SLOT COUNT : " + freeSlots.size());
+			Bukkit.getConsoleSender().sendMessage("ITEM AMOUNT : " + item.getAmount());
+			
+			
+			if (openAmount != item.getAmount())
+			{
+				event.getItem().remove();
+				
+				if (openAmount > 0)
+				{
+					item.setAmount(openAmount);
+					Bukkit.getConsoleSender().sendMessage("NEW ITEM AMOUNT" + item.getAmount());
+					player.getWorld().dropItem(event.getItem().getLocation(), item).setVelocity(new Vector(0, 0, 0));
+				}
+				player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 100, 1);
+			}
 			event.setCancelled(true);
 		}
 	}

@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
-import huff.lib.manager.delayedmessage.DelayType;
+import huff.lib.manager.delaymessage.DelayType;
 
 public class JoinListener implements Listener
 {
@@ -32,7 +32,7 @@ public class JoinListener implements Listener
 		
 		if (!playerInventory.contains(walletItem))
 		{
-			if (InventoryHelper.getFreeSlots(playerInventory) > 0)
+			if (InventoryHelper.getFreeSlotCount(playerInventory) > 0)
 			{
 				playerInventory.addItem(walletItem);
 			}
@@ -46,6 +46,6 @@ public class JoinListener implements Listener
 		{
 			economy.getStorage().addUser(player.getUniqueId(), economy.getConfig().getStartBalance());
 		}
-		economy.getDelayedMessageManager().sendDelayedMessages(player, DelayType.NEXTJOIN);
+		economy.getDelayMessageManager().sendDelayMessages(player, DelayType.NEXTJOIN);
 	}
 }

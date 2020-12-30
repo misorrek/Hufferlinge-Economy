@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -40,39 +41,44 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args)
 	{
-		if (args.length == 0 || (sender instanceof Player && !PermissionHelper.hasPlayerPermissionFeedbacked((Player) sender, PERM_ECONOMY)))
+		if (sender instanceof Player && !PermissionHelper.hasPlayerPermissionFeedbacked((Player) sender, PERM_ECONOMY))
 		{
 			return false;
 		}
-		final String firstArgument = args[0];
 		
-		if (args.length == 1)
+		if (args.length > 0)
 		{
-			if (firstArgument.equalsIgnoreCase("list"))
+			final String firstArgument = args[0];
+			
+			if (args.length == 1)
 			{
-				executeList(sender);
-				return true;
+				if (firstArgument.equalsIgnoreCase("list"))
+				{
+					executeList(sender);
+					return true;
+				}
 			}
-		}
-		else if (args.length >= 2)
-		{
-			if (firstArgument.equalsIgnoreCase("balance"))
+			else if (args.length >= 2)
 			{
-				return executeValueAction(sender, args, true);
-			}
-			else if (firstArgument.equalsIgnoreCase("wallet"))
-			{
-				return executeValueAction(sender, args, false);
-			}
-			else if (firstArgument.equalsIgnoreCase("bank"))
-			{
-				return executeBankAction(sender, args);
-			}
-		}		
-		sender.sendMessage(MessageHelper.getWrongInput(StringHelper.build("/", cmd.getName(), "\n",
-				                                       "§8☰ list\n",
-				                                       "§8☰ balance [show|set|add|remove] <value> (<player>)\n", 
-				                                       "§8☰ wallet [show|set|add|remove] <value> (<player>)")));
+				if (firstArgument.equalsIgnoreCase("balance"))
+				{
+					return executeValueAction(sender, args, true);
+				}
+				else if (firstArgument.equalsIgnoreCase("wallet"))
+				{
+					return executeValueAction(sender, args, false);
+				}
+				else if (firstArgument.equalsIgnoreCase("bank"))
+				{
+					return executeBankAction(sender, args);
+				}
+			}	
+		}	
+		sender.sendMessage(MessageHelper.getWrongInput(StringHelper.build("\n \n§8☷ §7", cmd.getName(), "\n",
+				                                       "§8☷ §7list\n",
+				                                       "§8☷ §7balance [show|set|add|remove] (<Wert>) (<Spieler>)\n", 
+				                                       "§8☷ §7wallet [show|set|add|remove] (<Wert>) (<Spieler>)\n",
+				                                       "§8☷ §7bank [show|item|add|remove]")));
 		return false;
 	}
 	
@@ -252,7 +258,7 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, String playerName, UUID playerUUID)
 	{
 		final StringBuilder messageBuilder = new StringBuilder();
-		final boolean selfPerform = StringHelper.isNullOrEmpty(playerName);
+		final boolean selfPerform = StringUtils.isNotEmpty(playerName);
 		final boolean updatedPerform = playerUUID != null;
 		
 		messageBuilder.append(MessageHelper.PREFIX_HUFF);

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -25,7 +26,7 @@ import huff.lib.helper.MessageHelper;
 import huff.lib.helper.IndependencyHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.interfaces.Action;
-import huff.lib.manager.delayedmessage.DelayType;
+import huff.lib.manager.delaymessage.DelayType;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.menuholder.PlayerChooserHolder;
@@ -128,7 +129,7 @@ public class TransactionHolder extends MenuHolder
 		final String currentItemName = currentItem.getItemMeta().getDisplayName();
 		final String amountValue = IndependencyHelper.getTagFromItemStack(currentItem, NBT_KEY);
 		
-		if (StringHelper.isNotNullOrEmpty(amountValue))
+		if (StringUtils.isNotEmpty(amountValue))
 		{					
 			handleTransactionValueChange(amountValue, (Player) human);
 		}
@@ -296,7 +297,7 @@ public class TransactionHolder extends MenuHolder
 			}
 			else
 			{
-				economy.getDelayedMessageManager().addDelayedMessage(target, DelayType.NEXTJOIN, otherMessage);
+				economy.getDelayMessageManager().addDelayMessage(target, DelayType.NEXTJOIN, otherMessage);
 			}		
 		}
 		else
