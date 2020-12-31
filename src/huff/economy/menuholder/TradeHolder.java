@@ -32,7 +32,7 @@ import huff.lib.menuholder.MenuHolder;
 public class TradeHolder extends MenuHolder
 {
 	private static final Integer[] TRADERLEFT_SLOTS = {10,11,12,19,20,21,28,29,30,37,38,39};
-	private static final Integer[] TRADERRIGHT_SLOTS = {14,15,16,23,24,25,32,33,34,41,42,43};
+	private static final Integer[]  TRADERRIGHT_SLOTS = {14,15,16,23,24,25,32,33,34,41,42,43};
 	private static final String NOTREADY_NAME = "§6Handel ausstehend...";
 	private static final Material NOTREADY_MATERIAL = Material.ORANGE_STAINED_GLASS_PANE;
 	private static final String READY_NAME = "§aHandel akzeptiert";
@@ -71,15 +71,18 @@ public class TradeHolder extends MenuHolder
 		
 		if (!event.isCancelled() && slotActionAllowed(isLeftTrader, event))
 		{
+			Bukkit.getConsoleSender().sendMessage("SLOT ACTION");
 			updateTraderSlots();
 			return false;
 		}
 		else if (isValueSlot(clickedSlot, isLeftTrader))
 		{
+			Bukkit.getConsoleSender().sendMessage("VALUE ACTION");
 			openValueChooser(human, isLeftTrader);
 		}
 		else if (isStatusSlot(clickedSlot, isLeftTrader))
 		{
+			Bukkit.getConsoleSender().sendMessage("STATUS ACTION");
 			changeTraderState(isLeftTrader);
 		}
 		
@@ -276,7 +279,7 @@ public class TradeHolder extends MenuHolder
 		final InventoryAction action = event.getAction();
 		final ItemStack currentItem = event.getCurrentItem();
 		final ItemStack cursorItem = event.getCursor();
-		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
+		final List<Integer> tradeSlots = new ArrayList<>(Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS));
 		
 		if (action == InventoryAction.COLLECT_TO_CURSOR && cursorItem != null)
 		{		
