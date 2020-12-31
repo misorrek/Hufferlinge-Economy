@@ -71,18 +71,15 @@ public class TradeHolder extends MenuHolder
 		
 		if (!event.isCancelled() && slotActionAllowed(isLeftTrader, event))
 		{
-			Bukkit.getConsoleSender().sendMessage("SLOT ACTION");
 			updateTraderSlots();
 			return false;
 		}
 		else if (isValueSlot(clickedSlot, isLeftTrader))
 		{
-			Bukkit.getConsoleSender().sendMessage("VALUE ACTION");
 			openValueChooser(human, isLeftTrader);
 		}
 		else if (isStatusSlot(clickedSlot, isLeftTrader))
 		{
-			Bukkit.getConsoleSender().sendMessage("STATUS ACTION");
 			changeTraderState(isLeftTrader);
 		}
 		
@@ -120,7 +117,7 @@ public class TradeHolder extends MenuHolder
 		
 		if (tradeInventoryChange)
 		{
-			revokeTraderReady(isLeftTrader);
+			revokeTraderReady();
 		}	
 		updateTraderSlots();
 		return false;
@@ -285,7 +282,7 @@ public class TradeHolder extends MenuHolder
 		{		
 			if (handleCollectToCursor(event.getView(), tradeSlots, cursorItem))
 			{
-				revokeTraderReady(isLeftTrader);
+				revokeTraderReady();
 				updateTraderSlots();
 			}
 			return false;
@@ -296,7 +293,7 @@ public class TradeHolder extends MenuHolder
 			if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && currentItem != null)
 			{
 				currentItem.setAmount(InventoryHelper.addToInventorySlots(this.getInventory(), tradeSlots, currentItem));
-				revokeTraderReady(isLeftTrader);
+				revokeTraderReady();
 				updateTraderSlots();
 				return false;
 			}
@@ -311,7 +308,7 @@ public class TradeHolder extends MenuHolder
 		{
 			return false;
 		}
-		revokeTraderReady(isLeftTrader);
+		revokeTraderReady();
 		return true;
 	}
 	
@@ -422,11 +419,16 @@ public class TradeHolder extends MenuHolder
 		return slot == InventoryHelper.getSlotFromRowColumn(this.getInventory().getSize(), 6, expectLeft ? 3 : 7);
 	}
 	
-	private void revokeTraderReady(boolean isLeftTrader)
+	private void revokeTraderReady()
 	{
-		if (isLeftTrader ? leftTrader.isReady() : rightTrader.isReady())
+		if (leftTrader.isReady())
 		{
-			changeTraderState(isLeftTrader);		
+			changeTraderState(true);		
+		}
+		
+		if (rightTrader.isReady())
+		{
+			changeTraderState(false);		
 		}
 	}
 	

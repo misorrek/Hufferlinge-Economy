@@ -6,6 +6,7 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +54,12 @@ public class InteractionHolder extends MenuHolder
 			}
 			else if (currentItem.getType() == economy.getConfig().getTradeMaterial())
 			{
-				new TradeHolder(economy, menuViewer, interactionTarget);
+				final Player targetPlayer = Bukkit.getPlayer(interactionTarget);
+				
+				if (targetPlayer != null && InventoryHelper.isInternalCraftView(targetPlayer.getOpenInventory()))
+				{
+					new TradeHolder(economy, menuViewer, interactionTarget);
+				}
 			}
 		}			
 		return true;

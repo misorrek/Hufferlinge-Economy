@@ -15,7 +15,6 @@ import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
 import huff.economy.storage.Storage;
 import huff.lib.helper.CommandHelper;
-import huff.lib.listener.MenuInventoryListener;
 import huff.lib.manager.RedisManager;
 import huff.lib.manager.delaymessage.DelayMessageManager;
 
@@ -57,7 +56,6 @@ public class EconomyModule
 		pluginManager.registerEvents(new JoinListener(economyInterface), plugin);
 		pluginManager.registerEvents(new EconomyListener(economyInterface), plugin);
 		pluginManager.registerEvents(new InventoryListener(economyInterface), plugin);
-		pluginManager.registerEvents(new MenuInventoryListener(plugin), plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)

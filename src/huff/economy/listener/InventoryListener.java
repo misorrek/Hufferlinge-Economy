@@ -42,139 +42,78 @@ public class InventoryListener implements Listener
 		
 		this.economy = economyInterface;
 	}
+	
 	private final EconomyInterface economy;
 	
 	// I N V E N T O R Y - D E N Y
 	
-	@EventHandler (priority = EventPriority.HIGHEST)
+	@EventHandler (priority = EventPriority.LOW)
 	public void onDenyHumanInventoryClick(InventoryClickEvent event)
 	{
 		if (event.getClickedInventory() == null)
 		{
-			if (pickedUpSlot.containsKey(event.getView().getPlayer().getUniqueId()))
-			{
-				pickedUpSlot.remove(event.getView().getPlayer().getUniqueId());
-			}
+			pickedUpSlot.remove(event.getView().getPlayer().getUniqueId());
 			return;
-		}	
+		}
+		final HumanEntity human = event.getView().getPlayer();
 		final InventoryType inventoryType = event.getClickedInventory().getType();
 		final InventoryAction inventoryAction = event.getAction();
 		final ItemStack currentItem = event.getCurrentItem();
-		final ItemStack cursorItem = event.getCursor();		
-		final HumanEntity human = event.getView().getPlayer();
+		final ItemStack cursorItem = event.getCursor();			
 		
 		if (InventoryHelper.isPickupAction(inventoryAction) && (economy.getConfig().equalsWalletItem(currentItem) || 
                                                                 economy.getConfig().equalsValueItem(currentItem)))
 		{
-			pickedUpSlot.remove(human.getUniqueId());
 			pickedUpSlot.put(human.getUniqueId(), event.getRawSlot());
 			return;
 		}
 		final boolean isWalletItemCase = (economy.getConfig().equalsWalletItem(cursorItem) && inventoryType != InventoryType.PLAYER) || 
 										 (economy.getConfig().equalsWalletItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
-					                      event.getView().countSlots() > human.getInventory().getSize());
+					                      !InventoryHelper.isInternalCraftView(event.getView()));
 		final boolean isValueItemCase = (economy.getConfig().equalsValueItem(cursorItem) && !InventoryHelper.isContainerInventory(inventoryType)) ||
 										(economy.getConfig().equalsValueItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
 										 !InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType()));
 		
-		//Bukkit.getConsoleSender().sendMessage("ViewSlots: " + event.getView().countSlots());
-		//Bukkit.getConsoleSender().sendMessage("InvSize: " + human.getInventory().getSize());
-		//Bukkit.getConsoleSender().sendMessage("CurrentItem: " + currentItem.toString());
-		//Bukkit.getConsoleSender().sendMessage("CursorItem: " + cursorItem.toString());
-		//Bukkit.getConsoleSender().sendMessage("InventoryTyp: " + inventoryType.toString());
-		//Bukkit.getConsoleSender().sendMessage("InventoryAction: " + inventoryAction.toString());
-		//Bukkit.getConsoleSender().sendMessage("ClickType: " + event.getClick().toString());		
-		
 		if (isWalletItemCase || isValueItemCase)			
 		{		
-			if (pickedUpSlot.containsKey(human.getUniqueId()))
+			if (inventoryAction != InventoryAction.MOVE_TO_OTHER_INVENTORY && pickedUpSlot.containsKey(human.getUniqueId()))
 			{
-				final int rawPickedUpSlot = pickedUpSlot.get(human.getUniqueId());
-				final ItemStack rawPickedUpSlotItem = event.getView().getItem(rawPickedUpSlot);
-				final ItemStack replaceItem = inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY ? currentItem : cursorItem;
-				
-				if (replaceItem.isSimilar(rawPickedUpSlotItem))
-				{
-					cursorItem.setAmount(replaceItem.getAmount() + rawPickedUpSlotItem.getAmount());
-					event.getView().setItem(rawPickedUpSlot, replaceItem);	
-				}
-				else
-				{
-					event.getView().setItem(rawPickedUpSlot, replaceItem);	
-				}					
-				
-				if (inventoryAction != InventoryAction.MOVE_TO_OTHER_INVENTORY)
-				{
-					event.getView().setCursor(null);
-				}		
-				pickedUpSlot.remove(human.getUniqueId());
+				moveBackToPickup(human, event.getView(), cursorItem);
+				event.getView().setCursor(null);
 			}			
 			event.setCancelled(true);
 		}
-		else if (inventoryAction == InventoryAction.SWAP_WITH_CURSOR && economy.getConfig().equalsValueItem(cursorItem))
-		{
-			final ItemStack clickedSlotItem = event.getView().getItem(event.getRawSlot());
-			
-			if (economy.getConfig().equalsValueItem(clickedSlotItem))
-			{				
-				final int cursorItemAmount = inventoryAction == InventoryAction.PLACE_ONE ? 1 : cursorItem.getAmount();
-				final int clickedSlotItemAmount = clickedSlotItem.getAmount();
-				int clickedSlotSpace = event.getClickedInventory().getMaxStackSize() < clickedSlotItem.getMaxStackSize() ? 
-						               event.getClickedInventory().getMaxStackSize() - clickedSlotItemAmount : 
-						               clickedSlotItem.getMaxStackSize() - clickedSlotItemAmount;
-				
-				//Bukkit.getConsoleSender().sendMessage("CursorAmount : " + cursorItemAmount);
-				//Bukkit.getConsoleSender().sendMessage("ClickedAmount : " + clickedSlotItemAmount);
-				//Bukkit.getConsoleSender().sendMessage("ClickedSlotSpace : " + clickedSlotSpace);
-				
-				if (cursorItemAmount < clickedSlotSpace)
-				{
-					clickedSlotSpace = cursorItemAmount;
-				}			
-				int cursorSignatureValueAmount = economy.getSignature().getSignatureValueAmount(cursorItem.getItemMeta().getLore(), clickedSlotSpace);
-				int clickedSignatureValueAmount = economy.getSignature().getSignatureValueAmount(clickedSlotItem.getItemMeta().getLore(), clickedSlotItemAmount);
-							
-				if (cursorSignatureValueAmount > clickedSlotSpace)
-				{
-					cursorSignatureValueAmount = clickedSlotSpace;
-				}
-				
-				if (clickedSignatureValueAmount > clickedSlotItemAmount)
-				{
-					clickedSignatureValueAmount = clickedSlotItemAmount;
-				}			
-				//Bukkit.getConsoleSender().sendMessage("ClickedSlotSpaceUpdated : " + clickedSlotSpace);
-				//Bukkit.getConsoleSender().sendMessage("CursorSig : " + cursorSignatureValueAmount);
-				//sBukkit.getConsoleSender().sendMessage("ClickedSig : " + clickedSignatureValueAmount);
-				
-				if (cursorSignatureValueAmount == -1)
-				{
-					cursorSignatureValueAmount = 0;
-				}
-				
-				if (clickedSignatureValueAmount == -1)
-				{
-					event.getView().setItem(event.getRawSlot(), null);
-				}
-								
-				cursorItem.setAmount(cursorItemAmount - clickedSlotSpace);
-		
-				final ItemStack valueItem = economy.getConfig().getValueItem();
-				
-				valueItem.setAmount(cursorSignatureValueAmount + clickedSignatureValueAmount);
-				
-				ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(cursorSignatureValueAmount + clickedSignatureValueAmount));
-							
-				event.getView().setItem(event.getRawSlot(), valueItem);
-				event.setCancelled(true);
-			}			
-		}
-		
-		if (pickedUpSlot.containsKey(human.getUniqueId()))
-		{
-			pickedUpSlot.remove(human.getUniqueId());
-		}
+		pickedUpSlot.remove(human.getUniqueId());
 	}
+	
+	@EventHandler (priority = EventPriority.LOW)
+	public void onDenyHumanInventoryDrag(InventoryDragEvent event)
+	{	
+		final ItemStack oldCursorItem = event.getOldCursor();		
+		final boolean isWalletItemCase = economy.getConfig().equalsWalletItem(oldCursorItem);
+		final boolean isValueItemCase = economy.getConfig().equalsValueItem(oldCursorItem) && !InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType());
+		
+		if (isWalletItemCase || isValueItemCase)
+		{
+			final int inventorySize = event.getView().getTopInventory().getSize();
+			
+			for (int slot : event.getNewItems().keySet())
+			{
+				if (slot < inventorySize)
+				{
+					final HumanEntity human = event.getWhoClicked();
+					
+					if (pickedUpSlot.containsKey(human.getUniqueId()))
+					{
+						moveBackToPickup(human, event.getView(), oldCursorItem);
+						Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () -> event.getView().setCursor(null), 1);						
+					}
+					event.setCancelled(true);	
+					return;
+				}
+			}
+		}		
+	}	
 	
 	@EventHandler
 	public void onDenyHumanInventoryPickup(EntityPickupItemEvent event)
@@ -193,17 +132,8 @@ public class InventoryListener implements Listener
 	
 			freeSlots.remove(view.convertSlot(pickedUpSlot.get(player.getUniqueId())));
 			
-			Bukkit.getConsoleSender().sendMessage("-----------------------");
-			
 			final int openAmount = InventoryHelper.addToInventorySlots(view.getBottomInventory(), freeSlots, item);
-					
-			Bukkit.getConsoleSender().sendMessage("OPEN AMOUNT : " + openAmount);
-			Bukkit.getConsoleSender().sendMessage("VIEW SLOT COUNT : " + view.countSlots());
-			Bukkit.getConsoleSender().sendMessage("BLOCKED SLOT : " + pickedUpSlot.get(player.getUniqueId()));
-			Bukkit.getConsoleSender().sendMessage("FREE SLOT COUNT : " + freeSlots.size());
-			Bukkit.getConsoleSender().sendMessage("ITEM AMOUNT : " + item.getAmount());
-			
-			
+								
 			if (openAmount != item.getAmount())
 			{
 				event.getItem().remove();
@@ -211,7 +141,6 @@ public class InventoryListener implements Listener
 				if (openAmount > 0)
 				{
 					item.setAmount(openAmount);
-					Bukkit.getConsoleSender().sendMessage("NEW ITEM AMOUNT" + item.getAmount());
 					player.getWorld().dropItem(event.getItem().getLocation(), item).setVelocity(new Vector(0, 0, 0));
 				}
 				player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 100, 1);
@@ -219,63 +148,72 @@ public class InventoryListener implements Listener
 			event.setCancelled(true);
 		}
 	}
-	
-	@EventHandler
-	public void onDenyHumanInventoryDrag(InventoryDragEvent event)
-	{	
-		if (InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType()) && 
-			InventoryHelper.isContainerInventory(event.getView().getBottomInventory().getType()))
-		{
-			return;
-		}
-		final ItemStack oldCursorItem = event.getOldCursor();	
-		
-		if (economy.getConfig().equalsWalletItem(oldCursorItem) || economy.getConfig().equalsValueItem(oldCursorItem))
-		{
-			final int inventorySize = event.getView().getTopInventory().getSize();
-			
-			for (int slot : event.getNewItems().keySet())
-			{
-				if (slot < inventorySize)
-				{		
-					event.setCancelled(true);				
-				}
-			}
-		}		
-	}	
 
 	// I N V E N T O R Y - H U M A N
 	
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onHumanInverntoryClick(InventoryClickEvent event)
 	{	
+		if (event.getClickedInventory() == null)
+		{
+			return;
+		}
+		final HumanEntity human = event.getWhoClicked();
+		final InventoryAction inventoryAction = event.getAction();
 		final ItemStack cursorItem = event.getCursor();
 		final ItemStack slotItem = event.getView().getItem(event.getRawSlot());
 		
-		if (event.getClickedInventory() != null && event.getClickedInventory().getType() == InventoryType.PLAYER &&
-			cursorItem != null && slotItem != null &&
+		if (event.getClickedInventory().getType() == InventoryType.PLAYER &&
 			economy.getConfig().equalsValueItem(cursorItem) && economy.getConfig().equalsWalletItem(slotItem))
 		{
-			final HumanEntity human = event.getWhoClicked();
+			event.setCancelled(true);
 			
 			if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
 			{
-				event.getView().setCursor(null);
 				human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst in deinem Spielmodus nicht in den ", economy.getConfig().getWalletName(), " einlagern."));
 				return;
 			}	
-		    
-			if (checkValueItem(cursorItem, human, true))
-			{
-				event.getView().setCursor(null);
-			}
-			
-			if (event.isShiftClick())
-			{
-				handleWalletInShift(human);
-			}		
-			event.setCancelled(true);			
+			handleWalletIn(human, cursorItem, event.isShiftClick());			
 		}
+		else if (inventoryAction == InventoryAction.SWAP_WITH_CURSOR && 
+				 economy.getConfig().equalsValueItem(cursorItem) && economy.getConfig().equalsValueItem(slotItem))
+		{					
+			final int cursorItemAmount = inventoryAction == InventoryAction.PLACE_ONE ? 1 : cursorItem.getAmount();
+			final int clickedSlotItemAmount = slotItem.getAmount();
+			final int maxStackSize = slotItem.getMaxStackSize() - clickedSlotItemAmount;
+			final int clickedSlotSpace = cursorItemAmount < maxStackSize ? cursorItemAmount : maxStackSize;		                		
+			int cursorSignatureValueAmount = economy.getSignature().getSignatureValueAmount(cursorItem.getItemMeta().getLore(), clickedSlotSpace);
+			int clickedSignatureValueAmount = economy.getSignature().getSignatureValueAmount(slotItem.getItemMeta().getLore(), clickedSlotItemAmount);		
+			final int valueAmount = cursorSignatureValueAmount + clickedSignatureValueAmount;
+			ItemStack valueItem = null;
+			
+			if (valueAmount > 0)
+			{
+				valueItem = economy.getConfig().getValueItem();
+				valueItem.setAmount(cursorSignatureValueAmount + clickedSignatureValueAmount);
+				ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(valueAmount));
+			}
+			cursorItem.setAmount(cursorItemAmount - clickedSlotSpace);			
+			event.getView().setItem(event.getRawSlot(), valueItem);
+			event.setCancelled(true);		
+		}
+	}
+	
+	private void moveBackToPickup(@NotNull HumanEntity human, @NotNull InventoryView view, @NotNull ItemStack itemStack)
+	{
+		final int rawPickedUpSlot = pickedUpSlot.get(human.getUniqueId());
+		final ItemStack rawPickedUpSlotItem = view.getItem(rawPickedUpSlot);
+
+		if (itemStack.isSimilar(rawPickedUpSlotItem))
+		{
+			itemStack.setAmount(itemStack.getAmount() + rawPickedUpSlotItem.getAmount());
+			view.setItem(rawPickedUpSlot, itemStack);	
+		}
+		else
+		{
+			view.setItem(rawPickedUpSlot, itemStack);	
+		}					
+		pickedUpSlot.remove(human.getUniqueId());
 	}
 	
 	private boolean checkValueItem(@NotNull ItemStack valueItem, @NotNull HumanEntity human, boolean withSoundFeedback)
@@ -287,7 +225,7 @@ public class InventoryListener implements Listener
 		int valueAmount = valueItem.getAmount();
 		final int signatureValueAmount = economy.getSignature().getSignatureValueAmount(valueItem.getItemMeta().getLore(), valueAmount);
 		
-		if (signatureValueAmount == -1)
+		if (signatureValueAmount == 0)
 		{
 			if (withSoundFeedback)
 			{
@@ -314,13 +252,21 @@ public class InventoryListener implements Listener
 		return false;
 	}
 	
-	private void handleWalletInShift(@NotNull HumanEntity human)
+	private void handleWalletIn(@NotNull HumanEntity human, @NotNull ItemStack cursorItem, boolean isShiftClick)
 	{
-		for (ItemStack currentItemStack : human.getInventory().getStorageContents())
+		if (checkValueItem(cursorItem, human, true))
 		{
-			if (checkValueItem(currentItemStack, human, false))
+			cursorItem.setAmount(0);
+		} 
+		
+		if (isShiftClick)
+		{
+			for (ItemStack currentItemStack : human.getInventory().getStorageContents())
 			{
-				human.getInventory().remove(currentItemStack);			
+				if (checkValueItem(currentItemStack, human, false))
+				{
+					human.getInventory().remove(currentItemStack);			
+				}
 			}
 		}
 	}

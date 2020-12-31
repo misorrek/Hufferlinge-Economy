@@ -41,16 +41,17 @@ public class Signature
 	
 	public int getSignatureValueAmount(@Nullable List<String> signatureLore, int wantedValueAmount)
 	{
-		if (signatureLore == null || signatureLore.isEmpty())
+		if (signatureLore == null || signatureLore.size() < 2)
 		{
-			return -1;
+			return 0;
 		}
 		final String loreSignature = signatureLore.get(1).substring(2);
 		
 		if (StringUtils.isNotEmpty(loreSignature))
 		{
-			return -1;
+			return 0;
 		}
+		
 		if (loreSignature.equals(OFFLINE_SIGNATURE))
 		{
 			return wantedValueAmount;
@@ -64,7 +65,7 @@ public class Signature
 			
 			if (StringUtils.isNotEmpty(storedValue))
 			{
-				return -1;
+				return 0;
 			}		
 			signatureValueAmount = Integer.parseInt(storedValue);
 			
