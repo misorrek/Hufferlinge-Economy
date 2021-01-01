@@ -1,8 +1,10 @@
 package huff.economy;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -10,30 +12,41 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.google.common.collect.ImmutableMap;
 
 import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
-import huff.lib.various.AlphanumericComparator;
+import huff.lib.various.HuffCommand;
 
-public class EconomyCommand implements CommandExecutor, TabCompleter
+public class EconomyCommand extends HuffCommand
 {
-	public static final String PERM_ECONOMY = PermissionHelper.PERM_ROOT_HUFF + "economy";
-	
-	public EconomyCommand(@NotNull EconomyInterface economyInterface)
+	public EconomyCommand(@NotNull EconomyInterface economy)
 	{
-		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
+		super(economy.getPlugin(), "economy");
 		
-		this.economy = economyInterface;
+		Validate.notNull((Object) economy, "The economy-interface cannot be null.");
+		
+		this.economy = economy;
+		this.setDescription("Hufferlinge Economy Verwaltung");
+		this.setUsage(StringHelper.build("\n \n§8☷ §7/economy\n",
+						                 "§8☷ §7list\n",
+						                 "§8☷ §7balance [show|set|add|remove] (<Wert>) (<Spieler>)\n", 
+						                 "§8☷ §7wallet [show|set|add|remove] (<Wert>) (<Spieler>)\n",
+						                 "§8☷ §7bank [show|item|add|remove]"));
+		this.setAliases("huffeconomy", "huffconomy", "money");
+		this.setPermission(PermissionHelper.PERM_ROOT_HUFF + "economy");
+		addTabCompletion();
+		this.registerCommand();
 	}
+
 	private final EconomyInterface economy;
 	
 	// C O M M A N D
@@ -41,11 +54,6 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args)
 	{
-		if (sender instanceof Player && !PermissionHelper.hasPlayerPermissionFeedbacked((Player) sender, PERM_ECONOMY))
-		{
-			return false;
-		}
-		
 		if (args.length > 0)
 		{
 			final String firstArgument = args[0];
@@ -74,11 +82,6 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 				}
 			}	
 		}	
-		sender.sendMessage(MessageHelper.getWrongInput(StringHelper.build("\n \n§8☷ §7", cmd.getName(), "\n",
-				                                       "§8☷ §7list\n",
-				                                       "§8☷ §7balance [show|set|add|remove] (<Wert>) (<Spieler>)\n", 
-				                                       "§8☷ §7wallet [show|set|add|remove] (<Wert>) (<Spieler>)\n",
-				                                       "§8☷ §7bank [show|item|add|remove]")));
 		return false;
 	}
 	
@@ -414,49 +417,23 @@ public class EconomyCommand implements CommandExecutor, TabCompleter
 
 	// T A B C O M P L E T E
 	
-	@Override
-	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args)
+	private void addTabCompletion()
 	{
-		final List<String> paramSuggestions = new ArrayList<>();
+		final Map<Integer, List<String>> showBeforeText = ImmutableMap.of(
+				0, Stream.of("balance", "wallet").collect(Collectors.toList()), 
+				1, Stream.of("show").collect(Collectors.toList()));
+		final Map<Integer, List<String>> valueBeforeText = ImmutableMap.of(
+				0, Stream.of("balance", "wallet").collect(Collectors.toList()), 
+				1, Stream.of("set", "add", "remove").collect(Collectors.toList()));
+		final String[] players = Bukkit.getOnlinePlayers().stream()
+				.map(Player::getName)
+				.toArray(String[]::new);
 		
-		if (!(sender instanceof Player) || !PermissionHelper.hasPlayerPermission((Player) sender, PERM_ECONOMY)) 
-		{
-			return paramSuggestions;
-		}	
-		
-		if (args.length == 1)
-		{
-			paramSuggestions.add("list");
-			paramSuggestions.add("balance");
-			paramSuggestions.add("wallet");
-			paramSuggestions.add("bank");
-		}        
-		else if (StringHelper.isIn(true, args[0], "balance", "wallet"))
-		{
-			if (args.length == 2)
-			{
-				paramSuggestions.add("show");
-				paramSuggestions.add("set");
-				paramSuggestions.add("add");
-				paramSuggestions.add("remove");
-			}
-			else if ((args.length == 3 && args[1].equalsIgnoreCase("show")) ||
-					 (args.length == 4 && StringHelper.isIn(true, args[1], "set", "add", "remove")))
-			{
-				for (Player publicPlayer : Bukkit.getOnlinePlayers())
-				{
-					paramSuggestions.add(publicPlayer.getName());
-				}
-				paramSuggestions.sort(new AlphanumericComparator());
-			}
-		}
-		else if (args[0].equalsIgnoreCase("bank") && args.length == 2)
-		{
-			paramSuggestions.add("show");
-			paramSuggestions.add("item");
-			paramSuggestions.add("add");
-			paramSuggestions.add("remove");			
-		}
-		return paramSuggestions;
+		this.addTabCompletion(0, "list", "balance", "wallet", "bank");
+		this.addTabCompletion(1, null, Stream.of("balance", "wallet").toArray(String[]::new), "show", "set", "add", "remove");
+		this.addTabCompletion(1, null, Stream.of("bank").toArray(String[]::new), "show", "item", "add", "remove");
+		this.addTabCompletion(2, null, showBeforeText, players);
+		this.addTabCompletion(2, null, valueBeforeText, "<Wert>");
+		this.addTabCompletion(3, null, valueBeforeText, players);
 	}
 }

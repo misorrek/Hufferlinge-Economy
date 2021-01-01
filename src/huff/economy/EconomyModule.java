@@ -3,7 +3,6 @@ package huff.economy;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +13,6 @@ import huff.economy.listener.JoinListener;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
 import huff.economy.storage.Storage;
-import huff.lib.helper.CommandHelper;
 import huff.lib.manager.RedisManager;
 import huff.lib.manager.delaymessage.DelayMessageManager;
 
@@ -26,7 +24,7 @@ public class EconomyModule
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
 		
 		this.plugin = plugin;	
-		this.economyInterface = new EconomyInterface(plugin,
+		this.economy = new EconomyInterface(plugin,
 				                                     new Config(plugin.getDataFolder().getAbsolutePath()), 
 				                                     new Storage(redisManager), 
 				                                     new Signature(redisManager), 
@@ -35,36 +33,29 @@ public class EconomyModule
 	}
 	
 	private final JavaPlugin plugin;	
-	private final EconomyInterface economyInterface;
+	private final EconomyInterface economy;
 	
 	public void registerCommands()
 	{
-		EconomyCommand economyCommand = new EconomyCommand(economyInterface);
-		PluginCommand pluginEconomyCommand = plugin.getCommand("huffeconomy");
-		
-		pluginEconomyCommand.setExecutor(economyCommand);
-		pluginEconomyCommand.setTabCompleter(economyCommand);
-		pluginEconomyCommand.setDescription("Hufferlinge Economy Command");
-		pluginEconomyCommand.setPermission(EconomyCommand.PERM_ECONOMY);
-		CommandHelper.addAliases(pluginEconomyCommand, "huffconomy", "economy", "money");
+		new EconomyCommand(economy);
 	} 
 	
 	public void registerListener()
 	{
 		PluginManager pluginManager = Bukkit.getPluginManager();
 		
-		pluginManager.registerEvents(new JoinListener(economyInterface), plugin);
-		pluginManager.registerEvents(new EconomyListener(economyInterface), plugin);
-		pluginManager.registerEvents(new InventoryListener(economyInterface), plugin);
+		pluginManager.registerEvents(new JoinListener(economy), plugin);
+		pluginManager.registerEvents(new EconomyListener(economy), plugin);
+		pluginManager.registerEvents(new InventoryListener(economy), plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)
 	{		
 		if (worldTime % 1000 == 0)
 		{
-			for (Location bankLocation : economyInterface.getBank().getBankLocations())
+			for (Location bankLocation : economy.getBank().getBankLocations())
 			{
-				economyInterface.trySpawnBankEntity(bankLocation);
+				economy.trySpawnBankEntity(bankLocation);
 			}
 		}
 	}
