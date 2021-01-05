@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
+import huff.lib.helper.MessageHelper;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 
@@ -59,6 +60,10 @@ public class InteractionHolder extends MenuHolder
 				if (targetPlayer != null && InventoryHelper.isInternalCraftView(targetPlayer.getOpenInventory()))
 				{
 					new TradeHolder(economy, menuViewer, interactionTarget);
+				}
+				else
+				{
+					human.sendMessage(MessageHelper.PREFIX_HUFF + "Mit diesem Spieler kann gerade nicht gehandelt werden.");
 				}
 			}
 		}			

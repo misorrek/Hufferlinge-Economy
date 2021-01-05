@@ -10,6 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -24,10 +25,13 @@ import huff.economy.storage.Storage;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
+import huff.lib.helper.UserHelper;
 import huff.lib.various.HuffCommand;
 
 public class EconomyCommand extends HuffCommand
 {
+	private static final int LISTENTRIES_PER_PAGE = 2;
+	
 	public EconomyCommand(@NotNull EconomyInterface economy)
 	{
 		super(economy.getPlugin(), "economy");
@@ -37,7 +41,7 @@ public class EconomyCommand extends HuffCommand
 		this.economy = economy;
 		this.setDescription("Hufferlinge Economy Verwaltung");
 		this.setUsage(StringHelper.build("\n \n§8☷ §7/economy\n",
-						                 "§8☷ §7list\n",
+						                 "§8☷ §7list <Seite>\n",
 						                 "§8☷ §7balance [show|set|add|remove] (<Wert>) (<Spieler>)\n", 
 						                 "§8☷ §7wallet [show|set|add|remove] (<Wert>) (<Spieler>)\n",
 						                 "§8☷ §7bank [show|item|add|remove]"));
@@ -58,17 +62,14 @@ public class EconomyCommand extends HuffCommand
 		{
 			final String firstArgument = args[0];
 			
-			if (args.length == 1)
+			if (args.length >= 2)
 			{
 				if (firstArgument.equalsIgnoreCase("list"))
 				{
-					executeList(sender);
+					executeList(sender, args);
 					return true;
 				}
-			}
-			else if (args.length >= 2)
-			{
-				if (firstArgument.equalsIgnoreCase("balance"))
+				else if (firstArgument.equalsIgnoreCase("balance"))
 				{
 					return executeValueAction(sender, args, true);
 				}
@@ -87,24 +88,44 @@ public class EconomyCommand extends HuffCommand
 	
 	// L I S T
 	
-	private void executeList(CommandSender sender)
+	private void executeList(CommandSender sender, String[] args)
 	{
-		final List<String> economyOverview = economy.getStorage().getEconomyOverview();
-		
-		if (!economyOverview.isEmpty())
+		try 
 		{
-			sender.sendMessage("§8☰ §7Übersicht über die Kontostände aller Spieler");
-			sender.sendMessage("");
+			final int page = Integer.parseInt(args[1]);
+			final int maxPage = getListPageCount();
 			
-			for (String economyEntry : economyOverview)
+			if (page < 1 || page > maxPage)
 			{
-				sender.sendMessage(economyEntry);
-			}	
+				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Ungültige Seite. Es gibt nur" + MessageHelper.getHighlighted(Integer.toString(maxPage)) + "Seiten.");
+				return;
+			}			
+			final List<String> economyOverview = economy.getStorage().getEconomyOverview((page - 1) * LISTENTRIES_PER_PAGE, page * LISTENTRIES_PER_PAGE);
+			
+			if (!economyOverview.isEmpty())
+			{
+				sender.sendMessage("§8☰ §7Übersicht über die Kontostände - Seite (" + page + "/" + maxPage + ")");
+				sender.sendMessage("");
+				
+				for (String economyEntry : economyOverview)
+				{
+					sender.sendMessage(economyEntry);
+				}	
+			}
+			else
+			{
+				sender.sendMessage("§8☰ §7Keine Spieler zur Übersicht vorhanden");
+			}
 		}
-		else
+		catch (NumberFormatException exception)
 		{
-			sender.sendMessage("§8☰ §7Keine Spieler zur Übersicht vorhanden");
+			sender.sendMessage(MessageHelper.PREFIX_HUFF + MessageHelper.getQuoted(args[1], false, true) + "ist keine gültige Seite.");
 		}
+	}
+	
+	private int getListPageCount()
+	{
+		return (int) Math.ceil((double) economy.getStorage().getUserCount() / LISTENTRIES_PER_PAGE);
 	}
 	
 	// V A L U E
@@ -135,14 +156,14 @@ public class EconomyCommand extends HuffCommand
 		if (args.length >= 3)
 		{			
 			final String targetPlayerName = args[2]; 
-			final Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+			final UUID targetPlayer = UserHelper.getUniqueId(targetPlayerName);
 			
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
 				return;
 			}
-			sender.sendMessage(processGetValue(isBalance, targetPlayer.getUniqueId(), targetPlayerName));
+			sender.sendMessage(processGetValue(isBalance, targetPlayer, targetPlayerName));
 		}
 		else if (sender instanceof Player)
 		{
@@ -159,7 +180,7 @@ public class EconomyCommand extends HuffCommand
 		final double value = isBalance ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
 		final int feedbackCode = value >= 0 ? Storage.CODE_SUCCESS : Storage.CODE_NOUSER;
 		
-		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null);
+		return processFeedbackCode(feedbackCode, value, isBalance, false, false, targetName, null);
 	}
 	
 	private void executeValueSet(CommandSender sender, String[] args, boolean isBalance)
@@ -174,14 +195,14 @@ public class EconomyCommand extends HuffCommand
 		if (args.length >= 4)
 		{			
 			final String targetPlayerName = args[3]; 
-			final Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+			final UUID targetPlayer = UserHelper.getUniqueId(targetPlayerName);
 			
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
 				return;
 			}
-			sender.sendMessage(procesSetValue(isBalance, value, targetPlayer.getUniqueId(), targetPlayerName));
+			sender.sendMessage(procesSetValue(isBalance, value, targetPlayer, targetPlayerName));
 		}
 		else if (sender instanceof Player)
 		{
@@ -197,7 +218,7 @@ public class EconomyCommand extends HuffCommand
 	{
 		final int feedbackCode = isBalance ? economy.getStorage().setBalance(targetUUID, value) : economy.getStorage().setWallet(targetUUID, value);
 		
-		return processFeedbackCode(feedbackCode, value, isBalance, false, targetName, null); 
+		return processFeedbackCode(feedbackCode, value, isBalance, false, true, targetName, targetUUID); 
 	}
 	
 	private void executeValueUpdate(CommandSender sender, String[] args, boolean isBalance, boolean isRemove) 
@@ -212,14 +233,14 @@ public class EconomyCommand extends HuffCommand
 		if (args.length >= 4)
 		{			
 			final String targetPlayerName = args[3]; 
-			final Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+			final UUID targetPlayer = UserHelper.getUniqueId(targetPlayerName);
 			
 			if (targetPlayer == null)
 			{
 				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
 				return;
 			}
-			sender.sendMessage(processUpdateValue(isBalance, isRemove, value, targetPlayer.getUniqueId(), targetPlayerName));
+			sender.sendMessage(processUpdateValue(isBalance, isRemove, value, targetPlayer, targetPlayerName));
 		}
 		else if (sender instanceof Player)
 		{
@@ -235,7 +256,7 @@ public class EconomyCommand extends HuffCommand
 	{
 		final int feedbackCode = (economy.getStorage().updateValue(targetUUID, value, isRemove, isBalance));
 		
-		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, targetName, targetUUID);
+		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, false, targetName, targetUUID);
 	}
 	
 	private double parseDoubleInput(CommandSender sender, String input)
@@ -258,10 +279,10 @@ public class EconomyCommand extends HuffCommand
 		return -1;
 	}
 	
-	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, String playerName, UUID playerUUID)
+	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, boolean override, String playerName, UUID playerUUID)
 	{
 		final StringBuilder messageBuilder = new StringBuilder();
-		final boolean selfPerform = StringUtils.isNotEmpty(playerName);
+		final boolean selfPerform = StringUtils.isEmpty(playerName);
 		final boolean updatedPerform = playerUUID != null;
 		
 		messageBuilder.append(MessageHelper.PREFIX_HUFF);
@@ -289,7 +310,7 @@ public class EconomyCommand extends HuffCommand
 			break;
 		case Storage.CODE_SUCCESS:
 			messageBuilder.append(selfPerform ? "hast " : "hat ");
-			messageBuilder.append(updatedPerform ? "nun " : "");
+			messageBuilder.append(updatedPerform || override ? "nun " : "");
 			messageBuilder.append(MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(value), false, true));
 			if (updatedPerform) messageBuilder.append(withRemove ? "weniger " : "mehr ");
 			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
@@ -383,7 +404,8 @@ public class EconomyCommand extends HuffCommand
 	private void executeBankAdd(Player player)
 	{
 		final Location playerLocation = player.getLocation();
-		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5);		
+		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5,
+				                                   playerLocation.getYaw(), 0);		
 		
 		if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 		{
@@ -425,11 +447,16 @@ public class EconomyCommand extends HuffCommand
 		final Map<Integer, List<String>> valueBeforeText = ImmutableMap.of(
 				0, Stream.of("balance", "wallet").collect(Collectors.toList()), 
 				1, Stream.of("set", "add", "remove").collect(Collectors.toList()));
-		final String[] players = Bukkit.getOnlinePlayers().stream()
-				.map(Player::getName)
+		final String[] listPages = Stream.iterate(1, x -> x + 1)
+				.limit(getListPageCount())
+				.map(x -> Integer.toString(x))
 				.toArray(String[]::new);
+		final String[] players = Stream.of(Bukkit.getOfflinePlayers())
+				.map(OfflinePlayer::getName)
+				.toArray(String[]::new); 
 		
 		this.addTabCompletion(0, "list", "balance", "wallet", "bank");
+		this.addTabCompletion(1, null, Stream.of("list").toArray(String[]::new), listPages);
 		this.addTabCompletion(1, null, Stream.of("balance", "wallet").toArray(String[]::new), "show", "set", "add", "remove");
 		this.addTabCompletion(1, null, Stream.of("bank").toArray(String[]::new), "show", "item", "add", "remove");
 		this.addTabCompletion(2, null, showBeforeText, players);

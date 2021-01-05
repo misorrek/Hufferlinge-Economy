@@ -25,28 +25,20 @@ public class EconomyModule
 		
 		this.plugin = plugin;	
 		this.economy = new EconomyInterface(plugin,
-				                                     new Config(plugin.getDataFolder().getAbsolutePath()), 
-				                                     new Storage(redisManager), 
-				                                     new Signature(redisManager), 
-				                                     new Bank(redisManager),
-				                                     delayMessageManager);
+				new Config(plugin.getDataFolder().getAbsolutePath()), 
+				new Storage(redisManager), 
+				new Signature(redisManager), 
+				new Bank(redisManager),
+				delayMessageManager);
 	}
 	
 	private final JavaPlugin plugin;	
 	private final EconomyInterface economy;
 	
-	public void registerCommands()
+	public void init()
 	{
-		new EconomyCommand(economy);
-	} 
-	
-	public void registerListener()
-	{
-		PluginManager pluginManager = Bukkit.getPluginManager();
-		
-		pluginManager.registerEvents(new JoinListener(economy), plugin);
-		pluginManager.registerEvents(new EconomyListener(economy), plugin);
-		pluginManager.registerEvents(new InventoryListener(economy), plugin);
+		registerCommands();
+		registerListener();
 	}
 	
 	public void handleBankSpawning(long worldTime)
@@ -58,5 +50,19 @@ public class EconomyModule
 				economy.trySpawnBankEntity(bankLocation);
 			}
 		}
+	}
+	
+	private void registerCommands()
+	{
+		new EconomyCommand(economy);
+	} 
+	
+	private void registerListener()
+	{
+		PluginManager pluginManager = Bukkit.getPluginManager();
+		
+		pluginManager.registerEvents(new JoinListener(economy), plugin);
+		pluginManager.registerEvents(new EconomyListener(economy), plugin);
+		pluginManager.registerEvents(new InventoryListener(economy), plugin);
 	}
 }

@@ -130,7 +130,7 @@ public class InventoryListener implements Listener
 		    final ItemStack item = event.getItem().getItemStack();
 			final List<Integer> freeSlots = InventoryHelper.getFreeSlots(view, false, item);
 	
-			freeSlots.remove(view.convertSlot(pickedUpSlot.get(player.getUniqueId())));
+			freeSlots.remove((Object) view.convertSlot(pickedUpSlot.get(player.getUniqueId())));
 			
 			final int openAmount = InventoryHelper.addToInventorySlots(view.getBottomInventory(), freeSlots, item);
 								

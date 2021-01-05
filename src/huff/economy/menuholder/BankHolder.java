@@ -14,7 +14,6 @@ import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
-import huff.lib.helper.StringHelper;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 
@@ -58,7 +57,8 @@ public class BankHolder extends MenuHolder
 				
 				MenuHolder.close(human);
 				human.getInventory().addItem(economy.getConfig().getBankSpawnItem());
-				human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt. Item zum Neuerstellen in das Inventar gelegt."));
+				human.sendMessage(MessageHelper.PREFIX_HUFF + economy.getConfig().getBankName() + " entfernt.");
+				human.sendMessage(MessageHelper.PREFIX_HUFF + "Gegenstand zum Neuerstellen in das Inventar gelegt.");
 			}
 			else
 			{

@@ -11,7 +11,6 @@ import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,6 +66,11 @@ public class Storage
 			}			
 		}
 		return users;
+	}
+	
+	public int getUserCount()
+	{
+		return getKeys().size();
 	}
 	
 	public double getBalance(@NotNull UUID uuid)
@@ -172,7 +176,7 @@ public class Storage
 		return true;
 	}
 	
-	public @NotNull List<String> getEconomyOverview()
+	public @NotNull List<String> getEconomyOverview(int startIndex, int limit)
 	{
 		final List<String> economyOverview = new ArrayList<>();	
 		final String rankKey = "rank";
@@ -185,23 +189,25 @@ public class Storage
 				final double wallet = parseDouble(jedis.hget(key, FIELD_WALLET));
 				final double sum = balance + wallet;
 				
-				redisManager.getJedis().zadd(rankKey, sum * -1, key);			
+				jedis.zadd(rankKey, sum * -1, key);			
 			}
-			int position = 1;
+			final List<String> orderdKeys = new ArrayList<>();
 			
-			for (String key : jedis.zrange(rankKey, 0, -1))
+			orderdKeys.addAll(jedis.zrange(rankKey, 0, -1));
+			
+			for (int i = startIndex; i < orderdKeys.size() && i < limit; i++)
 			{
-				final OfflinePlayer player = Bukkit.getOfflinePlayer(getUUIDFromKey(key));
+				final String key = orderdKeys.get(i);
+				final String playerName = Bukkit.getOfflinePlayer(getUUIDFromKey(key)).getName();
 				
-				if (player != null)
+				if (playerName != null)
 				{
 					final double balance = parseDouble(jedis.hget(key, FIELD_BALANCE));
 					final double wallet = parseDouble(jedis.hget(key, FIELD_WALLET));
 					final double sum = balance + wallet;
 					
 					economyOverview.add(String.format("§8☰ §a%d §8- §9%s\n" +
-	                                                  "§8☷ §7Gesamt: §9%.0f §8× §7Konto: §9%.0f §8× §7Geldbeutel: §9%.0f", position, player.getName(), sum, balance, wallet));
-					position++;
+	                                                  "§8☷ §7Gesamt: §9%.0f §8× §7Konto: §9%.0f §8× §7Geldbeutel: §9%.0f", i + 1, playerName, sum, balance, wallet));
 				}		
 			}			
 			jedis.del(rankKey);			

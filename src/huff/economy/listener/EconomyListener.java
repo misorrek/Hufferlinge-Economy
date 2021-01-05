@@ -184,13 +184,19 @@ public class EconomyListener implements Listener
 	@EventHandler
 	public void onVillagerTrade(VillagerAcquireTradeEvent event)
 	{
-		//TODO Check Villager
+		if (economy.getConfig().getBankEntityName().equals(event.getEntity().getCustomName()))
+		{
+			event.setCancelled(true);
+		}
 	}
 	
 	@EventHandler
 	public void onVillagerTrade(VillagerCareerChangeEvent event)
 	{
-		//TODO Check Villager
+		if (economy.getConfig().getBankEntityName().equals(event.getEntity().getCustomName()))
+		{
+			event.setCancelled(true);
+		}
 	}
 	
 	// E N T I T Y - I N T E R A C T
@@ -272,7 +278,9 @@ public class EconomyListener implements Listener
 				 economy.getConfig().equalsBankSpawnItem(playerMainItem))
 		{
 			final Location blockLocation = event.getClickedBlock().getLocation();
-			final Location bankLocation = new Location(blockLocation.getWorld(), blockLocation.getBlockX() + 0.5, blockLocation.getBlockY() + 1.0, blockLocation.getBlockZ() + 0.5);			
+			final float playerYaw = player.getLocation().getYaw();
+			final Location bankLocation = new Location(blockLocation.getWorld(), blockLocation.getBlockX() + 0.5, blockLocation.getBlockY() + 1.0, blockLocation.getBlockZ() + 0.5,
+					                                   playerYaw <= 0 ? playerYaw + 180 : playerYaw - 180, 0);			
 			
 			if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 			{

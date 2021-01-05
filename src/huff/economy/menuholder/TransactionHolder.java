@@ -13,6 +13,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -119,6 +120,10 @@ public class TransactionHolder extends MenuHolder
 	{
 		Validate.notNull((Object) event, "The inventory click event cannot be null.");
 		
+		if (event.getClickedInventory().getType() == InventoryType.PLAYER)
+		{
+			return false;
+		}
 		final HumanEntity human = event.getWhoClicked();
 		final ItemStack currentItem = event.getCurrentItem();
 		
@@ -319,6 +324,14 @@ public class TransactionHolder extends MenuHolder
 	private void handleTransactionWalletOut(@NotNull HumanEntity human)
 	{
 		final ItemStack valueItem = economy.getConfig().getValueItem();
+		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(human.getInventory(), valueItem);
+		
+		if (transactionValue > maxInventoryValue)
+		{
+			((Player) human).playSound(human.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
+			human.sendMessage(MessageHelper.PREFIX_HUFF + "Unzureichender Platz.");	
+			return;
+		}
 		
 		if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == Storage.CODE_SUCCESS)
 		{
