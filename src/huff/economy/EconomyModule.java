@@ -47,9 +47,7 @@ public class EconomyModule
 	public void handleBankSpawning(long worldTime)
 	{		
 		if ((lastWorldTime + BANKCHECK_PERIOD) <= worldTime || lastWorldTime > worldTime)
-		{
-			Bukkit.getConsoleSender().sendMessage("BANKCHECK : " + worldTime);
-			
+		{			
 			for (Location bankLocation : economy.getBank().getBankLocations())
 			{
 				economy.trySpawnBankEntity(bankLocation);
