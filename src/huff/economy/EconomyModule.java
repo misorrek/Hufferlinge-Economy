@@ -18,6 +18,8 @@ import huff.lib.manager.delaymessage.DelayMessageManager;
 
 public class EconomyModule
 {
+	private static final int BANKCHECK_PERIOD = 500;
+	
 	public EconomyModule(@NotNull JavaPlugin plugin, @NotNull RedisManager redisManager, @NotNull DelayMessageManager delayMessageManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin-instance cannot be null.");
@@ -34,6 +36,7 @@ public class EconomyModule
 	
 	private final JavaPlugin plugin;	
 	private final EconomyInterface economy;
+	private long lastWorldTime = 0;
 	
 	public void init()
 	{
@@ -43,12 +46,15 @@ public class EconomyModule
 	
 	public void handleBankSpawning(long worldTime)
 	{		
-		if (worldTime % 1000 == 0)
+		if ((lastWorldTime + BANKCHECK_PERIOD) <= worldTime || lastWorldTime > worldTime)
 		{
+			Bukkit.getConsoleSender().sendMessage("BANKCHECK : " + worldTime);
+			
 			for (Location bankLocation : economy.getBank().getBankLocations())
 			{
 				economy.trySpawnBankEntity(bankLocation);
 			}
+			lastWorldTime = worldTime;
 		}
 	}
 	
