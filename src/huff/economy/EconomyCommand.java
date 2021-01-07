@@ -39,16 +39,16 @@ public class EconomyCommand extends HuffCommand
 		Validate.notNull((Object) economy, "The economy-interface cannot be null.");
 		
 		this.economy = economy;
-		this.setDescription("Hufferlinge Economy Verwaltung");
-		this.setUsage(StringHelper.build("\n \n§8☷ §7/economy\n",
+		super.setDescription("Hufferlinge Economy Verwaltung");
+		super.setUsage(StringHelper.build("\n \n§8☷ §7/economy\n",
 						                 "§8☷ §7list <Seite>\n",
 						                 "§8☷ §7balance [show|set|add|remove] (<Wert>) (<Spieler>)\n", 
 						                 "§8☷ §7wallet [show|set|add|remove] (<Wert>) (<Spieler>)\n",
 						                 "§8☷ §7bank [show|item|add|remove]"));
-		this.setAliases("huffeconomy", "huffconomy", "money");
-		this.setPermission(PermissionHelper.PERM_ROOT_HUFF + "economy");
+		super.setAliases("huffeconomy", "huffconomy", "money");
+		super.setPermission(PermissionHelper.PERM_ROOT_HUFF + "economy");
 		addTabCompletion();
-		this.registerCommand();
+		super.registerCommand();
 	}
 
 	private final EconomyInterface economy;
@@ -455,12 +455,12 @@ public class EconomyCommand extends HuffCommand
 				.map(OfflinePlayer::getName)
 				.toArray(String[]::new); 
 		
-		this.addTabCompletion(0, "list", "balance", "wallet", "bank");
-		this.addTabCompletion(1, null, Stream.of("list").toArray(String[]::new), listPages);
-		this.addTabCompletion(1, null, Stream.of("balance", "wallet").toArray(String[]::new), "show", "set", "add", "remove");
-		this.addTabCompletion(1, null, Stream.of("bank").toArray(String[]::new), "show", "item", "add", "remove");
-		this.addTabCompletion(2, null, showBeforeText, players);
-		this.addTabCompletion(2, null, valueBeforeText, "<Wert>");
-		this.addTabCompletion(3, null, valueBeforeText, players);
+		super.addTabCompletion(0, "list", "balance", "wallet", "bank");
+		super.addTabCompletion(1, null, Stream.of("list").toArray(String[]::new), listPages);
+		super.addTabCompletion(1, null, Stream.of("balance", "wallet").toArray(String[]::new), "show", "set", "add", "remove");
+		super.addTabCompletion(1, null, Stream.of("bank").toArray(String[]::new), "show", "item", "add", "remove");
+		super.addTabCompletion(2, null, showBeforeText, players);
+		super.addTabCompletion(2, null, valueBeforeText, "<Wert>");
+		super.addTabCompletion(3, null, valueBeforeText, players);
 	}
 }

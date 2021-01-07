@@ -40,12 +40,12 @@ public enum TransactionKind
 		
 	public @NotNull String getLabel()
 	{
-		return this.label;
+		return label;
 	}
 	
 	public @NotNull String getLowerLabel()
 	{
-		return this.label.toLowerCase();
+		return label.toLowerCase();
 	}
 	
 	public boolean isBankTransaction()

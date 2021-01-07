@@ -38,15 +38,15 @@ public class TradeHolder extends MenuHolder
 	private static final String READY_NAME = "§aHandel akzeptiert";
 	private static final Material READY_MATERIAL = Material.LIME_STAINED_GLASS_PANE;
 	
-	public TradeHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID leftTrader, @NotNull UUID rightTrader)
+	public TradeHolder(@NotNull EconomyInterface economy, @NotNull UUID leftTrader, @NotNull UUID rightTrader)
 	{
-		super("economy:trade", InventoryHelper.INV_SIZE_6, economyInterface.getConfig().getTradeInventoryName(), MenuExitType.CLOSE);
+		super("economy:trade", InventoryHelper.INV_SIZE_6, economy.getConfig().getTradeInventoryName(), MenuExitType.CLOSE);
 		
-		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
+		Validate.notNull((Object) economy, "The economy interface cannot be null.");
 		Validate.notNull((Object) leftTrader, "The left trader uuid cannot be null.");
 		Validate.notNull((Object) rightTrader, "The right trader uuid cannot be null.");	
 		
-		this.economy = economyInterface;
+		this.economy = economy;
 		this.leftTrader = new Trader(leftTrader);
 		this.rightTrader = new Trader(rightTrader);
 		
@@ -168,25 +168,25 @@ public class TradeHolder extends MenuHolder
 		final OfflinePlayer leftPlayer = Bukkit.getOfflinePlayer(leftTrader.getUUID());
 		final OfflinePlayer rightPlayer = Bukkit.getOfflinePlayer(rightTrader.getUUID());
 		
-		InventoryHelper.setBorder(this.getInventory(), borderItem);
-		InventoryHelper.setItem(this.getInventory(), 2, 5, borderItem);
-		InventoryHelper.setItem(this.getInventory(), 3, 5, borderItem);
-		InventoryHelper.setItem(this.getInventory(), 4, 5, borderItem);
-		InventoryHelper.setItem(this.getInventory(), 5, 5, borderItem);
+		InventoryHelper.setBorder(super.getInventory(), borderItem);
+		InventoryHelper.setItem(super.getInventory(), 2, 5, borderItem);
+		InventoryHelper.setItem(super.getInventory(), 3, 5, borderItem);
+		InventoryHelper.setItem(super.getInventory(), 4, 5, borderItem);
+		InventoryHelper.setItem(super.getInventory(), 5, 5, borderItem);
 		
-		InventoryHelper.setItem(this.getInventory(), 1, 1, ItemHelper.getSkullWithMeta(leftPlayer, MessageHelper.getHighlighted(leftPlayer.getName(), false , false)));	
+		InventoryHelper.setItem(super.getInventory(), 1, 1, ItemHelper.getSkullWithMeta(leftPlayer, MessageHelper.getHighlighted(leftPlayer.getName(), false , false)));	
 		
-	    InventoryHelper.setItem(this.getInventory(), 1, 3, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+	    InventoryHelper.setItem(super.getInventory(), 1, 3, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
 				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false))); 
-	    InventoryHelper.setItem(this.getInventory(), 1, 7, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+	    InventoryHelper.setItem(super.getInventory(), 1, 7, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
                                                                                       MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false)));	
-	    InventoryHelper.setItem(this.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(rightPlayer, MessageHelper.getHighlighted(rightPlayer.getName(), false , false)));
+	    InventoryHelper.setItem(super.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(rightPlayer, MessageHelper.getHighlighted(rightPlayer.getName(), false , false)));
 	    
-		InventoryHelper.setItem(this.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
-		InventoryHelper.setItem(this.getInventory(), 6, 7, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
+		InventoryHelper.setItem(super.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
+		InventoryHelper.setItem(super.getInventory(), 6, 7, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
 		
 		updateTraderSlots();
-		this.setMenuExitItem();
+		super.setMenuExitItem();
 	}
 	
 	private void openInventory()
@@ -203,8 +203,8 @@ public class TradeHolder extends MenuHolder
 	
 	private void updateValues()
 	{
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false));
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false));
 	}
 	
 	private void updateTraderSlots()
@@ -230,13 +230,13 @@ public class TradeHolder extends MenuHolder
 		for (int i = 0; i < tradeSlots.length; i++)
 		{
 			final int currentSlot = tradeSlots[i];
-			final ItemStack currentItem = this.getInventory().getItem(currentSlot);
+			final ItemStack currentItem = super.getInventory().getItem(currentSlot);
 
 			if (freeSlots > 0)
 			{
 				if (slotBlockItem.equals(currentItem))
 				{
-					this.getInventory().setItem(currentSlot, null);
+					super.getInventory().setItem(currentSlot, null);
 				}
 				freeSlots--;
 			}
@@ -249,7 +249,7 @@ public class TradeHolder extends MenuHolder
 				
 				if (!slotBlockItem.equals(currentItem))
 				{
-					this.getInventory().setItem(currentSlot, slotBlockItem);
+					super.getInventory().setItem(currentSlot, slotBlockItem);
 				}
 			}
 		}
@@ -268,7 +268,7 @@ public class TradeHolder extends MenuHolder
 	private boolean checkPlayerState(@Nullable Player player, boolean withoutViewing)
 	{
 		return player != null && player.isOnline() && 
-			   (withoutViewing || InventoryHelper.isViewer(this.getInventory(), player));
+			   (withoutViewing || InventoryHelper.isViewer(super.getInventory(), player));
 	}
 	
 	private boolean slotActionAllowed(boolean isLeftTrader, @NotNull InventoryClickEvent event)
@@ -292,7 +292,7 @@ public class TradeHolder extends MenuHolder
 		{
 			if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && currentItem != null)
 			{
-				currentItem.setAmount(InventoryHelper.addToInventorySlots(this.getInventory(), tradeSlots, currentItem));
+				currentItem.setAmount(InventoryHelper.addToInventorySlots(super.getInventory(), tradeSlots, currentItem));
 				revokeTraderReady();
 				updateTraderSlots();
 				return false;
@@ -300,7 +300,7 @@ public class TradeHolder extends MenuHolder
 			return true;
 		}
 		final int slot = event.getSlot();
-		final boolean blockCase = getSlotBlocker().equals(this.getInventory().getItem(slot));
+		final boolean blockCase = getSlotBlocker().equals(super.getInventory().getItem(slot));
 		final boolean leftCase = isLeftTrader && tradeSlots.contains(slot);				                 
 		final boolean rightCase = !isLeftTrader && tradeSlots.contains(slot);
 		
@@ -315,7 +315,7 @@ public class TradeHolder extends MenuHolder
 	private boolean handleCollectToCursor(InventoryView view, List<Integer> tradeSlots, ItemStack collectItem)
 	{
 		final int slotCount = view.countSlots();
-		final int inventorySize = this.getInventory().getSize();
+		final int inventorySize = super.getInventory().getSize();
 		final int maxStackSize = collectItem.getMaxStackSize();
 		int openAmount = maxStackSize - collectItem.getAmount();
 		boolean changedTradeSlot = false;
@@ -357,7 +357,7 @@ public class TradeHolder extends MenuHolder
 	
 	private boolean isValueSlot(int slot, boolean expectLeft)
 	{
-		return slot == InventoryHelper.getSlotFromRowColumn(this.getInventory().getSize(), 1, expectLeft ? 3 : 7);
+		return slot == InventoryHelper.getSlotFromRowColumn(super.getInventory().getSize(), 1, expectLeft ? 3 : 7);
 	}
 	
 	private void openValueChooser(@NotNull HumanEntity human, boolean isLeftTrader) 
@@ -416,7 +416,7 @@ public class TradeHolder extends MenuHolder
 	
 	private boolean isStatusSlot(int slot, boolean expectLeft)
 	{
-		return slot == InventoryHelper.getSlotFromRowColumn(this.getInventory().getSize(), 6, expectLeft ? 3 : 7);
+		return slot == InventoryHelper.getSlotFromRowColumn(super.getInventory().getSize(), 6, expectLeft ? 3 : 7);
 	}
 	
 	private void revokeTraderReady()
@@ -442,7 +442,7 @@ public class TradeHolder extends MenuHolder
 		{
 			rightTrader.changeReady();
 		}
-		final ItemStack statusItem = InventoryHelper.getItem(this.getInventory(), 6, isLeftTrader ? 3 : 7);
+		final ItemStack statusItem = InventoryHelper.getItem(super.getInventory(), 6, isLeftTrader ? 3 : 7);
 		
 		if (isLeftTrader ? leftTrader.isReady() : rightTrader.isReady())
 		{
@@ -495,14 +495,14 @@ public class TradeHolder extends MenuHolder
 	{
 		final List<ItemStack> tradeItems = new ArrayList<>();
 		final List<Integer> tradeSlots = Arrays.asList(isLeftTrader ? TRADERLEFT_SLOTS : TRADERRIGHT_SLOTS);
-		final int inventorySize = this.getInventory().getSize();
+		final int inventorySize = super.getInventory().getSize();
 		final ItemStack slotBlockItem = getSlotBlocker();	
 		
 		for (int i = 0; i < inventorySize; i++)
 		{
 			if (tradeSlots.contains(i))
 			{
-				final ItemStack currentItem = this.getInventory().getItem(i);
+				final ItemStack currentItem = super.getInventory().getItem(i);
 				
 				if (currentItem == null || currentItem.equals(slotBlockItem))
 				{

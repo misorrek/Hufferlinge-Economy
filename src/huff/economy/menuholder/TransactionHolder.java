@@ -175,40 +175,40 @@ public class TransactionHolder extends MenuHolder
 	
 	private void initInventory(@NotNull UUID uuid)
 	{	
-		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getBorderItem(), true);
+		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getBorderItem(), true);
 		
-		InventoryHelper.setItem(this.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));		
-		InventoryHelper.setItem(this.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
-		InventoryHelper.setItem(this.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
-		InventoryHelper.setItem(this.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(),
+		InventoryHelper.setItem(super.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));		
+		InventoryHelper.setItem(super.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
+		InventoryHelper.setItem(super.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
+		InventoryHelper.setItem(super.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(),
 				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(0), false, false),
 				                                                                      getMaxValueLore(getMaxTransactionValue(uuid), false)));	
-		InventoryHelper.setItem(this.getInventory(), 2, 6, getAmountItem(AMOUNT_3, true));
-		InventoryHelper.setItem(this.getInventory(), 2, 7, getAmountItem(AMOUNT_4, true));
-		InventoryHelper.setItem(this.getInventory(), 2, 8, getAmountItem(AMOUNT_5, true));
+		InventoryHelper.setItem(super.getInventory(), 2, 6, getAmountItem(AMOUNT_3, true));
+		InventoryHelper.setItem(super.getInventory(), 2, 7, getAmountItem(AMOUNT_4, true));
+		InventoryHelper.setItem(super.getInventory(), 2, 8, getAmountItem(AMOUNT_5, true));
 		
-		InventoryHelper.setItem(this.getInventory(), 3, 3, getAmountItem(AMOUNT_2, false));
-		InventoryHelper.setItem(this.getInventory(), 3, 4, getAmountItem(AMOUNT_1, false));
+		InventoryHelper.setItem(super.getInventory(), 3, 3, getAmountItem(AMOUNT_2, false));
+		InventoryHelper.setItem(super.getInventory(), 3, 4, getAmountItem(AMOUNT_1, false));
 		
 		if (target != null)
 		{		
 			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
 			
-			InventoryHelper.setItem(this.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
+			InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
 		}		
-		InventoryHelper.setItem(this.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
-		InventoryHelper.setItem(this.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
+		InventoryHelper.setItem(super.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
+		InventoryHelper.setItem(super.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
 		
-		InventoryHelper.setItem(this.getInventory(), 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
+		InventoryHelper.setItem(super.getInventory(), 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
 		
-		this.setMenuExitItem();
+		super.setMenuExitItem();
 	}
 	
 	private void updateTransactionValue(@NotNull Config economyConfig, double updatedTransactionValue, double maxTransactionValue, boolean isInventoryMax)
 	{	
 		transactionValue = updatedTransactionValue;
 		
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(this.getInventory(), 2, 5), 
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 2, 5), 
 				                      MessageHelper.getHighlighted(economyConfig.getValueFormatted(transactionValue), false, false), 
 				                      getMaxValueLore(maxTransactionValue, isInventoryMax));
 		

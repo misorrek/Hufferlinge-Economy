@@ -74,16 +74,16 @@ public class InteractionHolder extends MenuHolder
 	{
 		final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(interactionTarget);
 		
-		InventoryHelper.setBorder(this.getInventory(), InventoryHelper.getBorderItem());
-		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getFillItem(), false);
+		InventoryHelper.setBorder(super.getInventory(), InventoryHelper.getBorderItem());
+		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getFillItem(), false);
 		
-		InventoryHelper.setItem(this.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
 				                                                                      economy.getConfig().getTransactionInventoryName(TransactionKind.WALLET_OTHER))); 
 		
-		InventoryHelper.setItem(this.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
+		InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
 	
-		InventoryHelper.setItem(this.getInventory(), 2, 8, ItemHelper.getItemWithMeta(economy.getConfig().getTradeMaterial(),
+		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(economy.getConfig().getTradeMaterial(),
 				                                                                      economy.getConfig().getTradeInventoryName()));
-		this.setMenuExitItem();
+		super.setMenuExitItem();
 	}
 }

@@ -51,14 +51,14 @@ public class WalletHolder extends MenuHolder
 	
 	private void initInventory()
 	{	
-		InventoryHelper.setBorder(this.getInventory(), InventoryHelper.getBorderItem());
-		InventoryHelper.setFill(this.getInventory(), InventoryHelper.getFillItem(), false);
+		InventoryHelper.setBorder(super.getInventory(), InventoryHelper.getBorderItem());
+		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getFillItem(), false);
 		
-		InventoryHelper.setItem(this.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
+		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
 				                                                                  MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getWallet(menuViewer)), 
 						                                                          false , false)));
-		InventoryHelper.setItem(this.getInventory(), 2, 8, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
+		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
 																				  economy.getConfig().getTransactionInventoryName(TransactionKind.WALLET_OUT)));
-		this.setMenuExitItem();
+		super.setMenuExitItem();
 	}
 }

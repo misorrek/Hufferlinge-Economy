@@ -65,6 +65,7 @@ public class EconomyModule
 	{
 		PluginManager pluginManager = Bukkit.getPluginManager();
 		
+		
 		pluginManager.registerEvents(new JoinListener(economy), plugin);
 		pluginManager.registerEvents(new EconomyListener(economy), plugin);
 		pluginManager.registerEvents(new InventoryListener(economy), plugin);
