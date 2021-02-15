@@ -10,7 +10,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.economy.EconomyMessage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
@@ -21,7 +23,7 @@ public class BankHolder extends MenuHolder
 {
 	public BankHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer, @NotNull Location bankLocation)
 	{
-		super("economy:bank", InventoryHelper.INV_SIZE_4, economyInterface.getConfig().getBankInventoryName(), MenuExitType.CLOSE);
+		super("economy:bank", InventoryHelper.INV_SIZE_4, EconomyConfig.BANK_INVNAME.getValue(), MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.notNull((Object) menuViewer, "The menu-viewer cannot be null.");
@@ -50,15 +52,15 @@ public class BankHolder extends MenuHolder
 		{
 			final String currentItemName = currentItem.getItemMeta().getDisplayName();
 			
-			if (economy.getConfig().getBankRemoveName().equals(currentItemName))
+			if (EconomyConfig.BANK_REMOVENAME.getValue().equals(currentItemName))
 			{
 				economy.getBank().removeBank(bankLocation);			
 				economy.tryRemoveBankEntity(bankLocation);
 				
 				MenuHolder.close(human);
-				human.getInventory().addItem(economy.getConfig().getBankSpawnItem());
-				human.sendMessage(MessageHelper.PREFIX_HUFF + economy.getConfig().getBankName() + " entfernt.");
-				human.sendMessage(MessageHelper.PREFIX_HUFF + "Gegenstand zum Neuerstellen in das Inventar gelegt.");
+				human.getInventory().addItem(EconomyConfig.getBankItem());
+				human.sendMessage(EconomyMessage.BANK_REMOVE.getMessage());
+				human.sendMessage(EconomyMessage.BANK_ITEM.getMessage());
 			}
 			else
 			{
@@ -72,22 +74,22 @@ public class BankHolder extends MenuHolder
 	{	
 		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getBorderItem(), true);		
 		
-		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), "§7" + economy.getConfig().getBankName() + " : " +
-																                MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getBalance(menuViewer)), 
+		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(), "§7" + EconomyConfig.BANK_NAME.getValue() + " : " +
+																                MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(economy.getStorage().getBalance(menuViewer)), 
 																                false , false)));
 		InventoryHelper.setItem(super.getInventory(), 2, 3, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-																				economy.getConfig().getTransactionInventoryName(TransactionKind.BANK_IN)));
+																				EconomyConfig.getTransactionInventoryName(TransactionKind.BANK_IN)));
 		InventoryHelper.setItem(super.getInventory(), 2, 5, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-																				economy.getConfig().getTransactionInventoryName(TransactionKind.BANK_OTHER)));
+																				EconomyConfig.getTransactionInventoryName(TransactionKind.BANK_OTHER)));
 		InventoryHelper.setItem(super.getInventory(), 2, 7, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-																				economy.getConfig().getTransactionInventoryName(TransactionKind.BANK_OUT)));			
-		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), "§7" + economy.getConfig().getWalletName() + " : " + 
-																                MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getWallet(menuViewer)), 
+																				EconomyConfig.getTransactionInventoryName(TransactionKind.BANK_OUT)));			
+		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(), "§7" + EconomyConfig.WALLET_NAME.getValue() + " : " + 
+																                MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(economy.getStorage().getWallet(menuViewer)), 
 																                false , false)));
 		
 		if (economy.getBank().isOwner(menuViewer, bankLocation))
 		{
-			InventoryHelper.setItem(super.getInventory(), 4, 9, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, economy.getConfig().getBankRemoveName()));
+			InventoryHelper.setItem(super.getInventory(), 4, 9, ItemHelper.getItemWithMeta(Material.RED_STAINED_GLASS_PANE, EconomyConfig.BANK_REMOVENAME.getValue()));
 		}
 		super.setMenuExitItem();
 	}

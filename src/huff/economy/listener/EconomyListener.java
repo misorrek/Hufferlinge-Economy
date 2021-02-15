@@ -36,7 +36,9 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.economy.EconomyMessage;
 import huff.economy.menuholder.BankHolder;
 import huff.economy.menuholder.InteractionHolder;
 import huff.economy.menuholder.TradeHolder;
@@ -45,8 +47,8 @@ import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
-import huff.lib.helper.StringHelper;
 import huff.lib.menuholder.MenuHolder;
+import huff.lib.various.structures.StringPair;
 
 public class EconomyListener implements Listener
 {
@@ -66,8 +68,7 @@ public class EconomyListener implements Listener
 	{
 		final ItemStack placedItem = event.getItemInHand();
 		
-		if (economy.getConfig().equalsWalletItem(placedItem) || 
-			economy.getConfig().equalsValueItem(placedItem))
+		if (EconomyConfig.equalsWalletItem(placedItem) || EconomyConfig.equalsValueItem(placedItem))
 		{
 			event.setCancelled(true);
 			return;
@@ -83,13 +84,13 @@ public class EconomyListener implements Listener
 	
 	private boolean handleBankBlockInteract(@NotNull Player player, @NotNull Location location, @Nullable Block block)
 	{
-		if (block == null || block.getType() == economy.getConfig().getBankMaterial())
+		if (block == null || block.getType() == EconomyConfig.BANK_MATERIAL.getValue())
 		{			
 			for (Location bankLocation : economy.getBank().getBankLocations())
 			{
 				if (bankLocation.distance(location) <= 1)
 				{
-					player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Das erlaubt der ", economy.getConfig().getBankName(), " nicht."));
+					player.sendMessage(EconomyMessage.BANK_NOTALLOWED.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 					return true;
 				}
 			}
@@ -107,7 +108,7 @@ public class EconomyListener implements Listener
 		
 		for (ItemStack playerDrop : playerDrops)
 		{
-			if (economy.getConfig().equalsWalletItem(playerDrop))
+			if (EconomyConfig.equalsWalletItem(playerDrop))
 			{
 				walletItem = playerDrop;
 				lastWalletSlot.put(event.getEntity().getUniqueId(), event.getEntity().getInventory().first(playerDrop));
@@ -122,7 +123,7 @@ public class EconomyListener implements Listener
 			{
 				while (dropValueAmount > 0)
 				{
-					final ItemStack dropValueItem = economy.getConfig().getValueItem();
+					final ItemStack dropValueItem = EconomyConfig.getValueItem();
 					final int maxValueItemStackSize = dropValueItem.getMaxStackSize();
 					
 					if (dropValueAmount >= maxValueItemStackSize)
@@ -148,7 +149,7 @@ public class EconomyListener implements Listener
 	public void onPlayerRespawn(PlayerRespawnEvent event)
 	{
 		final Inventory playerInventory = event.getPlayer().getInventory();
-		final ItemStack walletItem = economy.getConfig().getWalletItem();
+		final ItemStack walletItem = EconomyConfig.getWalletItem();
 		
 		if (!playerInventory.contains(walletItem))
 		{
@@ -161,7 +162,7 @@ public class EconomyListener implements Listener
 			}
 			else
 			{
-				playerInventory.setItem(economy.getConfig().getWalletDefaultSlot(), walletItem);
+				playerInventory.setItem(EconomyConfig.WALLET_DEFAULTSLOT.getValue(), walletItem);
 			}						
 		}		
 	}
@@ -170,7 +171,7 @@ public class EconomyListener implements Listener
 	public void onPlayerMove(PlayerMoveEvent event)
 	{
 		final Player player = event.getPlayer();
-		final String bankEntityName = economy.getConfig().getBankEntityName();
+		final String bankEntityName = EconomyConfig.BANK_ENTITYNAME.getValue();
 		
 		for (Entity curEntity : player.getLocation().getWorld().getNearbyEntities(player.getLocation(), 5, 5, 5))
 		{
@@ -184,7 +185,7 @@ public class EconomyListener implements Listener
 	@EventHandler
 	public void onVillagerTrade(VillagerAcquireTradeEvent event)
 	{
-		if (economy.getConfig().getBankEntityName().equals(event.getEntity().getCustomName()))
+		if (EconomyConfig.BANK_ENTITYNAME.getValue().equals(event.getEntity().getCustomName()))
 		{
 			event.setCancelled(true);
 		}
@@ -193,7 +194,7 @@ public class EconomyListener implements Listener
 	@EventHandler
 	public void onVillagerTrade(VillagerCareerChangeEvent event)
 	{
-		if (economy.getConfig().getBankEntityName().equals(event.getEntity().getCustomName()))
+		if (EconomyConfig.BANK_ENTITYNAME.getValue().equals(event.getEntity().getCustomName()))
 		{
 			event.setCancelled(true);
 		}
@@ -218,8 +219,8 @@ public class EconomyListener implements Listener
 	
 	private boolean handleEntityInteract(@NotNull Player player, @NotNull Entity entity)
 	{
-		if (economy.getConfig().equalsWalletItem(player.getInventory().getItemInMainHand()) ||
-		    economy.getConfig().equalsWalletItem(player.getInventory().getItemInOffHand()))
+		if (EconomyConfig.equalsWalletItem(player.getInventory().getItemInMainHand()) ||
+		    EconomyConfig.equalsWalletItem(player.getInventory().getItemInOffHand()))
 		{
 			if (entity instanceof Player)
 			{
@@ -229,7 +230,7 @@ public class EconomyListener implements Listener
 		}
 		
 		if (entity instanceof Villager &&
-			economy.getConfig().getBankEntityName().equals(entity.getCustomName()))
+				EconomyConfig.BANK_ENTITYNAME.getValue().equals(entity.getCustomName()))
 		{
 			final UUID playerUUID = player.getUniqueId();
 			
@@ -244,7 +245,7 @@ public class EconomyListener implements Listener
 	@EventHandler (priority = EventPriority.HIGH)
 	public void onDrop(PlayerDropItemEvent event)
 	{
-		if (economy.getConfig().equalsWalletItem(event.getItemDrop().getItemStack()))
+		if (EconomyConfig.equalsWalletItem(event.getItemDrop().getItemStack()))
 		{
 			event.setCancelled(true);
 		}
@@ -268,14 +269,14 @@ public class EconomyListener implements Listener
 		final ItemStack playerMainItem = player.getInventory().getItemInMainHand();
 		
 		if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) &&
-			economy.getConfig().equalsWalletItem(playerMainItem) && !(player.getOpenInventory().getTopInventory().getHolder() instanceof MenuHolder))
+			EconomyConfig.equalsWalletItem(playerMainItem) && !(player.getOpenInventory().getTopInventory().getHolder() instanceof MenuHolder))
 		{
 			MenuHolder.open(player, new WalletHolder(economy, player.getUniqueId()));
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}
 		else if (action == Action.RIGHT_CLICK_BLOCK && 
-				 economy.getConfig().equalsBankSpawnItem(playerMainItem))
+				 EconomyConfig.equalsBankSpawnItem(playerMainItem))
 		{
 			final Location blockLocation = event.getClickedBlock().getLocation();
 			final float playerYaw = player.getLocation().getYaw();
@@ -286,13 +287,13 @@ public class EconomyListener implements Listener
 			{
 				economy.trySpawnBankEntity(bankLocation);
 				player.getInventory().getItemInMainHand().setAmount(playerMainItem.getAmount() -1);
-				player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " platziert.\n",
-                                                      MessageHelper.PREFIX_HUFF, "Denke an die Öffnungszeiten von ", MessageHelper.getTimeLabel(economy.getConfig().getBankOpen()),
-                                                                                 " bis ", MessageHelper.getTimeLabel(economy.getConfig().getBankClose()), "."));
+				player.sendMessage(EconomyMessage.BANK_PLACE.getMessage() + "\n"
+                                   + EconomyMessage.BANK_OPENINGHOURS.getMessage(new StringPair("open", MessageHelper.getTimeLabel(EconomyConfig.BANK_OPEN.getValue())),
+                                		                                         new StringPair("close", MessageHelper.getTimeLabel(EconomyConfig.BANK_CLOSE.getValue()))));
 			}
 			else
 			{
-				player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economy.getConfig().getBankName(), "."));
+				player.sendMessage(EconomyMessage.BANK_TOCLOSE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 			}
 			event.setCancelled(true);
 		}

@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -21,26 +20,24 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.economy.EconomyMessage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
-import huff.lib.interfaces.Action;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
+import huff.lib.various.Action;
 
 public class TradeHolder extends MenuHolder
 {
 	private static final Integer[] TRADERLEFT_SLOTS = {10,11,12,19,20,21,28,29,30,37,38,39};
 	private static final Integer[]  TRADERRIGHT_SLOTS = {14,15,16,23,24,25,32,33,34,41,42,43};
-	private static final String NOTREADY_NAME = "§6Handel ausstehend...";
-	private static final Material NOTREADY_MATERIAL = Material.ORANGE_STAINED_GLASS_PANE;
-	private static final String READY_NAME = "§aHandel akzeptiert";
-	private static final Material READY_MATERIAL = Material.LIME_STAINED_GLASS_PANE;
 	
 	public TradeHolder(@NotNull EconomyInterface economy, @NotNull UUID leftTrader, @NotNull UUID rightTrader)
 	{
-		super("economy:trade", InventoryHelper.INV_SIZE_6, economy.getConfig().getTradeInventoryName(), MenuExitType.CLOSE);
+		super("economy:trade", InventoryHelper.INV_SIZE_6, EconomyConfig.TRADE_INVNAME.getValue(), MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economy, "The economy interface cannot be null.");
 		Validate.notNull((Object) leftTrader, "The left trader uuid cannot be null.");
@@ -150,11 +147,11 @@ public class TradeHolder extends MenuHolder
 		if (player.isOnline())
 		{
 			player.getInventory().addItem(getTradeItems(isLeftTrader).toArray(new ItemStack[0]));
-			player.sendMessage(MessageHelper.PREFIX_HUFF + "Der Handel wurde §cabgebrochen§7.");
+			player.sendMessage(EconomyMessage.TRADE_ABORT.getMessage());
 		}
 		MenuHolder.close(otherHuman);
 		otherHuman.getInventory().addItem(getTradeItems(!isLeftTrader).toArray(new ItemStack[0]));
-		otherHuman.sendMessage(MessageHelper.PREFIX_HUFF + "Der Handel wurde §cabgebrochen§7.");
+		otherHuman.sendMessage(EconomyMessage.TRADE_ABORT.getMessage());
 	}
 	
 	public void handlePickup()
@@ -176,14 +173,14 @@ public class TradeHolder extends MenuHolder
 		
 		InventoryHelper.setItem(super.getInventory(), 1, 1, ItemHelper.getSkullWithMeta(leftPlayer, MessageHelper.getHighlighted(leftPlayer.getName(), false , false)));	
 		
-	    InventoryHelper.setItem(super.getInventory(), 1, 3, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false))); 
-	    InventoryHelper.setItem(super.getInventory(), 1, 7, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-                                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false)));	
+	    InventoryHelper.setItem(super.getInventory(), 1, 3, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(), 
+				                                                                       MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(leftTrader.getValue()), false , false))); 
+	    InventoryHelper.setItem(super.getInventory(), 1, 7, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(), 
+                                                                                       MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(rightTrader.getValue()), false , false)));	
 	    InventoryHelper.setItem(super.getInventory(), 1, 9, ItemHelper.getSkullWithMeta(rightPlayer, MessageHelper.getHighlighted(rightPlayer.getName(), false , false)));
 	    
-		InventoryHelper.setItem(super.getInventory(), 6, 3, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
-		InventoryHelper.setItem(super.getInventory(), 6, 7, ItemHelper.getItemWithMeta(NOTREADY_MATERIAL, NOTREADY_NAME));
+		InventoryHelper.setItem(super.getInventory(), 6, 3, EconomyConfig.getTradePendingItem());
+		InventoryHelper.setItem(super.getInventory(), 6, 7, EconomyConfig.getTradePendingItem());
 		
 		updateTraderSlots();
 		super.setMenuExitItem();
@@ -203,8 +200,8 @@ public class TradeHolder extends MenuHolder
 	
 	private void updateValues()
 	{
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 1, 3), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(leftTrader.getValue()), false , false));
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 1, 7), MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(rightTrader.getValue()), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 1, 3), MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(leftTrader.getValue()), false , false));
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 1, 7), MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(rightTrader.getValue()), false , false));
 	}
 	
 	private void updateTraderSlots()
@@ -442,23 +439,14 @@ public class TradeHolder extends MenuHolder
 		{
 			rightTrader.changeReady();
 		}
-		final ItemStack statusItem = InventoryHelper.getItem(super.getInventory(), 6, isLeftTrader ? 3 : 7);
-		
+
 		if (isLeftTrader ? leftTrader.isReady() : rightTrader.isReady())
 		{
-			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () ->
-			{
-				statusItem.setType(READY_MATERIAL);
-				ItemHelper.updateItemWithMeta(statusItem, READY_NAME);
-			}, 1);
+			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () -> InventoryHelper.setItem(super.getInventory(), 6, 3, EconomyConfig.getTradePendingItem()), 1);
 		}
 		else
 		{
-			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () ->
-			{
-				statusItem.setType(NOTREADY_MATERIAL);
-				ItemHelper.updateItemWithMeta(statusItem, NOTREADY_NAME);
-			}, 1);
+			Bukkit.getScheduler().runTaskLater(economy.getPlugin(), () -> InventoryHelper.setItem(super.getInventory(), 6, 7, EconomyConfig.getTradePendingItem()), 1);
 		}
 	}
 	
@@ -531,7 +519,7 @@ public class TradeHolder extends MenuHolder
 	                         "§8☷ §7%5$-12s §8→ §9%6$d\n" +
 	                         "§8☷ §7%2$-12s §8← §9%4$.0f\n" +
 	                         "§8☷ §7%5$-12s §8← §9%7$d", 
-	                         partnerName, economy.getConfig().getValueName(), 
+	                         partnerName, EconomyConfig.VALUE_NAME.getValue(), 
 	                         traderSelf.getValue(), traderOther.getValue(),
 	                         "Güter",
 	                         traderSelf.getItems(), traderOther.getItems());

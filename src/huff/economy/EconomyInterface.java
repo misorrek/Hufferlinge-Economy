@@ -19,18 +19,16 @@ import huff.lib.manager.delaymessage.DelayMessageManager;
 
 public class EconomyInterface
 {
-	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull Config config, @NotNull Storage storage, @NotNull Signature signature, 
+	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull Storage storage, @NotNull Signature signature, 
 			                @NotNull Bank bank, @NotNull DelayMessageManager delayMessageManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin instance cannot be null.");
-		Validate.notNull((Object) config, "The economy config cannot be null.");
 		Validate.notNull((Object) storage, "The economy storage cannot be null.");
 		Validate.notNull((Object) signature, "The economy signature cannot be null");
 		Validate.notNull((Object) bank, "The economy bank cannot be null");
 		Validate.notNull((Object) delayMessageManager, "The delay message manager cannot be null.");
 		
 		this.plugin = plugin;
-		this.config = config;
 		this.storage = storage;
 		this.signature = signature;
 		this.bank = bank;
@@ -38,7 +36,6 @@ public class EconomyInterface
 	}
 	
 	private final JavaPlugin plugin;
-	private final Config config;
 	private final Storage storage;
 	private final Signature signature;
 	private final Bank bank;
@@ -47,11 +44,6 @@ public class EconomyInterface
 	public @NotNull JavaPlugin getPlugin()
 	{
 		return plugin;
-	}
-	
-	public @NotNull Config getConfig()
-	{
-		return config;
 	}
 	
 	public @NotNull Storage getStorage()
@@ -83,7 +75,7 @@ public class EconomyInterface
 			return;
 		}
 		
-		if (world.getTime() >= getConfig().getBankOpen() && world.getTime() < getConfig().getBankClose())
+		if (world.getTime() >= EconomyConfig.BANK_OPEN.getValue() && world.getTime() < EconomyConfig.BANK_CLOSE.getValue())
 		{
 			spawnBankEntity(location);
 			removeClosedEntity(location);
@@ -115,7 +107,7 @@ public class EconomyInterface
 		bankEntity.setCollidable(false);
 		bankEntity.setVillagerType(Type.SAVANNA);
 		//bankEntity.setProfession(Profession.CARTOGRAPHER);
-		bankEntity.setCustomName(config.getBankEntityName());
+		bankEntity.setCustomName(EconomyConfig.BANK_ENTITYNAME.getValue());
 	}
 	
 	private void spawnClosedEntity(@Nullable Location location)
@@ -133,7 +125,7 @@ public class EconomyInterface
 		closedEntity.setInvulnerable(true);
 		closedEntity.setCollidable(false);
 		closedEntity.setCustomNameVisible(true);
-		closedEntity.setCustomName(config.getBankEntityName());
+		closedEntity.setCustomName(EconomyConfig.BANK_ENTITYNAME.getValue());
 		
 		closedEntity2.setSmall(true);
 		closedEntity2.setVisible(false);
@@ -141,7 +133,7 @@ public class EconomyInterface
 		closedEntity2.setInvulnerable(true);
 		closedEntity2.setCollidable(false);
 		closedEntity2.setCustomNameVisible(true);
-		closedEntity2.setCustomName("§7- Geschlossen -");
+		closedEntity2.setCustomName(EconomyConfig.BANK_CLOSEDNAME.getValue());
 	}
 	
 	private boolean alreadyBankEntitySpawned(@NotNull Location location)
@@ -150,7 +142,7 @@ public class EconomyInterface
 		
 		for (Entity entity : location.getWorld().getNearbyEntities(location, 1.5, 1.5, 1.5))
 		{
-			if (entity instanceof Villager && entity.getCustomName().equals(config.getBankEntityName()))
+			if (entity instanceof Villager && entity.getCustomName().equals(EconomyConfig.BANK_ENTITYNAME.getValue()))
 			{
 				return true;	
 			}
@@ -164,7 +156,7 @@ public class EconomyInterface
 		
 		for (Entity entity : location.getWorld().getNearbyEntities(location.clone().add(0, 0.2, 0), 1.5, 1.5, 1.5))
 		{
-			if (entity instanceof ArmorStand && entity.getCustomName().equals("§7- Geschlossen -"))
+			if (entity instanceof ArmorStand && entity.getCustomName().equals(EconomyConfig.BANK_CLOSEDNAME.getValue()))
 			{
 				return true;	
 			}
@@ -178,7 +170,7 @@ public class EconomyInterface
 		
 		for (Entity entity : location.getWorld().getNearbyEntities(location, 1.5, 1.5, 1.5))
 		{
-			if (entity instanceof Villager && entity.getCustomName().equals(config.getBankEntityName()))
+			if (entity instanceof Villager && entity.getCustomName().equals(EconomyConfig.BANK_ENTITYNAME.getValue()))
 			{
 				entity.remove();		
 			}
@@ -191,8 +183,8 @@ public class EconomyInterface
 		
 		for (Entity entity : location.getWorld().getNearbyEntities(location.clone().add(0, 0.35, 0), 1.5, 1.5, 1.5))
 		{
-			if (entity instanceof ArmorStand && (entity.getCustomName().equals(config.getBankEntityName()) || 
-					                             entity.getCustomName().equals("§7- Geschlossen -")))
+			if (entity instanceof ArmorStand && (entity.getCustomName().equals(EconomyConfig.BANK_ENTITYNAME.getValue()) || 
+					                             entity.getCustomName().equals(EconomyConfig.BANK_CLOSEDNAME.getValue())))
 			{
 				entity.remove();		
 			}

@@ -9,6 +9,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.manager.delaymessage.DelayType;
@@ -28,7 +29,7 @@ public class JoinListener implements Listener
 	{
 		final Player player = event.getPlayer();
 		final Inventory playerInventory = player.getInventory();
-		final ItemStack walletItem = economy.getConfig().getWalletItem();
+		final ItemStack walletItem = EconomyConfig.getWalletItem();
 		
 		if (!playerInventory.contains(walletItem))
 		{
@@ -38,13 +39,13 @@ public class JoinListener implements Listener
 			}
 			else
 			{
-				playerInventory.setItem(economy.getConfig().getWalletDefaultSlot(), walletItem);
+				playerInventory.setItem(EconomyConfig.WALLET_DEFAULTSLOT.getValue(), walletItem);
 			}
 		}
 		
 		if (!economy.getStorage().existUser(player.getUniqueId()))
 		{
-			economy.getStorage().addUser(player.getUniqueId(), economy.getConfig().getStartBalance());
+			economy.getStorage().addUser(player.getUniqueId(), EconomyConfig.BANK_STARTBALANCE.getValue());
 		}
 		economy.getDelayMessageManager().sendDelayMessages(player, DelayType.NEXTJOIN);
 	}

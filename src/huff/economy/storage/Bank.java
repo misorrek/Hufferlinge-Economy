@@ -73,6 +73,11 @@ public class Bank
 		return nearestBankKey;
 	} 
 	
+	public int getBankCount()
+	{
+		return getKeys().size();
+	}
+	
 	public boolean isOwner(@NotNull UUID uuid, @NotNull Location location)
 	{
 		final String bankKey = getBankAtLocation(location, 2);

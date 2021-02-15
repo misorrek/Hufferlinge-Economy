@@ -11,12 +11,14 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.economy.EconomyMessage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
-import huff.lib.helper.MessageHelper;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
+import huff.lib.various.structures.StringPair;
 
 public class InteractionHolder extends MenuHolder
 {
@@ -49,21 +51,28 @@ public class InteractionHolder extends MenuHolder
 		
 		if (ItemHelper.hasMeta(currentItem))
 		{
-			if (currentItem.getType() == economy.getConfig().getValueMaterial())
+			if (currentItem.getType() == EconomyConfig.VALUE_MATERIAL.getValue())
 			{
 				MenuHolder.open(human, new TransactionHolder(economy, TransactionKind.WALLET_OTHER, human.getUniqueId(), interactionTarget));
 			}
-			else if (currentItem.getType() == economy.getConfig().getTradeMaterial())
+			else if (currentItem.getType() == EconomyConfig.TRADE_MATERIAL.getValue())
 			{
 				final Player targetPlayer = Bukkit.getPlayer(interactionTarget);
 				
-				if (targetPlayer != null && InventoryHelper.isInternalCraftView(targetPlayer.getOpenInventory()))
+				if (targetPlayer != null)
 				{
-					new TradeHolder(economy, menuViewer, interactionTarget);
+					if (InventoryHelper.isInternalCraftView(targetPlayer.getOpenInventory()))
+					{
+						new TradeHolder(economy, menuViewer, interactionTarget);
+					}
+					else
+					{
+						human.sendMessage(EconomyMessage.TRADE_NOTALLOWED.getMessage(new StringPair("user", targetPlayer.getName())));
+					}
 				}
 				else
 				{
-					human.sendMessage(MessageHelper.PREFIX_HUFF + "Mit diesem Spieler kann gerade nicht gehandelt werden.");
+					MenuHolder.close(human);
 				}
 			}
 		}			
@@ -77,13 +86,13 @@ public class InteractionHolder extends MenuHolder
 		InventoryHelper.setBorder(super.getInventory(), InventoryHelper.getBorderItem());
 		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getFillItem(), false);
 		
-		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-				                                                                      economy.getConfig().getTransactionInventoryName(TransactionKind.WALLET_OTHER))); 
+		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(), 
+				                                                                       EconomyConfig.getTransactionInventoryName(TransactionKind.WALLET_OTHER))); 
 		
-		InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
+		InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getMessage(new StringPair("user", targetPlayer.getName()))));
 	
-		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(economy.getConfig().getTradeMaterial(),
-				                                                                      economy.getConfig().getTradeInventoryName()));
+		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(EconomyConfig.TRADE_MATERIAL.getValue(),
+				                                                                       EconomyConfig.TRADE_INVNAME.getValue()));
 		super.setMenuExitItem();
 	}
 }

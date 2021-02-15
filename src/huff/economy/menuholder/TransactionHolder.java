@@ -18,19 +18,20 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import huff.economy.Config;
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.economy.EconomyMessage;
 import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.IndependencyHelper;
-import huff.lib.helper.StringHelper;
-import huff.lib.interfaces.Action;
 import huff.lib.manager.delaymessage.DelayType;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.menuholder.PlayerChooserHolder;
+import huff.lib.various.Action;
+import huff.lib.various.structures.StringPair;
 
 public class TransactionHolder extends MenuHolder
 {
@@ -167,7 +168,7 @@ public class TransactionHolder extends MenuHolder
 			else
 			{
 				MenuHolder.close(human);
-				human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Transaktion konnte nicht abgeschlossen werden.");	
+				human.sendMessage(EconomyMessage.TRANSACTION_FAIL.getMessage());	
 			}	
 		}
 		return true;
@@ -180,9 +181,9 @@ public class TransactionHolder extends MenuHolder
 		InventoryHelper.setItem(super.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));		
 		InventoryHelper.setItem(super.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
 		InventoryHelper.setItem(super.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
-		InventoryHelper.setItem(super.getInventory(), 2, 5, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(),
-				                                                                      MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(0), false, false),
-				                                                                      getMaxValueLore(getMaxTransactionValue(uuid), false)));	
+		InventoryHelper.setItem(super.getInventory(), 2, 5, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(),
+				                                                                       MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(0), false, false),
+				                                                                       getMaxValueLore(getMaxTransactionValue(uuid), false)));	
 		InventoryHelper.setItem(super.getInventory(), 2, 6, getAmountItem(AMOUNT_3, true));
 		InventoryHelper.setItem(super.getInventory(), 2, 7, getAmountItem(AMOUNT_4, true));
 		InventoryHelper.setItem(super.getInventory(), 2, 8, getAmountItem(AMOUNT_5, true));
@@ -194,7 +195,7 @@ public class TransactionHolder extends MenuHolder
 		{		
 			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
 			
-			InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, "§7Empfänger: §9" + targetPlayer.getName()));
+			InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getMessage(new StringPair("user", targetPlayer.getName()))));
 		}		
 		InventoryHelper.setItem(super.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
 		InventoryHelper.setItem(super.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
@@ -204,15 +205,13 @@ public class TransactionHolder extends MenuHolder
 		super.setMenuExitItem();
 	}
 	
-	private void updateTransactionValue(@NotNull Config economyConfig, double updatedTransactionValue, double maxTransactionValue, boolean isInventoryMax)
+	private void updateTransactionValue(double updatedTransactionValue, double maxTransactionValue, boolean isInventoryMax)
 	{	
 		transactionValue = updatedTransactionValue;
 		
 		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 2, 5), 
-				                      MessageHelper.getHighlighted(economyConfig.getValueFormatted(transactionValue), false, false), 
+				                      MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(transactionValue), false, false), 
 				                      getMaxValueLore(maxTransactionValue, isInventoryMax));
-		
-		Bukkit.getConsoleSender().sendMessage("FINAL VALUE : " + transactionValue);
 	}
 	
 	private List<String> getMaxValueLore(double maxTransactionValue, boolean isInventoryMax)
@@ -220,8 +219,8 @@ public class TransactionHolder extends MenuHolder
 		final List<String> valueItemLore = new ArrayList<>();
 		
 		valueItemLore.add(String.format("§7%s: %.0f", transactionKind.isBankTransaction() ? 
-				                                      economy.getConfig().getBankName() : 
-			                                          economy.getConfig().getWalletName(),
+				                                      EconomyConfig.BANK_NAME.getValue() : 
+				                                      EconomyConfig.WALLET_NAME.getValue(),
 				                                      maxTransactionValue));
 		if (isInventoryMax)
 		{
@@ -254,7 +253,7 @@ public class TransactionHolder extends MenuHolder
 		
 		if (transactionKind.isItemTransaction())
 		{
-			final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(player.getInventory(), economy.getConfig().getValueItem());
+			final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(player.getInventory(), EconomyConfig.getValueItem());
 			
 			if (updatedTransactionValue > maxInventoryValue)
 			{
@@ -265,12 +264,12 @@ public class TransactionHolder extends MenuHolder
 
 		if (transactionValue != updatedTransactionValue)
 		{	
-			updateTransactionValue(economy.getConfig(), updatedTransactionValue, maxValue, isInventoryMax);
+			updateTransactionValue(updatedTransactionValue, maxValue, isInventoryMax);
 			player.playSound(player.getLocation(), (changeValue < 0 ? Sound.BLOCK_WOODEN_BUTTON_CLICK_OFF : Sound.ENTITY_EXPERIENCE_ORB_PICKUP), 1, 2);
 		}
 		else
 		{
-			updateTransactionValue(economy.getConfig(), updatedTransactionValue, maxValue, isInventoryMax);
+			updateTransactionValue(updatedTransactionValue, maxValue, isInventoryMax);
 			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
 		}
 		
@@ -278,27 +277,24 @@ public class TransactionHolder extends MenuHolder
 	
 	private void handleTransactionHuman(@NotNull HumanEntity human)
 	{
-		final String formattedValueAmount = MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue));
+		final String formattedValueAmount = EconomyConfig.getValueFormatted(transactionValue);
 		final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
 		
 		if (!transactionKind.isBankTransaction() && !targetPlayer.isOnline())
 		{
 			MenuHolder.close(human);
-			human.sendMessage(MessageHelper.PREFIX_HUFF + MessageHelper.getHighlighted(targetPlayer.getName(), false, true) + "ist nicht mehr da.");
+			human.sendMessage(EconomyMessage.TRANSACTION_TARGETDISCONNECTED.getMessage(new StringPair("user", targetPlayer.getName())));
 		}
 		else if (economy.getStorage().runTransaction(human.getUniqueId(), target, transactionValue, transactionKind.isBankTransaction()))
 		{
 			MenuHolder.close(human);
-			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "an",
-												 MessageHelper.getHighlighted(targetPlayer.getName()), "übertragen."));
+			human.sendMessage(EconomyMessage.TRANSACTION_SENT.getMessage(new StringPair("amount", formattedValueAmount), new StringPair("user", targetPlayer.getName())));
 			
-			final String otherMessage = StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
-                                                           MessageHelper.getHighlighted(human.getName()), "erhalten.");
+			final String otherMessage = EconomyMessage.TRANSACTION_SENT.getMessage(new StringPair("amount", formattedValueAmount), new StringPair("user", human.getName()));
 			
 			if (targetPlayer.isOnline())
 			{
-				((Player) targetPlayer).sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", formattedValueAmount, "von",
-									                                   MessageHelper.getHighlighted(human.getName()), "erhalten."));
+				((Player) targetPlayer).sendMessage(otherMessage);
 			}
 			else
 			{
@@ -307,7 +303,7 @@ public class TransactionHolder extends MenuHolder
 		}
 		else
 		{
-			human.sendMessage(MessageHelper.PREFIX_HUFF + "Die Transaktion ist fehlgeschlagen.");
+			human.sendMessage(EconomyMessage.TRANSACTION_FAIL.getMessage());
 		}
 	}
 	
@@ -316,14 +312,14 @@ public class TransactionHolder extends MenuHolder
 		if (economy.getStorage().runTransaction(human.getUniqueId(), transactionValue, fromBalanceTransaction))
 		{		
 			MenuHolder.close(human);
-			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), 
-												 (fromBalanceTransaction ? "von der Bank ausgezahlt." :"auf die Bank eingezahlt.")));
+			human.sendMessage(fromBalanceTransaction ? EconomyMessage.TRANSACTION_WITHDRAWED.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue)))
+					                                 : EconomyMessage.TRANSACTION_DEPOSITED.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue))));
 		}	
 	}
 	
 	private void handleTransactionWalletOut(@NotNull HumanEntity human)
 	{
-		final ItemStack valueItem = economy.getConfig().getValueItem();
+		final ItemStack valueItem = EconomyConfig.getValueItem();
 		final int maxInventoryValue = InventoryHelper.getFreeItemStackAmount(human.getInventory(), valueItem);
 		
 		if (transactionValue > maxInventoryValue)
@@ -356,8 +352,8 @@ public class TransactionHolder extends MenuHolder
 			}
 			MenuHolder.close(human);
 			((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);
-			human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast", MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(transactionValue)), "aus deinem ",
-												 economy.getConfig().getWalletName(), " herausgenommen."));
+			human.sendMessage(EconomyMessage.TRANSACTION_TAKEN.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue)), 
+					                                                      new StringPair("walletname", EconomyConfig.WALLET_NAME.getValue())));
 		}
 	}
 	

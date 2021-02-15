@@ -25,12 +25,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.economy.EconomyMessage;
 import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
-import huff.lib.helper.MessageHelper;
-import huff.lib.helper.StringHelper;
+import huff.lib.various.structures.StringPair;
 
 public class InventoryListener implements Listener
 {
@@ -61,17 +62,17 @@ public class InventoryListener implements Listener
 		final ItemStack currentItem = event.getCurrentItem();
 		final ItemStack cursorItem = event.getCursor();			
 		
-		if (InventoryHelper.isPickupAction(inventoryAction) && (economy.getConfig().equalsWalletItem(currentItem) || 
-                                                                economy.getConfig().equalsValueItem(currentItem)))
+		if (InventoryHelper.isPickupAction(inventoryAction) && (EconomyConfig.equalsWalletItem(currentItem) || 
+                                                                EconomyConfig.equalsValueItem(currentItem)))
 		{
 			pickedUpSlot.put(human.getUniqueId(), event.getRawSlot());
 			return;
 		}
-		final boolean isWalletItemCase = (economy.getConfig().equalsWalletItem(cursorItem) && inventoryType != InventoryType.PLAYER) || 
-										 (economy.getConfig().equalsWalletItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
+		final boolean isWalletItemCase = (EconomyConfig.equalsWalletItem(cursorItem) && inventoryType != InventoryType.PLAYER) || 
+										 (EconomyConfig.equalsWalletItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
 					                      !InventoryHelper.isInternalCraftView(event.getView()));
-		final boolean isValueItemCase = (economy.getConfig().equalsValueItem(cursorItem) && !InventoryHelper.isContainerInventory(inventoryType)) ||
-										(economy.getConfig().equalsValueItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
+		final boolean isValueItemCase = (EconomyConfig.equalsValueItem(cursorItem) && !InventoryHelper.isContainerInventory(inventoryType)) ||
+										(EconomyConfig.equalsValueItem(currentItem) && inventoryAction == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
 										 !InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType()));
 		
 		if (isWalletItemCase || isValueItemCase)			
@@ -90,8 +91,8 @@ public class InventoryListener implements Listener
 	public void onDenyHumanInventoryDrag(InventoryDragEvent event)
 	{	
 		final ItemStack oldCursorItem = event.getOldCursor();		
-		final boolean isWalletItemCase = economy.getConfig().equalsWalletItem(oldCursorItem);
-		final boolean isValueItemCase = economy.getConfig().equalsValueItem(oldCursorItem) && !InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType());
+		final boolean isWalletItemCase = EconomyConfig.equalsWalletItem(oldCursorItem);
+		final boolean isValueItemCase = EconomyConfig.equalsValueItem(oldCursorItem) && !InventoryHelper.isContainerInventory(event.getView().getTopInventory().getType());
 		
 		if (isWalletItemCase || isValueItemCase)
 		{
@@ -164,19 +165,19 @@ public class InventoryListener implements Listener
 		final ItemStack slotItem = event.getView().getItem(event.getRawSlot());
 		
 		if (event.getClickedInventory().getType() == InventoryType.PLAYER &&
-			economy.getConfig().equalsValueItem(cursorItem) && economy.getConfig().equalsWalletItem(slotItem))
+			EconomyConfig.equalsValueItem(cursorItem) && EconomyConfig.equalsWalletItem(slotItem))
 		{
 			event.setCancelled(true);
 			
 			if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
 			{
-				human.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst in deinem Spielmodus nicht in den ", economy.getConfig().getWalletName(), " einlagern."));
+				human.sendMessage(EconomyMessage.WALLET_NOPICKUP.getMessage(new StringPair("walletname", EconomyConfig.WALLET_NAME.getValue())));
 				return;
 			}	
 			handleWalletIn(human, cursorItem, event.isShiftClick());			
 		}
 		else if (inventoryAction == InventoryAction.SWAP_WITH_CURSOR && 
-				 economy.getConfig().equalsValueItem(cursorItem) && economy.getConfig().equalsValueItem(slotItem))
+				 EconomyConfig.equalsValueItem(cursorItem) && EconomyConfig.equalsValueItem(slotItem))
 		{					
 			final int cursorItemAmount = inventoryAction == InventoryAction.PLACE_ONE ? 1 : cursorItem.getAmount();
 			final int clickedSlotItemAmount = slotItem.getAmount();
@@ -189,7 +190,7 @@ public class InventoryListener implements Listener
 			
 			if (valueAmount > 0)
 			{
-				valueItem = economy.getConfig().getValueItem();
+				valueItem = EconomyConfig.getValueItem();
 				valueItem.setAmount(cursorSignatureValueAmount + clickedSignatureValueAmount);
 				ItemHelper.applyLore(valueItem, economy.getSignature().createSignatureLore(valueAmount));
 			}
@@ -218,7 +219,7 @@ public class InventoryListener implements Listener
 	
 	private boolean checkValueItem(@NotNull ItemStack valueItem, @NotNull HumanEntity human, boolean withSoundFeedback)
 	{
-		if (!economy.getConfig().equalsValueItem(valueItem))
+		if (!EconomyConfig.equalsValueItem(valueItem))
 		{
 			return false;
 		}

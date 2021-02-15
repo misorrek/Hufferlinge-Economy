@@ -9,6 +9,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
@@ -20,7 +21,7 @@ public class WalletHolder extends MenuHolder
 {
 	public WalletHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer)
 	{
-		super("economy:wallet", InventoryHelper.INV_SIZE_3, economyInterface.getConfig().getWalletInventoryName(), MenuExitType.CLOSE);
+		super("economy:wallet", InventoryHelper.INV_SIZE_3, EconomyConfig.WALLET_INVNAME.getValue(), MenuExitType.CLOSE);
 		
 		Validate.notNull((Object) economyInterface, "The economy-interface cannot be null.");
 		Validate.notNull((Object) menuViewer, "The menu-viewer cannot be null.");
@@ -54,11 +55,11 @@ public class WalletHolder extends MenuHolder
 		InventoryHelper.setBorder(super.getInventory(), InventoryHelper.getBorderItem());
 		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getFillItem(), false);
 		
-		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(economy.getConfig().getValueMaterial(), 
-				                                                                  MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(economy.getStorage().getWallet(menuViewer)), 
-						                                                          false , false)));
+		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(),
+				                                                                       MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(economy.getStorage().getWallet(menuViewer)), 
+						                                                               false , false)));
 		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, 
-																				  economy.getConfig().getTransactionInventoryName(TransactionKind.WALLET_OUT)));
+																				       EconomyConfig.getTransactionInventoryName(TransactionKind.WALLET_OUT)));
 		super.setMenuExitItem();
 	}
 }

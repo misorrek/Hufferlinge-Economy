@@ -27,10 +27,11 @@ import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.helper.UserHelper;
 import huff.lib.various.HuffCommand;
+import huff.lib.various.structures.StringPair;
 
 public class EconomyCommand extends HuffCommand
 {
-	private static final int LISTENTRIES_PER_PAGE = 2;
+	private static final int LISTENTRIES_PER_PAGE = 10;
 	
 	public EconomyCommand(@NotNull EconomyInterface economy)
 	{
@@ -44,7 +45,7 @@ public class EconomyCommand extends HuffCommand
 						                 "§8☷ §7list <Seite>\n",
 						                 "§8☷ §7balance [show|set|add|remove] (<Wert>) (<Spieler>)\n", 
 						                 "§8☷ §7wallet [show|set|add|remove] (<Wert>) (<Spieler>)\n",
-						                 "§8☷ §7bank [show|item|add|remove]"));
+						                 "§8☷ §7bank [show|item|add|remove] (<Seite>)"));
 		super.setAliases("huffeconomy", "huffconomy", "money");
 		super.setPermission(PermissionHelper.PERM_ROOT_HUFF + "economy");
 		addTabCompletion();
@@ -90,42 +91,54 @@ public class EconomyCommand extends HuffCommand
 	
 	private void executeList(CommandSender sender, String[] args)
 	{
-		try 
+		final int maxPage = getListPageCount(economy.getStorage().getUserCount());
+		final int page = getListPage(sender, args[1], maxPage);
+		
+		if (page == -1)
 		{
-			final int page = Integer.parseInt(args[1]);
-			final int maxPage = getListPageCount();
+			return;
+		}		
+		final List<String> economyOverview = economy.getStorage().getEconomyOverview((page - 1) * LISTENTRIES_PER_PAGE, page * LISTENTRIES_PER_PAGE);
+		
+		if (!economyOverview.isEmpty())
+		{
+			sender.sendMessage(EconomyMessage.LIST_HEADER.getMessage(new StringPair("page", Integer.toString(page)), new StringPair("maxpage", Integer.toString(maxPage))));
+			sender.sendMessage("");
 			
-			if (page < 1 || page > maxPage)
+			for (String economyEntry : economyOverview)
 			{
-				sender.sendMessage(MessageHelper.PREFIX_HUFF + "Ungültige Seite. Es gibt nur" + MessageHelper.getHighlighted(Integer.toString(maxPage)) + "Seiten.");
-				return;
-			}			
-			final List<String> economyOverview = economy.getStorage().getEconomyOverview((page - 1) * LISTENTRIES_PER_PAGE, page * LISTENTRIES_PER_PAGE);
-			
-			if (!economyOverview.isEmpty())
-			{
-				sender.sendMessage("§8☰ §7Übersicht über die Kontostände - Seite (" + page + "/" + maxPage + ")");
-				sender.sendMessage("");
-				
-				for (String economyEntry : economyOverview)
-				{
-					sender.sendMessage(economyEntry);
-				}	
-			}
-			else
-			{
-				sender.sendMessage("§8☰ §7Keine Spieler zur Übersicht vorhanden");
-			}
+				sender.sendMessage(economyEntry);
+			}	
 		}
-		catch (NumberFormatException exception)
+		else
 		{
-			sender.sendMessage(MessageHelper.PREFIX_HUFF + MessageHelper.getQuoted(args[1], false, true) + "ist keine gültige Seite.");
+			sender.sendMessage(EconomyMessage.LIST_NODATA.getMessage());
 		}
 	}
 	
-	private int getListPageCount()
+	private int getListPage(CommandSender sender, String input, int maxPage)
 	{
-		return (int) Math.ceil((double) economy.getStorage().getUserCount() / LISTENTRIES_PER_PAGE);
+		try 
+		{
+			final int page = Integer.parseInt(input);
+			
+			if (page < 1 || page > maxPage)
+			{
+				sender.sendMessage(EconomyMessage.INVALIDPAGE.getMessage(new StringPair("maxpage", Integer.toString(maxPage))));
+				return -1;
+			}
+			return page;
+		}
+		catch (NumberFormatException exception)
+		{
+			sender.sendMessage(EconomyMessage.INVALIDNUMBER.getMessage(new StringPair("text", input)));
+		}	
+		return -1;
+	}
+	
+	private int getListPageCount(int count)
+	{
+		return (int) Math.ceil((double) count / LISTENTRIES_PER_PAGE);
 	}
 	
 	// V A L U E
@@ -267,72 +280,105 @@ public class EconomyCommand extends HuffCommand
 			
 			if (parsedValue < 0)
 			{
-				sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Der eingegebene Wert darf nicht negativ sein."));
+				sender.sendMessage(EconomyMessage.VALUE_NONEGATIVE.getMessage());
 				return -1;
 			}		
 			return parsedValue;
 		}
 		catch (NumberFormatException execption)
 		{
-			sender.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Der eingegebene Wert ist ungültig."));
+			sender.sendMessage(EconomyMessage.VALUE_INVALIDVALUE.getMessage(new StringPair("text", input)));
 		}
 		return -1;
 	}
 	
 	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, boolean override, String playerName, UUID playerUUID)
 	{
-		final StringBuilder messageBuilder = new StringBuilder();
 		final boolean selfPerform = StringUtils.isEmpty(playerName);
 		final boolean updatedPerform = playerUUID != null;
-		
-		messageBuilder.append(MessageHelper.PREFIX_HUFF);
-		
-		if (selfPerform)
-		{
-			messageBuilder.append("Du ");
-		}
-		else
-		{
-			messageBuilder.append("Der Spieler");
-			messageBuilder.append(MessageHelper.getHighlighted(playerName));
-		}
 		
 		switch (code)
 		{
 		case Storage.CODE_NOUSER:
-			messageBuilder.append(selfPerform ? "bist " : "ist ");
-			messageBuilder.append("nicht in der Economy-Datenbank vorhanden.");
-			break;
+			return selfPerform ? EconomyMessage.DONTEXIST_SELF.getMessage() : EconomyMessage.DONTEXIST_OTHER.getMessage(new StringPair("user", playerName));
+		
 		case Storage.CODE_NOTENOUGHVALUE:
-			messageBuilder.append(selfPerform ? "hast " : "hat ");
-			messageBuilder.append("dazu nicht genug ");
-			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
-			break;
+			if (isBalance)
+			{
+				return selfPerform ? EconomyMessage.BALANCE_SELF_NOTENOUGH.getMessage() : EconomyMessage.BALANCE_OTHER_NOTENOUGH.getMessage(new StringPair("user", playerName));
+			}
+			return selfPerform ? EconomyMessage.WALLET_SELF_NOTENOUGH.getMessage() : EconomyMessage.WALLET_OTHER_NOTENOUGH.getMessage(new StringPair("user", playerName));
+		
 		case Storage.CODE_SUCCESS:
-			messageBuilder.append(selfPerform ? "hast " : "hat ");
-			messageBuilder.append(updatedPerform || override ? "nun " : "");
-			messageBuilder.append(MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(value), false, true));
-			if (updatedPerform) messageBuilder.append(withRemove ? "weniger " : "mehr ");
-			messageBuilder.append(isBalance ? "auf der Bank." : "im Geldbeutel.");
+			// B A L A N C E
+			
+			if (isBalance)
+			{
+				if (override)
+				{
+					return selfPerform ? EconomyMessage.BALANCE_SELF_SET.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+					                   : EconomyMessage.BALANCE_OTHER_SET.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))); 
+				}
+				
+				if (updatedPerform)
+				{
+					final StringBuilder messageBuilder = new StringBuilder();
+					
+					if (withRemove)
+					{
+						messageBuilder.append(selfPerform ? EconomyMessage.BALANCE_SELF_LESS.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+						                                  : EconomyMessage.BALANCE_OTHER_LESS.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+					}
+					else
+					{
+						messageBuilder.append(selfPerform ? EconomyMessage.BALANCE_SELF_MORE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+                                                          : EconomyMessage.BALANCE_OTHER_MORE.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+					}
+					messageBuilder.append("\n");
+					messageBuilder.append(EconomyMessage.NEWVALUE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getBalance(playerUUID)))));
+					return messageBuilder.toString();
+				}
+				return selfPerform ? EconomyMessage.BALANCE_SELF_SHOW.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+						           : EconomyMessage.BALANCE_OTHER_SHOW.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
+			}
+			
+			// W A L L E T
+			
+			if (override)
+			{
+				return selfPerform ? EconomyMessage.WALLET_SELF_SET.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+				                   : EconomyMessage.WALLET_OTHER_SET.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))); 
+			}
+			
 			if (updatedPerform)
 			{
+				final StringBuilder messageBuilder = new StringBuilder();
+				
+				if (withRemove)
+				{
+					messageBuilder.append(selfPerform ? EconomyMessage.WALLET_SELF_LESS.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+					                                  : EconomyMessage.WALLET_OTHER_LESS.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+				}
+				else
+				{
+					messageBuilder.append(selfPerform ? EconomyMessage.WALLET_SELF_MORE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+                                                      : EconomyMessage.WALLET_OTHER_MORE.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+				}
 				messageBuilder.append("\n");
-				messageBuilder.append(MessageHelper.PREFIX_HUFF);
-				messageBuilder.append("Der neue Stand beträgt");
-				messageBuilder.append(MessageHelper.getHighlighted(economy.getConfig().getValueFormatted(isBalance ? economy.getStorage().getBalance(playerUUID) : 
-						                                                                                             economy.getStorage().getWallet(playerUUID)), true, false));
-				messageBuilder.append(".");
+				messageBuilder.append(EconomyMessage.NEWVALUE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getWallet(playerUUID)))));
+				return messageBuilder.toString();
 			}
-			break;
+			return selfPerform ? EconomyMessage.WALLET_SELF_SHOW.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+					           : EconomyMessage.WALLET_OTHER_SHOW.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
+		
 		default:
-			return MessageHelper.PREFIX_HUFF + "Ungültiger Datenbank-Rückgabecode" + MessageHelper.getQuoted(Integer.toString(code), true, false) + ".";
-		}		
-		return messageBuilder.toString();
+			return EconomyMessage.INVALIDFEEDBACK.getMessage(new StringPair("text", Integer.toString(code)));
+		}
 	}
 
 	private @NotNull String getInvalidSenderMessage()
 	{
-		return StringHelper.build(MessageHelper.PREFIX_HUFF, "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
+		return StringHelper.build(EconomyMessage.NOSELFEXECUTE.getMessage());
 	}
 	
 	// B A N K
@@ -350,8 +396,12 @@ public class EconomyCommand extends HuffCommand
 		switch (action)
 		{
 		case "show":
-			executeBankShow(sender);	
-			return true;
+			if (args.length >= 3)
+			{
+				executeBankShow(sender, args);	
+				return true;
+			}
+			return false;
 		case "add":
 			executeBankAdd((Player) sender);
 			return true;
@@ -366,19 +416,29 @@ public class EconomyCommand extends HuffCommand
 		}
 	}
 	
-	private void executeBankShow(CommandSender sender)
-	{
+	private void executeBankShow(CommandSender sender, String[] args)
+	{	
+		final int maxPage = getListPageCount(economy.getBank().getBankCount());
+		final int page = getListPage(sender, args[2], maxPage);
+		
+		if (page == -1)
+		{
+			return;
+		}		
 		final List<Location> bankLocations = economy.getBank().getBankLocations();
 		
 		if (!bankLocations.isEmpty())
-		{
-			sender.sendMessage("§8☰ §7Übersicht aller Bänker");
-			sender.sendMessage("");
-			
+		{	
 			int position = 1;
 			
-			for (Location bankLocation : bankLocations)
+			sender.sendMessage(EconomyMessage.BANK_HEADER.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue()), 
+					                                                 new StringPair("page", Integer.toString(page)), 
+					                                                 new StringPair("maxpage", Integer.toString(maxPage))));
+			sender.sendMessage("");		
+			
+			for (int i = (page - 1) * LISTENTRIES_PER_PAGE; i < (page * LISTENTRIES_PER_PAGE); i++)
 			{
+				final Location bankLocation = bankLocations.get(i);
 				final World bankLocationWorld = bankLocation.getWorld();
 				
 				if (bankLocationWorld == null)
@@ -397,8 +457,8 @@ public class EconomyCommand extends HuffCommand
 		}
 		else
 		{
-			sender.sendMessage("§8☰ §7Keine Bänker zur Übersicht vorhanden");
-		}	
+			sender.sendMessage(EconomyMessage.BANK_NODATA.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+		}
 	}
 	
 	private void executeBankAdd(Player player)
@@ -410,11 +470,11 @@ public class EconomyCommand extends HuffCommand
 		if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 		{
 			economy.trySpawnBankEntity(bankLocation);
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " platziert.\n"));
+			player.sendMessage(EconomyMessage.BANK_PLACE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 		else
 		{
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist zu nah an einem anderen ", economy.getConfig().getBankName(), "."));
+			player.sendMessage(EconomyMessage.BANK_TOCLOSE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 	}
 	
@@ -423,18 +483,18 @@ public class EconomyCommand extends HuffCommand
 		if (economy.getBank().removeBank(player.getLocation()) == Bank.CODE_SUCCESS)
 		{
 			economy.tryRemoveBankEntity(player.getLocation());
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, economy.getConfig().getBankName(), " entfernt."));
+			player.sendMessage(EconomyMessage.BANK_REMOVE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 		else
 		{
-			player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du bist nicht in der Nähe von einem ", economy.getConfig().getBankName(), "."));
+			player.sendMessage(EconomyMessage.BANK_NOTHINGNEAR.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}	
 	}
 	
 	private void executeBankItem(Player player)
 	{
-		player.getInventory().addItem(economy.getConfig().getBankSpawnItem());
-		player.sendMessage(StringHelper.build(MessageHelper.PREFIX_HUFF, "Du hast das ", economy.getConfig().getBankName(), "-Spawn-Item bekommen."));		
+		player.getInventory().addItem(EconomyConfig.getBankItem());
+		player.sendMessage(EconomyMessage.BANK_ITEM.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));		
 	}
 
 	// T A B C O M P L E T E
@@ -447,8 +507,15 @@ public class EconomyCommand extends HuffCommand
 		final Map<Integer, List<String>> valueBeforeText = ImmutableMap.of(
 				0, Stream.of("balance", "wallet").collect(Collectors.toList()), 
 				1, Stream.of("set", "add", "remove").collect(Collectors.toList()));
+		final Map<Integer, List<String>> bankBeforeText = ImmutableMap.of(
+				0, Stream.of("bank").collect(Collectors.toList()), 
+				1, Stream.of("show").collect(Collectors.toList()));
 		final String[] listPages = Stream.iterate(1, x -> x + 1)
-				.limit(getListPageCount())
+				.limit(getListPageCount(economy.getStorage().getUserCount()))
+				.map(x -> Integer.toString(x))
+				.toArray(String[]::new);
+		final String[] bankPages = Stream.iterate(1, x -> x + 1)
+				.limit(getListPageCount(economy.getBank().getBankCount()))
 				.map(x -> Integer.toString(x))
 				.toArray(String[]::new);
 		final String[] players = Stream.of(Bukkit.getOfflinePlayers())
@@ -462,5 +529,6 @@ public class EconomyCommand extends HuffCommand
 		super.addTabCompletion(2, null, showBeforeText, players);
 		super.addTabCompletion(2, null, valueBeforeText, "<Wert>");
 		super.addTabCompletion(3, null, valueBeforeText, players);
+		super.addTabCompletion(3, null, bankBeforeText, bankPages);
 	}
 }

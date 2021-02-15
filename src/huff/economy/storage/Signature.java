@@ -11,13 +11,13 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import huff.economy.EconomyConfig;
 import huff.lib.manager.RedisManager;
 import redis.clients.jedis.Jedis;
 
 public class Signature
 {
 	private static final String PATTERN_USER = "signature:";
-	private static final String OFFLINE_SIGNATURE = "#0000#";	
 	
 	public Signature(@NotNull RedisManager redisManager)
 	{
@@ -33,7 +33,7 @@ public class Signature
 		final List<String> signatureLore = new ArrayList<>();
 		final String signature = createSignature(valueAmount);
 		
-		signatureLore.add("§8Prägung");
+		signatureLore.add(EconomyConfig.VALUE_SIGNATURE.getValue());
 		signatureLore.add("§8" + signature);
 		
 		return signatureLore;
@@ -50,11 +50,6 @@ public class Signature
 		if (StringUtils.isNotEmpty(loreSignature))
 		{
 			return 0;
-		}
-		
-		if (loreSignature.equals(OFFLINE_SIGNATURE))
-		{
-			return wantedValueAmount;
 		}
 		final String patternKey = getPatternKey(loreSignature);
 		int signatureValueAmount = 0;

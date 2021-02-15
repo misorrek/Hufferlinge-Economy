@@ -26,8 +26,7 @@ public class EconomyModule
 		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");
 		
 		this.plugin = plugin;	
-		this.economy = new EconomyInterface(plugin,
-				new Config(plugin.getDataFolder().getAbsolutePath()), 
+		this.economy = new EconomyInterface(plugin, 
 				new Storage(redisManager), 
 				new Signature(redisManager), 
 				new Bank(redisManager),
