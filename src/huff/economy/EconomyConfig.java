@@ -54,7 +54,7 @@ public class EconomyConfig
 	public static final ConfigPair<String> TRADE_ACCEPTEDNAME = new ConfigPair<>("economy.trade.accepted_name", "§aHandel akzeptiert", String.class);
 	public static final ConfigEnumPair<Material> TRADE_ACCEPTEDMATERIAL = new ConfigEnumPair<>("economy.trade.accepted_material", Material.LIME_STAINED_GLASS_PANE, Material.class);
 	
-	static 
+	public static void init()
 	{
 		final HuffConfiguration config = new HuffConfiguration(); 		
 		
@@ -78,6 +78,7 @@ public class EconomyConfig
 		config.set(BANK_NAME);
 		config.set(BANK_ITEMNAME);
 		config.set(BANK_INVNAME);
+		config.set(BANK_ENTITYNAME);
 		config.set(BANK_REMOVENAME);
 		config.set(BANK_MATERIAL);
 		config.set(BANK_OPEN);
@@ -90,7 +91,7 @@ public class EconomyConfig
 		config.set(TRADE_INVNAME);
 		config.set(TRADE_MATERIAL);
 		
-		ConfigManager.CONFIG.addDefaults(config);
+		ConfigManager.addDefaults(config);
 	}
 	
 	private static final ItemStack VALUE_ITEM = ItemHelper.getItemWithMeta(VALUE_MATERIAL.getValue(), VALUE_ITEMNAME.getValue());

@@ -68,7 +68,7 @@ public class EconomyMessage
 	public static final MessagePair TRADE_NOTALLOWED = new MessagePair("economy.wallet.other.not_allowed", LibMessage.PREFIX_GENERAL.getKeyLink() + "Mit §9%user%§7 kann gerade nicht gehandelt werden.");
 	public static final MessagePair TRADE_ABORT = new MessagePair("economy.wallet.other.abort", LibMessage.PREFIX_GENERAL.getKeyLink() + "Der Handel wurde §cabgebrochen§7.");
 	
-	static
+	public static void init()
 	{
 		final HuffConfiguration config = new HuffConfiguration();
 		
@@ -88,7 +88,7 @@ public class EconomyMessage
 		config.addContextLine(INVALIDFEEDBACK.getKey(), "text");
 		config.set(INVALIDFEEDBACK);
 		
-		config.addContextLine(INVALIDFEEDBACK.getKey(), "page", "maxpage");
+		config.addContextLine(LIST_HEADER.getKey(), "page", "maxpage");
 		config.set(LIST_HEADER);
 		config.set(LIST_NODATA);
 		
@@ -177,6 +177,6 @@ public class EconomyMessage
 		config.set(TRADE_NOTALLOWED);
 		config.set(TRADE_ABORT);
 		
-		MessageManager.MESSAGE.addDefaults(config);
+		MessageManager.addDefaults(config);
 	}
 }

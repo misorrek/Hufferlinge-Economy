@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>hufferlinge</groupId>
   <artifactId>economy</artifactId>
-  <version>1.16.4-R0.1-SNAPSHOT</version>
+  <version>1.16.5-R0.1-SNAPSHOT</version>
   
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
