@@ -15,13 +15,13 @@ public class EconomyMessage
 	public static final MessagePair INVALIDNUMBER = new MessagePair("economy.invalid_number", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist keine gültige Nummer.");
 	public static final MessagePair INVALIDFEEDBACK = new MessagePair("economy.invalid_feedback", LibMessage.PREFIX_GENERAL.getKeyLink() + "Ungültiger Datenbank-Rückgabecode §9\"%text%\"§7.");
 
-	public static final MessagePair LIST_HEADER = new MessagePair("economy.list.header", "§8☰ §7Übersicht über die Kontostände - Seite (%page%/%maxPage%)");
+	public static final MessagePair LIST_HEADER = new MessagePair("economy.list.header", "§8☰ §7Übersicht über die Kontostände - Seite (%page%/%maxpage%)");
 	public static final MessagePair LIST_NODATA = new MessagePair("economy.list.no_data", "§8☰ §7Keine Spieler zur Übersicht vorhanden");
 
 	public static final MessagePair VALUE_NONEGATIVE = new MessagePair("economy.value.no_negative", LibMessage.PREFIX_GENERAL.getKeyLink() + "Der eingegebene Wert darf nicht negativ sein.");
 	public static final MessagePair VALUE_INVALIDVALUE = new MessagePair("economy.value.invalid_value", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist kein gültiger Zahlenwert.");
 	
-	public static final MessagePair BANK_HEADER = new MessagePair("economy.bank.header", "§8☰ §7Übersicht aller %bankname% - Seite (%page%/%maxPage%)");
+	public static final MessagePair BANK_HEADER = new MessagePair("economy.bank.header", "§8☰ §7Übersicht aller %bankname% - Seite (%page%/%maxpage%)");
 	public static final MessagePair BANK_NODATA = new MessagePair("economy.bank.no_data", "§8☰ §7Keine %bankname% zur Übersicht vorhanden");
 	public static final MessagePair BANK_NOTALLOWED = new MessagePair("economy.bank.not_allowed", LibMessage.PREFIX_GENERAL.getKeyLink() + "Das erlaubt der %bankname% nicht.");
 	public static final MessagePair BANK_PLACE = new MessagePair("economy.bank.place", LibMessage.PREFIX_GENERAL.getKeyLink() + "%bankname% platziert.");

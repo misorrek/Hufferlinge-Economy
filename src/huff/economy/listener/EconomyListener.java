@@ -27,7 +27,6 @@ import org.bukkit.event.entity.VillagerCareerChangeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
@@ -45,6 +44,7 @@ import huff.economy.menuholder.TradeHolder;
 import huff.economy.menuholder.WalletHolder;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
+import huff.lib.helper.EntityHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.menuholder.MenuHolder;
@@ -58,6 +58,7 @@ public class EconomyListener implements Listener
 		
 		this.economy = economyInterface;
 	}
+	
 	private final EconomyInterface economy;
 	private final Map<UUID, Integer> lastWalletSlot = new HashMap<>();
 	
@@ -168,24 +169,9 @@ public class EconomyListener implements Listener
 	}
 	
 	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent event)
-	{
-		final Player player = event.getPlayer();
-		final String bankEntityName = EconomyConfig.BANK_ENTITYNAME.getValue();
-		
-		for (Entity curEntity : player.getLocation().getWorld().getNearbyEntities(player.getLocation(), 5, 5, 5))
-		{
-			if (bankEntityName.equals(curEntity.getCustomName()))
-			{
-				curEntity.teleport(curEntity.getLocation().setDirection(player.getLocation().subtract(curEntity.getLocation()).toVector()));
-			}
-		}
-	}
-	
-	@EventHandler
 	public void onVillagerTrade(VillagerAcquireTradeEvent event)
 	{
-		if (EconomyConfig.BANK_ENTITYNAME.getValue().equals(event.getEntity().getCustomName()))
+		if (EntityHelper.hasTag(event.getEntity(), economy.getPlugin(), EconomyInterface.ENTITYKEY_BANK))
 		{
 			event.setCancelled(true);
 		}
@@ -194,7 +180,7 @@ public class EconomyListener implements Listener
 	@EventHandler
 	public void onVillagerTrade(VillagerCareerChangeEvent event)
 	{
-		if (EconomyConfig.BANK_ENTITYNAME.getValue().equals(event.getEntity().getCustomName()))
+		if (EntityHelper.hasTag(event.getEntity(), economy.getPlugin(), EconomyInterface.ENTITYKEY_BANK))
 		{
 			event.setCancelled(true);
 		}
@@ -229,8 +215,7 @@ public class EconomyListener implements Listener
 			return true;
 		}
 		
-		if (entity instanceof Villager &&
-				EconomyConfig.BANK_ENTITYNAME.getValue().equals(entity.getCustomName()))
+		if (entity instanceof Villager && EntityHelper.hasTag(entity, economy.getPlugin(), EconomyInterface.ENTITYKEY_BANK))
 		{
 			final UUID playerUUID = player.getUniqueId();
 			

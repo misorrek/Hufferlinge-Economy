@@ -25,12 +25,14 @@ import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
+import huff.lib.helper.SignHelper;
 import huff.lib.helper.IndependencyHelper;
 import huff.lib.manager.delaymessage.DelayType;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.menuholder.PlayerChooserHolder;
 import huff.lib.various.Action;
+import huff.lib.various.LibMessage;
 import huff.lib.various.structures.StringPair;
 
 public class TransactionHolder extends MenuHolder
@@ -139,6 +141,10 @@ public class TransactionHolder extends MenuHolder
 		{					
 			handleTransactionValueChange(amountValue, (Player) human);
 		}
+		else if (currentItemName.equals("§7» §9Alternative Eingabe"))
+		{
+			MenuHolder.openSign(human, SignHelper.getInputLines("Betrag eingeben", "---"));
+		}
 		else if (currentItemName.equals(getPerformItemName()))
 		{
 			if (transactionValue == 0)
@@ -178,6 +184,8 @@ public class TransactionHolder extends MenuHolder
 	{	
 		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getBorderItem(), true);
 		
+		InventoryHelper.setItem(super.getInventory(), 1, 5, ItemHelper.getItemWithMeta(Material.JUNGLE_SIGN, "§7» §9Alternative Eingabe"));	
+		
 		InventoryHelper.setItem(super.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));		
 		InventoryHelper.setItem(super.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
 		InventoryHelper.setItem(super.getInventory(), 2, 4, getAmountItem(AMOUNT_3, false));
@@ -200,7 +208,7 @@ public class TransactionHolder extends MenuHolder
 		InventoryHelper.setItem(super.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
 		InventoryHelper.setItem(super.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
 		
-		InventoryHelper.setItem(super.getInventory(), 4, 1,ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
+		InventoryHelper.setItem(super.getInventory(), 4, 1, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
 		
 		super.setMenuExitItem();
 	}
@@ -325,7 +333,7 @@ public class TransactionHolder extends MenuHolder
 		if (transactionValue > maxInventoryValue)
 		{
 			((Player) human).playSound(human.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-			human.sendMessage(MessageHelper.PREFIX_HUFF + "Unzureichender Platz.");	
+			human.sendMessage(LibMessage.PREFIX_GENERAL.getMessage() + "Unzureichender Platz.");	
 			return;
 		}
 		

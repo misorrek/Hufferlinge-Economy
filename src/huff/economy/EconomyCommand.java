@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableMap;
 
 import huff.economy.storage.Bank;
 import huff.economy.storage.Storage;
-import huff.lib.helper.MessageHelper;
 import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.helper.UserHelper;
 import huff.lib.various.HuffCommand;
+import huff.lib.various.LibMessage;
 import huff.lib.various.structures.StringPair;
 
 public class EconomyCommand extends HuffCommand
@@ -107,6 +107,8 @@ public class EconomyCommand extends HuffCommand
 			
 			for (String economyEntry : economyOverview)
 			{
+			
+			
 				sender.sendMessage(economyEntry);
 			}	
 		}
@@ -173,7 +175,7 @@ public class EconomyCommand extends HuffCommand
 			
 			if (targetPlayer == null)
 			{
-				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				sender.sendMessage(LibMessage.NOTFOUND.getMessage(new StringPair("user", targetPlayerName)));
 				return;
 			}
 			sender.sendMessage(processGetValue(isBalance, targetPlayer, targetPlayerName));
@@ -212,7 +214,7 @@ public class EconomyCommand extends HuffCommand
 			
 			if (targetPlayer == null)
 			{
-				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				sender.sendMessage(LibMessage.NOTFOUND.getMessage(new StringPair("user", targetPlayerName)));
 				return;
 			}
 			sender.sendMessage(procesSetValue(isBalance, value, targetPlayer, targetPlayerName));
@@ -250,7 +252,7 @@ public class EconomyCommand extends HuffCommand
 			
 			if (targetPlayer == null)
 			{
-				sender.sendMessage(MessageHelper.getPlayerNotFound(targetPlayerName));
+				sender.sendMessage(LibMessage.NOTFOUND.getMessage(new StringPair("user", targetPlayerName)));
 				return;
 			}
 			sender.sendMessage(processUpdateValue(isBalance, isRemove, value, targetPlayer, targetPlayerName));
@@ -389,7 +391,7 @@ public class EconomyCommand extends HuffCommand
 		
 		if (!action.equals("show") && !(sender instanceof Player))
 		{
-			sender.sendMessage(MessageHelper.NORUNINCONSOLE);
+			sender.sendMessage(LibMessage.NOTINCONSOLE.getMessage());
 			return true;
 		}
 		

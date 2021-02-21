@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
+import huff.lib.events.PlayerSignInputEvent;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.manager.delaymessage.DelayType;
 
@@ -48,5 +49,11 @@ public class JoinListener implements Listener
 			economy.getStorage().addUser(player.getUniqueId(), EconomyConfig.BANK_STARTBALANCE.getValue());
 		}
 		economy.getDelayMessageManager().sendDelayMessages(player, DelayType.NEXTJOIN);
+	}
+	
+	@EventHandler
+	public void onSignInput(PlayerSignInputEvent event)
+	{
+		event.getPlayer().sendMessage(event.getLines()[0]);
 	}
 }
