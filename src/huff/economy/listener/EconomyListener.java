@@ -210,7 +210,7 @@ public class EconomyListener implements Listener
 		{
 			if (entity instanceof Player)
 			{
-				MenuHolder.open(player, new InteractionHolder(economy, player.getUniqueId(), entity.getUniqueId()));
+				 new InteractionHolder(economy, player.getUniqueId(), entity.getUniqueId()).open(player);
 			}	
 			return true;
 		}
@@ -219,7 +219,7 @@ public class EconomyListener implements Listener
 		{
 			final UUID playerUUID = player.getUniqueId();
 			
-			MenuHolder.open(player, new BankHolder(economy, playerUUID, entity.getLocation()));
+			new BankHolder(economy, playerUUID, entity.getLocation()).open(player);
 			return true;
 		}	
 		return false;
@@ -256,7 +256,7 @@ public class EconomyListener implements Listener
 		if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) &&
 			EconomyConfig.equalsWalletItem(playerMainItem) && !(player.getOpenInventory().getTopInventory().getHolder() instanceof MenuHolder))
 		{
-			MenuHolder.open(player, new WalletHolder(economy, player.getUniqueId()));
+			new WalletHolder(economy, player.getUniqueId()).open(player);
 			player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1, 2);	
 			event.setCancelled(true);
 		}

@@ -182,15 +182,17 @@ public class TransactionHolder extends MenuHolder
 	@Override
 	public void handleSignInput(PlayerSignInputEvent event)
 	{
+		final Player player = event.getPlayer();
 		final String inputValue = event.getLines()[0];
 		
 		try
 		{
-			handleTransactionValueChange(Double.parseDouble(inputValue), event.getPlayer());
+			handleTransactionValueChange(Double.parseDouble(inputValue) - transactionValue, player);
 		}
 		catch (NumberFormatException exception)
 		{
-			EconomyMessage.INVALIDAMOUNT.getMessage(new StringPair("text", inputValue));
+			player.sendMessage(EconomyMessage.INVALIDAMOUNT.getMessage(new StringPair("text", inputValue)));
+			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
 		}
 	}
 	

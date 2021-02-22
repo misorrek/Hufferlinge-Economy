@@ -12,15 +12,15 @@ public class EconomyMessage
 	public static final MessagePair NEWVALUE = new MessagePair("economy.new_value", LibMessage.PREFIX_GENERAL.getKeyLink() + "Der neue Stand beträgt §9%amount%§7.");
 	public static final MessagePair NOSELFEXECUTE = new MessagePair("economy.no_self_execute", LibMessage.PREFIX_GENERAL.getKeyLink() + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
 	public static final MessagePair INVALIDPAGE = new MessagePair("economy.invalid_page", LibMessage.PREFIX_GENERAL.getKeyLink() + "Ungültige Seite. Es gibt §9%maxpage% Seiten§7.");
-	public static final MessagePair INVALIDNUMBER = new MessagePair("economy.invalid_number", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist keine gültige Nummer.");
-	public static final MessagePair INVALIDAMOUNT = new MessagePair("economy.invalid_amount", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist kein gültiger Betrag.");
+	public static final MessagePair INVALIDNUMBER = new MessagePair("economy.invalid_number", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"§7 ist keine gültige Nummer.");
+	public static final MessagePair INVALIDAMOUNT = new MessagePair("economy.invalid_amount", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"§7 ist kein gültiger Betrag.");
 	public static final MessagePair INVALIDFEEDBACK = new MessagePair("economy.invalid_feedback", LibMessage.PREFIX_GENERAL.getKeyLink() + "Ungültiger Datenbank-Rückgabecode §9\"%text%\"§7.");
 
 	public static final MessagePair LIST_HEADER = new MessagePair("economy.list.header", "§8☰ §7Übersicht über die Kontostände - Seite (%page%/%maxpage%)");
 	public static final MessagePair LIST_NODATA = new MessagePair("economy.list.no_data", "§8☰ §7Keine Spieler zur Übersicht vorhanden");
 
 	public static final MessagePair VALUE_NONEGATIVE = new MessagePair("economy.value.no_negative", LibMessage.PREFIX_GENERAL.getKeyLink() + "Der eingegebene Wert darf nicht negativ sein.");
-	public static final MessagePair VALUE_INVALIDVALUE = new MessagePair("economy.value.invalid_value", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist kein gültiger Zahlenwert.");
+	public static final MessagePair VALUE_INVALIDVALUE = new MessagePair("economy.value.invalid_value", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"§7 ist kein gültiger Zahlenwert.");
 	
 	public static final MessagePair BANK_HEADER = new MessagePair("economy.bank.header", "§8☰ §7Übersicht aller %bankname% - Seite (%page%/%maxpage%)");
 	public static final MessagePair BANK_NODATA = new MessagePair("economy.bank.no_data", "§8☰ §7Keine %bankname% zur Übersicht vorhanden");
@@ -33,7 +33,7 @@ public class EconomyMessage
 	public static final MessagePair BANK_ITEM = new MessagePair("economy.bank.item", LibMessage.PREFIX_GENERAL.getKeyLink() + "Du hast den Gegenstand zum Erstellen eines %bankname% bekommen.");
 	
 	public static final MessagePair DONTEXIST_SELF = new MessagePair("economy.dont_exist.self", LibMessage.PREFIX_GENERAL.getKeyLink() + "Du bist nicht in der Economy-Datenbank vorhanden.");
-	public static final MessagePair DONTEXIST_OTHER = new MessagePair("economy.dont_exist.other", LibMessage.PREFIX_GENERAL.getKeyLink() + "Der Spieler §9%user%§7 ist nicht in der Economy-Datenbank vorhanden");
+	public static final MessagePair DONTEXIST_OTHER = new MessagePair("economy.dont_exist.other", LibMessage.PREFIX_GENERAL.getKeyLink() + "Der Spieler §9%user%§7 ist nicht in der Economy-Datenbank vorhanden.");
 	
 	public static final MessagePair BALANCE_SELF_SHOW = new MessagePair("economy.balance.self.show", LibMessage.PREFIX_GENERAL.getKeyLink() + "Du hast §9%amount%§7 auf der Bank.");
 	public static final MessagePair BALANCE_SELF_SET = new MessagePair("economy.balance.self.set", LibMessage.PREFIX_GENERAL.getKeyLink() + "Du hast nun §9%amount%§7 auf der Bank.");
