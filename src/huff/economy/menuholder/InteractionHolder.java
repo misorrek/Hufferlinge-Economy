@@ -53,7 +53,7 @@ public class InteractionHolder extends MenuHolder
 		{
 			if (currentItem.getType() == EconomyConfig.VALUE_MATERIAL.getValue())
 			{
-				MenuHolder.open(human, new TransactionHolder(economy, TransactionKind.WALLET_OTHER, human.getUniqueId(), interactionTarget));
+				new TransactionHolder(economy, TransactionKind.WALLET_OTHER, human.getUniqueId(), interactionTarget).open(human);
 			}
 			else if (currentItem.getType() == EconomyConfig.TRADE_MATERIAL.getValue())
 			{

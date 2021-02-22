@@ -2,7 +2,6 @@ package huff.economy;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
@@ -47,36 +46,34 @@ public class EconomyInterface
 	private final Bank bank;
 	private final DelayMessageManager delayMessageManager;
 	
-	public @NotNull JavaPlugin getPlugin()
+	@NotNull
+	public JavaPlugin getPlugin()
 	{
 		return plugin;
 	}
 	
-	public @NotNull Storage getStorage()
+	@NotNull
+	public Storage getStorage()
 	{
 		return storage;
 	}
 	
-	public @NotNull Signature getSignature()
+	@NotNull
+	public Signature getSignature()
 	{
 		return signature;
 	}
 	
-	public @NotNull Bank getBank()
+	@NotNull
+	public Bank getBank()
 	{
 		return bank;
 	}
 	
-	public @NotNull DelayMessageManager getDelayMessageManager()
+	@NotNull
+	public DelayMessageManager getDelayMessageManager()
 	{
 		return delayMessageManager;
-	}
-	
-	public @NotNull NamespacedKey getNamespacedKey(@NotNull String key)
-	{
-		Validate.notNull((Object) key, "The namespaced key cannot be null.");
-		
-		return new NamespacedKey(plugin, key);
 	}
 	
 	public void trySpawnBankEntity(@NotNull Location location)
@@ -91,24 +88,24 @@ public class EconomyInterface
 		if (world.getTime() >= EconomyConfig.BANK_OPEN.getValue() && world.getTime() < EconomyConfig.BANK_CLOSE.getValue())
 		{
 			spawnBankEntity(location);
-			removeClosedEntity(location);
+			checkClosedEntitySpawn(location, true);
 		}
 		else
 		{
 			spawnClosedEntity(location);
-			removeBankEntity(location);
+			checkBankEntitySpawn(location, true);
 		}
 	}
 	
 	public void tryRemoveBankEntity(@NotNull Location location)
 	{
-		removeBankEntity(location);
-		removeClosedEntity(location);
+		checkBankEntitySpawn(location, true);
+		checkClosedEntitySpawn(location, true);
 	}
 	
 	private void spawnBankEntity(@Nullable Location location)
 	{
-		if (location == null || alreadyBankEntitySpawned(location))
+		if (location == null || checkBankEntitySpawn(location, false))
 		{
 			return;
 		}
@@ -118,7 +115,7 @@ public class EconomyInterface
 		bankEntity.setSilent(true);
 		bankEntity.setInvulnerable(true);
 		bankEntity.setCollidable(false);
-		bankEntity.setVillagerType(Type.SAVANNA);
+		bankEntity.setVillagerType(Type.TAIGA);
 		bankEntity.setProfession(Profession.CARTOGRAPHER);
 		bankEntity.setCustomName(EconomyConfig.BANK_ENTITYNAME.getValue());
 		EntityHelper.setTag(bankEntity, plugin, ENTITYKEY_BANK);
@@ -127,7 +124,7 @@ public class EconomyInterface
 	
 	private void spawnClosedEntity(@Nullable Location location)
 	{
-		if (location == null || alreadyClosedEntitySpawned(location))
+		if (location == null || checkClosedEntitySpawn(location, false))
 		{
 			return;
 		}
@@ -153,57 +150,39 @@ public class EconomyInterface
 		EntityHelper.setTag(closedEntity2, plugin, ENTITYKEY_BANKCLOSED);
 	}
 	
-	private boolean alreadyBankEntitySpawned(@NotNull Location location)
+	private boolean checkBankEntitySpawn(@NotNull Location location, boolean withRemove)
 	{
 		Validate.notNull((Object) location, "The bank entity location cannot be null");
 		
-		for (Entity entity : location.getWorld().getNearbyEntities(location, 1.5, 1.5, 1.5))
+		for (Entity entity : location.getWorld().getNearbyEntities(location, Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE))
 		{
 			if (entity instanceof Villager && EntityHelper.hasTag(entity, plugin, ENTITYKEY_BANK))
 			{
+				if (withRemove)
+				{
+					entity.remove();
+				}
 				return true;	
 			}
 		}
 		return false;
 	}
 	
-	private boolean alreadyClosedEntitySpawned(@NotNull Location location)
+	private boolean checkClosedEntitySpawn(@NotNull Location location, boolean withRemove)
 	{
 		Validate.notNull((Object) location, "The bank entity location cannot be null");
 		
-		for (Entity entity : location.getWorld().getNearbyEntities(location.clone().add(0, 0.2, 0), 1.5, 1.5, 1.5))
+		for (Entity entity : location.getWorld().getNearbyEntities(location.clone().add(0, 0.35, 0), Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE))
 		{
 			if (entity instanceof ArmorStand && EntityHelper.hasTag(entity, plugin, ENTITYKEY_BANKCLOSED))
 			{
+				if (withRemove)
+				{
+					entity.remove();
+				}
 				return true;	
 			}
 		}
 		return false;
-	}
-	
-	private void removeBankEntity(@NotNull Location location)
-	{
-		Validate.notNull((Object) location, "The bank entity location cannot be null");
-		
-		for (Entity entity : location.getWorld().getNearbyEntities(location, 1.5, 1.5, 1.5))
-		{
-			if (entity instanceof Villager && EntityHelper.hasTag(entity, plugin, ENTITYKEY_BANK))
-			{
-				entity.remove();		
-			}
-		}
-	}
-	
-	private void removeClosedEntity(@NotNull Location location)
-	{
-		Validate.notNull((Object) location, "The bank closed location cannot be null");
-		
-		for (Entity entity : location.getWorld().getNearbyEntities(location.clone().add(0, 0.35, 0), 1.5, 1.5, 1.5))
-		{
-			if (entity instanceof ArmorStand && EntityHelper.hasTag(entity, plugin, ENTITYKEY_BANKCLOSED))
-			{
-				entity.remove();		
-			}
-		}
 	}
 }

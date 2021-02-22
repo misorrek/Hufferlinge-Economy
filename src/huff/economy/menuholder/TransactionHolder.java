@@ -26,6 +26,7 @@ import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
 import huff.lib.helper.SignHelper;
+import huff.lib.events.PlayerSignInputEvent;
 import huff.lib.helper.IndependencyHelper;
 import huff.lib.manager.delaymessage.DelayType;
 import huff.lib.menuholder.MenuExitType;
@@ -99,21 +100,19 @@ public class TransactionHolder extends MenuHolder
 			
 			if (transactionKind == TransactionKind.BANK_OTHER)
 			{
-				MenuHolder.open(human, new PlayerChooserHolder(economy.getPlugin(), economy.getStorage().getUsers(human.getUniqueId()), 
-						                                       InventoryHelper.INV_SIZE_6, null, MenuExitType.BACK,
-						                                       params -> 
+				new PlayerChooserHolder(economy.getPlugin(), economy.getStorage().getUsers(human.getUniqueId()), InventoryHelper.INV_SIZE_6, null, MenuExitType.BACK, params -> 
 				{
 					final Object object = params != null && params.length > 0 ? params[0] : null;
 					
 					if (object instanceof UUID)
 					{
-						MenuHolder.open(human, new TransactionHolder(economy, TransactionKind.BANK_OTHER, human.getUniqueId(), (UUID) object));
+						new TransactionHolder(economy, TransactionKind.BANK_OTHER, human.getUniqueId(), (UUID) object).open(human);
 					}
-				}));
+				}).open(human);
 			}
 			else
-			{		
-				MenuHolder.open(human, new TransactionHolder(economy, transactionKind, human.getUniqueId()));
+			{	
+				 new TransactionHolder(economy, transactionKind, human.getUniqueId()).open(human);
 			}
 		}
 	}
@@ -139,11 +138,11 @@ public class TransactionHolder extends MenuHolder
 		
 		if (StringUtils.isNotEmpty(amountValue))
 		{					
-			handleTransactionValueChange(amountValue, (Player) human);
+			handleTransactionValueChange(Integer.parseInt(amountValue), (Player) human);
 		}
-		else if (currentItemName.equals("§7» §9Alternative Eingabe"))
+		else if (currentItemName.equals(EconomyConfig.TRANSACTION_SIGNINPUTNAME.getValue()))
 		{
-			MenuHolder.openSign(human, SignHelper.getInputLines("Betrag eingeben", "---"));
+			super.openSign(human, SignHelper.getInputLines("Betrag eingeben", "---"));
 		}
 		else if (currentItemName.equals(getPerformItemName()))
 		{
@@ -180,11 +179,24 @@ public class TransactionHolder extends MenuHolder
 		return true;
 	}
 	
+	@Override
+	public void handleSignInput(PlayerSignInputEvent event)
+	{
+		final String inputValue = event.getLines()[0];
+		
+		try
+		{
+			handleTransactionValueChange(Double.parseDouble(inputValue), event.getPlayer());
+		}
+		catch (NumberFormatException exception)
+		{
+			EconomyMessage.INVALIDAMOUNT.getMessage(new StringPair("text", inputValue));
+		}
+	}
+	
 	private void initInventory(@NotNull UUID uuid)
 	{	
 		InventoryHelper.setFill(super.getInventory(), InventoryHelper.getBorderItem(), true);
-		
-		InventoryHelper.setItem(super.getInventory(), 1, 5, ItemHelper.getItemWithMeta(Material.JUNGLE_SIGN, "§7» §9Alternative Eingabe"));	
 		
 		InventoryHelper.setItem(super.getInventory(), 2, 2, getAmountItem(AMOUNT_5, false));		
 		InventoryHelper.setItem(super.getInventory(), 2, 3, getAmountItem(AMOUNT_4, false));
@@ -203,50 +215,24 @@ public class TransactionHolder extends MenuHolder
 		{		
 			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
 			
-			InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getMessage(new StringPair("user", targetPlayer.getName()))));
+			InventoryHelper.setItem(super.getInventory(), 3, 5, 
+					ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getMessage(new StringPair("user", targetPlayer.getName()))));
 		}		
 		InventoryHelper.setItem(super.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
 		InventoryHelper.setItem(super.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
 		
 		InventoryHelper.setItem(super.getInventory(), 4, 1, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
 		
+		if (EconomyConfig.TRANSACTION_SIGNINPUT.getValue())
+		{
+			InventoryHelper.setItem(super.getInventory(), 4, 5, ItemHelper.getItemWithMeta(Material.JUNGLE_SIGN, EconomyConfig.TRANSACTION_SIGNINPUTNAME.getValue()));	
+		}
 		super.setMenuExitItem();
 	}
 	
-	private void updateTransactionValue(double updatedTransactionValue, double maxTransactionValue, boolean isInventoryMax)
-	{	
-		transactionValue = updatedTransactionValue;
-		
-		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 2, 5), 
-				                      MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(transactionValue), false, false), 
-				                      getMaxValueLore(maxTransactionValue, isInventoryMax));
-	}
-	
-	private List<String> getMaxValueLore(double maxTransactionValue, boolean isInventoryMax)
-	{
-		final List<String> valueItemLore = new ArrayList<>();
-		
-		valueItemLore.add(String.format("§7%s: %.0f", transactionKind.isBankTransaction() ? 
-				                                      EconomyConfig.BANK_NAME.getValue() : 
-				                                      EconomyConfig.WALLET_NAME.getValue(),
-				                                      maxTransactionValue));
-		if (isInventoryMax)
-		{
-			valueItemLore.add(" ");
-			valueItemLore.add("§cUnzureichender Platz.");
-		}		
-		return valueItemLore;
-	}
-	
-	private double getMaxTransactionValue(@NotNull UUID uuid)
-	{
-		return transactionKind.isBankTransaction() ? economy.getStorage().getBalance(uuid) : economy.getStorage().getWallet(uuid);
-	}
-	
-	private void handleTransactionValueChange(@NotNull String changeValueString, @NotNull Player player)
+	private void handleTransactionValueChange(double changeValue, @NotNull Player player)
 	{
 		final double maxValue = getMaxTransactionValue(player.getUniqueId());
-		final double changeValue = Integer.parseInt(changeValueString);
 		double updatedTransactionValue = transactionValue + changeValue;
 		boolean isInventoryMax = false;
 	
@@ -376,5 +362,36 @@ public class TransactionHolder extends MenuHolder
 	private @NotNull String getPerformItemName()
 	{		
 		return "§7» §a" + transactionKind.getLabel();
+	}
+	
+	private void updateTransactionValue(double updatedTransactionValue, double maxTransactionValue, boolean isInventoryMax)
+	{	
+		transactionValue = updatedTransactionValue;
+		
+		ItemHelper.updateItemWithMeta(InventoryHelper.getItem(super.getInventory(), 2, 5), 
+				                      MessageHelper.getHighlighted(EconomyConfig.getValueFormatted(transactionValue), false, false), 
+				                      getMaxValueLore(maxTransactionValue, isInventoryMax));
+	}
+	
+	@NotNull
+	private List<String> getMaxValueLore(double maxTransactionValue, boolean isInventoryMax)
+	{
+		final List<String> valueItemLore = new ArrayList<>();
+		
+		valueItemLore.add(String.format("§7%s: %.0f", transactionKind.isBankTransaction() ? 
+				                                      EconomyConfig.BANK_NAME.getValue() : 
+				                                      EconomyConfig.WALLET_NAME.getValue(),
+				                                      maxTransactionValue));
+		if (isInventoryMax)
+		{
+			valueItemLore.add(" ");
+			valueItemLore.add("§cUnzureichender Platz.");
+		}		
+		return valueItemLore;
+	}
+	
+	private double getMaxTransactionValue(@NotNull UUID uuid)
+	{
+		return transactionKind.isBankTransaction() ? economy.getStorage().getBalance(uuid) : economy.getStorage().getWallet(uuid);
 	}
 }

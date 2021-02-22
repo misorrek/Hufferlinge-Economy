@@ -45,6 +45,8 @@ public class EconomyConfig
 	
 	public static final ConfigPair<Boolean> TRANSACTION_FEEDBACK = new ConfigPair<>("economy.transaction.feedback", true, Boolean.class);
 	public static final MessagePair TRANSACTION_RECEIVER = new MessagePair("economy.trade.name", "§7Empfänger: §9%user%");
+	public static final ConfigPair<Boolean> TRANSACTION_SIGNINPUT = new ConfigPair<>("economy.transaction.sign_input", true, Boolean.class);
+	public static final ConfigPair<String> TRANSACTION_SIGNINPUTNAME = new ConfigPair<>("economy.transaction.sign_input_name", "§7» §9Alternative Eingabe", String.class);
 	
 	public static final ConfigPair<String> TRADE_NAME = new ConfigPair<>("economy.trade.name", "Handel", String.class);
 	public static final ConfigPair<String> TRADE_INVNAME = new ConfigPair<>("economy.trade.inventory_name", "§7» §e" + TRADE_NAME.getKeyLink(), String.class);

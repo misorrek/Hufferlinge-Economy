@@ -193,8 +193,8 @@ public class TradeHolder extends MenuHolder
 		
 		if (checkPlayerState(leftPlayer, true) && checkPlayerState(rightPlayer, true))
 		{
-			MenuHolder.open(leftPlayer, this);
-			MenuHolder.open(rightPlayer, this);
+			super.open(leftPlayer);
+			super.open(rightPlayer);
 		}
 	}
 	
@@ -252,7 +252,8 @@ public class TradeHolder extends MenuHolder
 		}
 	}
 	
-	private @NotNull ItemStack getSlotBlocker()
+	@NotNull
+	private ItemStack getSlotBlocker()
 	{
 		final List<String> lore = new ArrayList<>();
 		
@@ -373,11 +374,12 @@ public class TradeHolder extends MenuHolder
 				currentValue = rightTrader.getValue();
 				rightTrader.setValueChoosing(true);
 			}
-			MenuHolder.open(human, new TransactionHolder(economy, TransactionKind.WALLET_CHOOSE, human.getUniqueId(),
-                                   currentValue, getValueFinishAction(isLeftTrader)));
+			new TransactionHolder(economy, TransactionKind.WALLET_CHOOSE, human.getUniqueId(), 
+					currentValue, getValueFinishAction(isLeftTrader)).open(human);
 		}
 	}
 	
+	@NotNull
 	private Action getValueFinishAction(boolean isLeftTrader)
 	{
 		return params -> 
@@ -479,6 +481,7 @@ public class TradeHolder extends MenuHolder
 		}
 	}
 	
+	@NotNull
 	private List<ItemStack> getTradeItems(boolean isLeftTrader)
 	{
 		final List<ItemStack> tradeItems = new ArrayList<>();
@@ -511,6 +514,7 @@ public class TradeHolder extends MenuHolder
 		return tradeItems;
 	}
 	
+	@NotNull
 	private String getTradeOverview(@NotNull String partnerName, @NotNull Trader traderSelf, @NotNull Trader traderOther)
 	{
 		return String.format("§8☰ §7Handel §aabgeschlossen §7- Übersicht\n \n" +

@@ -28,7 +28,8 @@ public class Signature
 	
 	private final RedisManager redisManager;
 	
-	public @NotNull List<String> createSignatureLore(int valueAmount)
+	@NotNull
+	public List<String> createSignatureLore(int valueAmount)
 	{
 		final List<String> signatureLore = new ArrayList<>();
 		final String signature = createSignature(valueAmount);
@@ -80,12 +81,14 @@ public class Signature
 		return signatureValueAmount;
 	}
 	
-	private @NotNull String getPatternKey(@NotNull String key)
+	@NotNull
+	private String getPatternKey(@NotNull String key)
 	{
 		return PATTERN_USER + key;
 	}
 	
-	private @NotNull String createSignature(int valueAmount)
+	@NotNull
+	private String createSignature(int valueAmount)
 	{
 		final String signatureId = RandomStringUtils.random(12, "0123456789ABCDEF");
 		

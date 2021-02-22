@@ -26,7 +26,8 @@ public enum TransactionKind
 		return getTransaction(transactionLabel) != null;
 	}
 	
-	public static @Nullable TransactionKind getTransaction(@NotNull String transactionLabel)
+	@Nullable
+	public static TransactionKind getTransaction(@NotNull String transactionLabel)
 	{
 		for (TransactionKind transactionKind : TransactionKind.values())
 		{
@@ -38,12 +39,14 @@ public enum TransactionKind
 		return null;
 	}	
 		
-	public @NotNull String getLabel()
+	@NotNull
+	public String getLabel()
 	{
 		return label;
 	}
 	
-	public @NotNull String getLowerLabel()
+	@NotNull
+	public String getLowerLabel()
 	{
 		return label.toLowerCase();
 	}

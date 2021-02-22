@@ -13,6 +13,7 @@ public class EconomyMessage
 	public static final MessagePair NOSELFEXECUTE = new MessagePair("economy.no_self_execute", LibMessage.PREFIX_GENERAL.getKeyLink() + "Du kannst diesen Befehl nicht auf dich selbst aufrufen.");
 	public static final MessagePair INVALIDPAGE = new MessagePair("economy.invalid_page", LibMessage.PREFIX_GENERAL.getKeyLink() + "Ungültige Seite. Es gibt §9%maxpage% Seiten§7.");
 	public static final MessagePair INVALIDNUMBER = new MessagePair("economy.invalid_number", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist keine gültige Nummer.");
+	public static final MessagePair INVALIDAMOUNT = new MessagePair("economy.invalid_amount", LibMessage.PREFIX_GENERAL.getKeyLink() + "§9\"%text%\"%7 ist kein gültiger Betrag.");
 	public static final MessagePair INVALIDFEEDBACK = new MessagePair("economy.invalid_feedback", LibMessage.PREFIX_GENERAL.getKeyLink() + "Ungültiger Datenbank-Rückgabecode §9\"%text%\"§7.");
 
 	public static final MessagePair LIST_HEADER = new MessagePair("economy.list.header", "§8☰ §7Übersicht über die Kontostände - Seite (%page%/%maxpage%)");
@@ -85,6 +86,8 @@ public class EconomyMessage
 		config.set(INVALIDPAGE);
 		config.addContextLine(INVALIDNUMBER.getKey(), "text");
 		config.set(INVALIDNUMBER);
+		config.addContextLine(INVALIDAMOUNT.getKey(), "text");
+		config.set(INVALIDAMOUNT);
 		config.addContextLine(INVALIDFEEDBACK.getKey(), "text");
 		config.set(INVALIDFEEDBACK);
 		

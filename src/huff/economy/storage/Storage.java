@@ -47,11 +47,13 @@ public class Storage
 		return redisManager.addMap(getPatternKey(uuid), getFieldValuePairs(startBalance, 0.0));
 	}
 	
+	@NotNull
 	public List<UUID> getUsers()
 	{
 		return getUsers(null);
 	}
 	
+	@NotNull
 	public List<UUID> getUsers(@Nullable UUID filteredUUID)
 	{
 		List<UUID> users = new ArrayList<>();
@@ -176,7 +178,8 @@ public class Storage
 		return true;
 	}
 	
-	public @NotNull List<String> getEconomyOverview(int startIndex, int limit)
+	@NotNull
+	public List<String> getEconomyOverview(int startIndex, int limit)
 	{
 		final List<String> economyOverview = new ArrayList<>();	
 		final String rankKey = "rank";
@@ -219,7 +222,8 @@ public class Storage
 		return economyOverview;
 	}
 	
-	private @NotNull Set<String> getKeys()
+	@NotNull
+	private  Set<String> getKeys()
 	{
 		try (final Jedis jedis = redisManager.getJedis())
 		{
@@ -232,12 +236,14 @@ public class Storage
 		return new HashSet<>();
 	}
 	
-	private @NotNull String getPatternKey(@NotNull UUID uuid)
+	@NotNull
+	private String getPatternKey(@NotNull UUID uuid)
 	{
 		return PATTERN_USER + uuid.toString();
 	}
 	
-	private @Nullable UUID getUUIDFromKey(@NotNull String key)
+	@Nullable
+	private UUID getUUIDFromKey(@NotNull String key)
 	{
 		return UUID.fromString(key.replace(PATTERN_USER, ""));
 	}

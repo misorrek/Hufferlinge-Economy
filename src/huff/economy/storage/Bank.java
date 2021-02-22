@@ -26,6 +26,7 @@ public class Bank
 	public static final int CODE_NOBANK = -1;
 	public static final int CODE_DUPLICATE = -2;
 	public static final int CODE_NOSPACE = -3;
+	public static final double BANK_TOLERANCE = 2;
 	
 	private static final String PATTERN_BANK = "bank:";	
 	private static final String FIELD_LOCATION = "location";
@@ -48,7 +49,8 @@ public class Bank
 		return getBankAtLocation(location, tolerance) != null;
 	}
 	
-	public @Nullable String getBankAtLocation(@NotNull Location location, double tolerance)
+	@Nullable
+	public String getBankAtLocation(@NotNull Location location, double tolerance)
 	{
 		Validate.notNull((Object) location, "The location cannot be null.");	
 		
@@ -80,7 +82,7 @@ public class Bank
 	
 	public boolean isOwner(@NotNull UUID uuid, @NotNull Location location)
 	{
-		final String bankKey = getBankAtLocation(location, 2);
+		final String bankKey = getBankAtLocation(location, BANK_TOLERANCE);
 		
 		if (bankKey != null)
 		{
@@ -91,7 +93,8 @@ public class Bank
 		return false;
 	}
 	
-	public @NotNull List<Location> getBankLocations()
+	@NotNull
+	public List<Location> getBankLocations()
 	{
 		List<Location> bankLocations = new ArrayList<>();
 		
@@ -111,7 +114,7 @@ public class Bank
 	{
 		Validate.notNull((Object) location, "The bank location cannot be null.");	
 		
-		if (isBankAtLocation(location, 1.5))
+		if (isBankAtLocation(location, BANK_TOLERANCE))
 		{
 			return CODE_DUPLICATE;
 		}
@@ -135,7 +138,8 @@ public class Bank
 		return CODE_NOBANK;
 	}
 	
-	private @NotNull Set<String> getKeys()
+	@NotNull
+	private Set<String> getKeys()
 	{
 		try (final Jedis jedis = redisManager.getJedis())
 		{
@@ -148,16 +152,19 @@ public class Bank
 		return new HashSet<>();
 	}
 	
-	private @NotNull String getPatternKey(@NotNull String key)
+	@NotNull
+	private String getPatternKey(@NotNull String key)
 	{
 		return PATTERN_BANK + key;
 	}
 	
-	private @NotNull String getNewPatternKey()
+	@NotNull
+	private String getNewPatternKey()
 	{
 		return PATTERN_BANK + getKeys().size();
 	}
 	
+	@NotNull
 	private Map<String, String> getFieldValuePairs(@NotNull Location location, @Nullable UUID owenerUUID)
 	{
 		final Map<String, String> resultMap = new HashMap<>();

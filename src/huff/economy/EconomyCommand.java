@@ -190,7 +190,8 @@ public class EconomyCommand extends HuffCommand
 		}
 	}
 	
-	private @NotNull String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
+	@NotNull
+	private String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
 		final double value = isBalance ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
 		final int feedbackCode = value >= 0 ? Storage.CODE_SUCCESS : Storage.CODE_NOUSER;
@@ -229,7 +230,8 @@ public class EconomyCommand extends HuffCommand
 		}
 	}
 	
-	private @NotNull String procesSetValue(boolean isBalance, double value, @NotNull UUID targetUUID, @Nullable String targetName)
+	@NotNull
+	private String procesSetValue(boolean isBalance, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
 		final int feedbackCode = isBalance ? economy.getStorage().setBalance(targetUUID, value) : economy.getStorage().setWallet(targetUUID, value);
 		
@@ -267,7 +269,8 @@ public class EconomyCommand extends HuffCommand
 		}
 	}
 	
-	private @NotNull String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
+	@NotNull
+	private String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
 		final int feedbackCode = (economy.getStorage().updateValue(targetUUID, value, isRemove, isBalance));
 		
@@ -378,7 +381,8 @@ public class EconomyCommand extends HuffCommand
 		}
 	}
 
-	private @NotNull String getInvalidSenderMessage()
+	@NotNull
+	private String getInvalidSenderMessage()
 	{
 		return StringHelper.build(EconomyMessage.NOSELFEXECUTE.getMessage());
 	}

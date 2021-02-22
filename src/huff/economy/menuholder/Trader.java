@@ -20,6 +20,7 @@ public class Trader
 	private boolean valueChoosing = false;
 	private boolean ready = false;
 
+	@NotNull
 	public UUID getUUID()
 	{
 		return uuid;
