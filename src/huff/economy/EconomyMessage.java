@@ -3,7 +3,7 @@ package huff.economy;
 import huff.lib.manager.MessageManager;
 import huff.lib.various.HuffConfiguration;
 import huff.lib.various.LibMessage;
-import huff.lib.various.structures.MessagePair;
+import huff.lib.various.structures.configuration.MessagePair;
 
 public class EconomyMessage
 {

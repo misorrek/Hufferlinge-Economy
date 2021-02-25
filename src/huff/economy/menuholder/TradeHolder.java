@@ -30,6 +30,9 @@ import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.various.Action;
 
+/**
+ * A menu class that contains the trade menu.
+ */
 public class TradeHolder extends MenuHolder
 {
 	private static final Integer[] TRADERLEFT_SLOTS = {10,11,12,19,20,21,28,29,30,37,38,39};
@@ -147,11 +150,11 @@ public class TradeHolder extends MenuHolder
 		if (player.isOnline())
 		{
 			player.getInventory().addItem(getTradeItems(isLeftTrader).toArray(new ItemStack[0]));
-			player.sendMessage(EconomyMessage.TRADE_ABORT.getMessage());
+			player.sendMessage(EconomyMessage.TRADE_ABORT.getValue());
 		}
 		MenuHolder.close(otherHuman);
 		otherHuman.getInventory().addItem(getTradeItems(!isLeftTrader).toArray(new ItemStack[0]));
-		otherHuman.sendMessage(EconomyMessage.TRADE_ABORT.getMessage());
+		otherHuman.sendMessage(EconomyMessage.TRADE_ABORT.getValue());
 	}
 	
 	public void handlePickup()

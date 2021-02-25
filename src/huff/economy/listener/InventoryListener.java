@@ -33,6 +33,9 @@ import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.various.structures.StringPair;
 
+/**
+ * A listener class that handles economy inventory events.
+ */
 public class InventoryListener implements Listener
 {
 	private Map<UUID, Integer> pickedUpSlot = new HashMap<>();
@@ -171,7 +174,7 @@ public class InventoryListener implements Listener
 			
 			if (human.getGameMode() == GameMode.CREATIVE || human.getGameMode() == GameMode.SPECTATOR)
 			{
-				human.sendMessage(EconomyMessage.WALLET_NOPICKUP.getMessage(new StringPair("walletname", EconomyConfig.WALLET_NAME.getValue())));
+				human.sendMessage(EconomyMessage.WALLET_NOPICKUP.getValue(new StringPair("walletname", EconomyConfig.WALLET_NAME.getValue())));
 				return;
 			}	
 			handleWalletIn(human, cursorItem, event.isShiftClick());			

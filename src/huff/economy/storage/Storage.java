@@ -18,6 +18,9 @@ import huff.lib.manager.RedisManager;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
+/**
+ * A redis storage class that stores user economy data.
+ */
 public class Storage
 {
 	public static final int CODE_SUCCESS = 0;
@@ -35,7 +38,7 @@ public class Storage
 		this.redisManager = redisManager;
 	}
 	
-	private RedisManager redisManager;
+	private final RedisManager redisManager;
 	
 	public boolean existUser(@NotNull UUID uuid)
 	{

@@ -20,6 +20,9 @@ import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.various.structures.StringPair;
 
+/**
+ * A menu class that contains the menu that shows up when a player interact with the wallet to another player.
+ */
 public class InteractionHolder extends MenuHolder
 {
 	public InteractionHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer, @NotNull UUID interactionTarget)
@@ -67,7 +70,7 @@ public class InteractionHolder extends MenuHolder
 					}
 					else
 					{
-						human.sendMessage(EconomyMessage.TRADE_NOTALLOWED.getMessage(new StringPair("user", targetPlayer.getName())));
+						human.sendMessage(EconomyMessage.TRADE_NOTALLOWED.getValue(new StringPair("user", targetPlayer.getName())));
 					}
 				}
 				else
@@ -89,7 +92,7 @@ public class InteractionHolder extends MenuHolder
 		InventoryHelper.setItem(super.getInventory(), 2, 2, ItemHelper.getItemWithMeta(EconomyConfig.VALUE_MATERIAL.getValue(), 
 				                                                                       EconomyConfig.getTransactionInventoryName(TransactionKind.WALLET_OTHER))); 
 		
-		InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getMessage(new StringPair("user", targetPlayer.getName()))));
+		InventoryHelper.setItem(super.getInventory(), 3, 5, ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getValue(new StringPair("user", targetPlayer.getName()))));
 	
 		InventoryHelper.setItem(super.getInventory(), 2, 8, ItemHelper.getItemWithMeta(EconomyConfig.TRADE_MATERIAL.getValue(),
 				                                                                       EconomyConfig.TRADE_INVNAME.getValue()));

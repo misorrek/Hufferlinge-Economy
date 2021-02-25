@@ -15,6 +15,9 @@ import huff.economy.EconomyConfig;
 import huff.lib.manager.RedisManager;
 import redis.clients.jedis.Jedis;
 
+/**
+ * A redis storage class that stores the signatures of withdrawn value items.
+ */
 public class Signature
 {
 	private static final String PATTERN_USER = "signature:";

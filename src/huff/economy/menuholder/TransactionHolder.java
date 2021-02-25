@@ -36,6 +36,9 @@ import huff.lib.various.Action;
 import huff.lib.various.LibMessage;
 import huff.lib.various.structures.StringPair;
 
+/**
+ * A menu class that contains the transaction menu that is integrated in the bank, wallet or trade menu.
+ */
 public class TransactionHolder extends MenuHolder
 {
 	private static final String NBT_KEY = "changeamount";
@@ -173,7 +176,7 @@ public class TransactionHolder extends MenuHolder
 			else
 			{
 				MenuHolder.close(human);
-				human.sendMessage(EconomyMessage.TRANSACTION_FAIL.getMessage());	
+				human.sendMessage(EconomyMessage.TRANSACTION_FAIL.getValue());	
 			}	
 		}
 		return true;
@@ -191,7 +194,7 @@ public class TransactionHolder extends MenuHolder
 		}
 		catch (NumberFormatException exception)
 		{
-			player.sendMessage(EconomyMessage.INVALIDAMOUNT.getMessage(new StringPair("text", inputValue)));
+			player.sendMessage(EconomyMessage.INVALIDAMOUNT.getValue(new StringPair("text", inputValue)));
 			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
 		}
 	}
@@ -218,7 +221,7 @@ public class TransactionHolder extends MenuHolder
 			final OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
 			
 			InventoryHelper.setItem(super.getInventory(), 3, 5, 
-					ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getMessage(new StringPair("user", targetPlayer.getName()))));
+					ItemHelper.getSkullWithMeta(targetPlayer, EconomyConfig.TRANSACTION_RECEIVER.getValue(new StringPair("user", targetPlayer.getName()))));
 		}		
 		InventoryHelper.setItem(super.getInventory(), 3, 6, getAmountItem(AMOUNT_1, true));
 		InventoryHelper.setItem(super.getInventory(), 3, 7, getAmountItem(AMOUNT_2, true));
@@ -279,14 +282,14 @@ public class TransactionHolder extends MenuHolder
 		if (!transactionKind.isBankTransaction() && !targetPlayer.isOnline())
 		{
 			MenuHolder.close(human);
-			human.sendMessage(EconomyMessage.TRANSACTION_TARGETDISCONNECTED.getMessage(new StringPair("user", targetPlayer.getName())));
+			human.sendMessage(EconomyMessage.TRANSACTION_TARGETDISCONNECTED.getValue(new StringPair("user", targetPlayer.getName())));
 		}
 		else if (economy.getStorage().runTransaction(human.getUniqueId(), target, transactionValue, transactionKind.isBankTransaction()))
 		{
 			MenuHolder.close(human);
-			human.sendMessage(EconomyMessage.TRANSACTION_SENT.getMessage(new StringPair("amount", formattedValueAmount), new StringPair("user", targetPlayer.getName())));
+			human.sendMessage(EconomyMessage.TRANSACTION_SENT.getValue(new StringPair("amount", formattedValueAmount), new StringPair("user", targetPlayer.getName())));
 			
-			final String otherMessage = EconomyMessage.TRANSACTION_SENT.getMessage(new StringPair("amount", formattedValueAmount), new StringPair("user", human.getName()));
+			final String otherMessage = EconomyMessage.TRANSACTION_SENT.getValue(new StringPair("amount", formattedValueAmount), new StringPair("user", human.getName()));
 			
 			if (targetPlayer.isOnline())
 			{
@@ -299,7 +302,7 @@ public class TransactionHolder extends MenuHolder
 		}
 		else
 		{
-			human.sendMessage(EconomyMessage.TRANSACTION_FAIL.getMessage());
+			human.sendMessage(EconomyMessage.TRANSACTION_FAIL.getValue());
 		}
 	}
 	
@@ -308,8 +311,8 @@ public class TransactionHolder extends MenuHolder
 		if (economy.getStorage().runTransaction(human.getUniqueId(), transactionValue, fromBalanceTransaction))
 		{		
 			MenuHolder.close(human);
-			human.sendMessage(fromBalanceTransaction ? EconomyMessage.TRANSACTION_WITHDRAWED.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue)))
-					                                 : EconomyMessage.TRANSACTION_DEPOSITED.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue))));
+			human.sendMessage(fromBalanceTransaction ? EconomyMessage.TRANSACTION_WITHDRAWED.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue)))
+					                                 : EconomyMessage.TRANSACTION_DEPOSITED.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue))));
 		}	
 	}
 	
@@ -321,7 +324,7 @@ public class TransactionHolder extends MenuHolder
 		if (transactionValue > maxInventoryValue)
 		{
 			((Player) human).playSound(human.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
-			human.sendMessage(LibMessage.PREFIX_GENERAL.getMessage() + "Unzureichender Platz.");	
+			human.sendMessage(LibMessage.PREFIX_GENERAL.getValue() + "Unzureichender Platz.");	
 			return;
 		}
 		
@@ -348,7 +351,7 @@ public class TransactionHolder extends MenuHolder
 			}
 			MenuHolder.close(human);
 			((Player) human).playSound(human.getLocation(), Sound.ENTITY_HORSE_ARMOR, 1, 2);
-			human.sendMessage(EconomyMessage.TRANSACTION_TAKEN.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue)), 
+			human.sendMessage(EconomyMessage.TRANSACTION_TAKEN.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(transactionValue)), 
 					                                                      new StringPair("walletname", EconomyConfig.WALLET_NAME.getValue())));
 		}
 	}

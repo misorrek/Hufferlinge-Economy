@@ -20,6 +20,9 @@ import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
 import redis.clients.jedis.Jedis;
 
+/**
+ * A redis storage class that stores the locations of banks.
+ */
 public class Bank
 {
 	public static final int CODE_SUCCESS = 0;

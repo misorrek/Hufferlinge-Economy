@@ -17,6 +17,9 @@ import huff.lib.helper.MessageHelper;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 
+/**
+ * A menu class that contains the wallet main menu.
+ */
 public class WalletHolder extends MenuHolder
 {
 	public WalletHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer)

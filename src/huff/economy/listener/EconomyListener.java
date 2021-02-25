@@ -50,6 +50,9 @@ import huff.lib.helper.MessageHelper;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.various.structures.StringPair;
 
+/**
+ * A listener class that handles general economy specific events.
+ */
 public class EconomyListener implements Listener
 {
 	public EconomyListener(@NotNull EconomyInterface economyInterface)
@@ -91,7 +94,7 @@ public class EconomyListener implements Listener
 			{
 				if (bankLocation.distance(location) <= 1)
 				{
-					player.sendMessage(EconomyMessage.BANK_NOTALLOWED.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+					player.sendMessage(EconomyMessage.BANK_NOTALLOWED.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 					return true;
 				}
 			}
@@ -272,13 +275,13 @@ public class EconomyListener implements Listener
 			{
 				economy.trySpawnBankEntity(bankLocation);
 				player.getInventory().getItemInMainHand().setAmount(playerMainItem.getAmount() -1);
-				player.sendMessage(EconomyMessage.BANK_PLACE.getMessage() + "\n"
-                                   + EconomyMessage.BANK_OPENINGHOURS.getMessage(new StringPair("open", MessageHelper.getTimeLabel(EconomyConfig.BANK_OPEN.getValue())),
+				player.sendMessage(EconomyMessage.BANK_PLACE.getValue() + "\n"
+                                   + EconomyMessage.BANK_OPENINGHOURS.getValue(new StringPair("open", MessageHelper.getTimeLabel(EconomyConfig.BANK_OPEN.getValue())),
                                 		                                         new StringPair("close", MessageHelper.getTimeLabel(EconomyConfig.BANK_CLOSE.getValue()))));
 			}
 			else
 			{
-				player.sendMessage(EconomyMessage.BANK_TOCLOSE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+				player.sendMessage(EconomyMessage.BANK_TOCLOSE.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 			}
 			event.setCancelled(true);
 		}

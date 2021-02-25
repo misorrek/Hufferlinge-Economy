@@ -14,6 +14,9 @@ import huff.economy.EconomyInterface;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.manager.delaymessage.DelayType;
 
+/**
+ * A listener class that handles the join event for economy.
+ */
 public class JoinListener implements Listener
 {
 	public JoinListener(@NotNull EconomyInterface economyInterface)

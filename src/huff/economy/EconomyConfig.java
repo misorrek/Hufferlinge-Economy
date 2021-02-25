@@ -13,9 +13,7 @@ import huff.lib.helper.ItemHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.manager.ConfigManager;
 import huff.lib.various.HuffConfiguration;
-import huff.lib.various.structures.ConfigEnumPair;
-import huff.lib.various.structures.ConfigPair;
-import huff.lib.various.structures.MessagePair;
+import huff.lib.various.structures.configuration.ConfigPair;
 
 public class EconomyConfig
 {
@@ -23,13 +21,13 @@ public class EconomyConfig
 
 	public static final ConfigPair<String> VALUE_NAME = new ConfigPair<>("economy.value.name", "Goldlinge", String.class);
 	public static final ConfigPair<String> VALUE_ITEMNAME = new ConfigPair<>("economy.value.item_name", "§e§l" + VALUE_NAME.getKeyLink(), String.class);
-	public static final ConfigEnumPair<Material> VALUE_MATERIAL = new ConfigEnumPair<>("economy.value.material", Material.GOLD_NUGGET, Material.class);
+	public static final ConfigPair<Material> VALUE_MATERIAL = new ConfigPair<>("economy.value.material", Material.GOLD_NUGGET, Material.class);
 	public static final ConfigPair<String> VALUE_SIGNATURE = new ConfigPair<>("economy.value.signature", "§8Prägung", String.class);
 
 	public static final ConfigPair<String> WALLET_NAME = new ConfigPair<>("economy.wallet.name", "Geldbeutel", String.class);
 	public static final ConfigPair<String> WALLET_ITEMNAME = new ConfigPair<>("economy.wallet.item_name", "§6§l" + WALLET_NAME.getKeyLink(), String.class);
 	public static final ConfigPair<String> WALLET_INVNAME = new ConfigPair<>("economy.wallet.inventory_name", "§7» §6" + WALLET_NAME.getKeyLink(), String.class);
-	public static final ConfigEnumPair<Material> WALLET_MATERIAL = new ConfigEnumPair<>("economy.wallet.material", Material.BROWN_SHULKER_BOX, Material.class);
+	public static final ConfigPair<Material> WALLET_MATERIAL = new ConfigPair<>("economy.wallet.material", Material.BROWN_SHULKER_BOX, Material.class);
 	public static final ConfigPair<Integer> WALLET_DEFAULTSLOT = new ConfigPair<>("economy.wallet.default_slot", 8, Integer.class);
 	
 	public static final ConfigPair<String> BANK_NAME = new ConfigPair<>("economy.bank.name", "Bänker", String.class);
@@ -38,23 +36,23 @@ public class EconomyConfig
 	public static final ConfigPair<String> BANK_ENTITYNAME = new ConfigPair<>("economy.bank.entity_name", "§e§l" + BANK_NAME.getKeyLink(), String.class);
 	public static final ConfigPair<String> BANK_CLOSEDNAME = new ConfigPair<>("economy.bank.closed_name", "§7- Geschlossen -", String.class);
 	public static final ConfigPair<String> BANK_REMOVENAME = new ConfigPair<>("economy.bank.inventory_remove_name", "§7» §c" + BANK_NAME.getKeyLink() + " entfernen", String.class);
-	public static final ConfigEnumPair<Material> BANK_MATERIAL = new ConfigEnumPair<>("economy.bank.material", Material.OCELOT_SPAWN_EGG, Material.class);
+	public static final ConfigPair<Material> BANK_MATERIAL = new ConfigPair<>("economy.bank.material", Material.OCELOT_SPAWN_EGG, Material.class);
 	public static final ConfigPair<Integer> BANK_OPEN = new ConfigPair<>("economy.bank.open", 1000, Integer.class);
 	public static final ConfigPair<Integer> BANK_CLOSE = new ConfigPair<>("economy.bank.close", 13000, Integer.class);
 	public static final ConfigPair<Integer> BANK_STARTBALANCE = new ConfigPair<>("economy.bank.start_balance", 100, Integer.class);
 	
 	public static final ConfigPair<Boolean> TRANSACTION_FEEDBACK = new ConfigPair<>("economy.transaction.feedback", true, Boolean.class);
-	public static final MessagePair TRANSACTION_RECEIVER = new MessagePair("economy.transaction.receiver", "§7Empfänger: §9%user%");
+	public static final ConfigPair<String> TRANSACTION_RECEIVER = new ConfigPair<>("economy.transaction.receiver", "§7Empfänger: §9%user%", String.class);
 	public static final ConfigPair<Boolean> TRANSACTION_SIGNINPUT = new ConfigPair<>("economy.transaction.sign_input", true, Boolean.class);
 	public static final ConfigPair<String> TRANSACTION_SIGNINPUTNAME = new ConfigPair<>("economy.transaction.sign_input_name", "§7» §9Alternative Eingabe", String.class);
 	
 	public static final ConfigPair<String> TRADE_NAME = new ConfigPair<>("economy.trade.name", "Handel", String.class);
 	public static final ConfigPair<String> TRADE_INVNAME = new ConfigPair<>("economy.trade.inventory_name", "§7» §e" + TRADE_NAME.getKeyLink(), String.class);
-	public static final ConfigEnumPair<Material> TRADE_MATERIAL = new ConfigEnumPair<>("economy.trade.material", Material.BARREL, Material.class);
+	public static final ConfigPair<Material> TRADE_MATERIAL = new ConfigPair<>("economy.trade.material", Material.BARREL, Material.class);
 	public static final ConfigPair<String> TRADE_PENDINGNAME = new ConfigPair<>("economy.trade.pending_name", "§6Handel ausstehend...", String.class);
-	public static final ConfigEnumPair<Material> TRADE_PENDINGMATERIAL = new ConfigEnumPair<>("economy.trade.pending_material", Material.ORANGE_STAINED_GLASS_PANE, Material.class);
+	public static final ConfigPair<Material> TRADE_PENDINGMATERIAL = new ConfigPair<>("economy.trade.pending_material", Material.ORANGE_STAINED_GLASS_PANE, Material.class);
 	public static final ConfigPair<String> TRADE_ACCEPTEDNAME = new ConfigPair<>("economy.trade.accepted_name", "§aHandel akzeptiert", String.class);
-	public static final ConfigEnumPair<Material> TRADE_ACCEPTEDMATERIAL = new ConfigEnumPair<>("economy.trade.accepted_material", Material.LIME_STAINED_GLASS_PANE, Material.class);
+	public static final ConfigPair<Material> TRADE_ACCEPTEDMATERIAL = new ConfigPair<>("economy.trade.accepted_material", Material.LIME_STAINED_GLASS_PANE, Material.class);
 	
 	public static void init()
 	{

@@ -19,6 +19,9 @@ import huff.lib.helper.MessageHelper;
 import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 
+/**
+ * A menu class that contains the bank main menu.
+ */
 public class BankHolder extends MenuHolder
 {
 	public BankHolder(@NotNull EconomyInterface economyInterface, @NotNull UUID menuViewer, @NotNull Location bankLocation)
@@ -59,8 +62,8 @@ public class BankHolder extends MenuHolder
 				
 				MenuHolder.close(human);
 				human.getInventory().addItem(EconomyConfig.getBankItem());
-				human.sendMessage(EconomyMessage.BANK_REMOVE.getMessage());
-				human.sendMessage(EconomyMessage.BANK_ITEM.getMessage());
+				human.sendMessage(EconomyMessage.BANK_REMOVE.getValue());
+				human.sendMessage(EconomyMessage.BANK_ITEM.getValue());
 			}
 			else
 			{

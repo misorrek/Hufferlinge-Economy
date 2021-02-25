@@ -19,6 +19,9 @@ import huff.economy.storage.Storage;
 import huff.lib.helper.EntityHelper;
 import huff.lib.manager.delaymessage.DelayMessageManager;
 
+/**
+ * The dependency injection class for the economy module.
+ */
 public class EconomyInterface
 {
 	public static final String ENTITYKEY_BANK = "bank";

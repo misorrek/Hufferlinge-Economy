@@ -29,6 +29,10 @@ import huff.lib.various.HuffCommand;
 import huff.lib.various.LibMessage;
 import huff.lib.various.structures.StringPair;
 
+/**
+ * A command class for economy statistics and user data manipulation.
+ * Contains the command and tab completion.
+ */
 public class EconomyCommand extends HuffCommand
 {
 	private static final int LISTENTRIES_PER_PAGE = 10;
@@ -102,7 +106,7 @@ public class EconomyCommand extends HuffCommand
 		
 		if (!economyOverview.isEmpty())
 		{
-			sender.sendMessage(EconomyMessage.LIST_HEADER.getMessage(new StringPair("page", Integer.toString(page)), new StringPair("maxpage", Integer.toString(maxPage))));
+			sender.sendMessage(EconomyMessage.LIST_HEADER.getValue(new StringPair("page", Integer.toString(page)), new StringPair("maxpage", Integer.toString(maxPage))));
 			sender.sendMessage("");
 			
 			for (String economyEntry : economyOverview)
@@ -114,7 +118,7 @@ public class EconomyCommand extends HuffCommand
 		}
 		else
 		{
-			sender.sendMessage(EconomyMessage.LIST_NODATA.getMessage());
+			sender.sendMessage(EconomyMessage.LIST_NODATA.getValue());
 		}
 	}
 	
@@ -126,14 +130,14 @@ public class EconomyCommand extends HuffCommand
 			
 			if (page < 1 || page > maxPage)
 			{
-				sender.sendMessage(EconomyMessage.INVALIDPAGE.getMessage(new StringPair("maxpage", Integer.toString(maxPage))));
+				sender.sendMessage(EconomyMessage.INVALIDPAGE.getValue(new StringPair("maxpage", Integer.toString(maxPage))));
 				return -1;
 			}
 			return page;
 		}
 		catch (NumberFormatException exception)
 		{
-			sender.sendMessage(EconomyMessage.INVALIDNUMBER.getMessage(new StringPair("text", input)));
+			sender.sendMessage(EconomyMessage.INVALIDNUMBER.getValue(new StringPair("text", input)));
 		}	
 		return -1;
 	}
@@ -175,7 +179,7 @@ public class EconomyCommand extends HuffCommand
 			
 			if (targetPlayer == null)
 			{
-				sender.sendMessage(LibMessage.NOTFOUND.getMessage(new StringPair("user", targetPlayerName)));
+				sender.sendMessage(LibMessage.NOTFOUND.getValue(new StringPair("user", targetPlayerName)));
 				return;
 			}
 			sender.sendMessage(processGetValue(isBalance, targetPlayer, targetPlayerName));
@@ -215,7 +219,7 @@ public class EconomyCommand extends HuffCommand
 			
 			if (targetPlayer == null)
 			{
-				sender.sendMessage(LibMessage.NOTFOUND.getMessage(new StringPair("user", targetPlayerName)));
+				sender.sendMessage(LibMessage.NOTFOUND.getValue(new StringPair("user", targetPlayerName)));
 				return;
 			}
 			sender.sendMessage(procesSetValue(isBalance, value, targetPlayer, targetPlayerName));
@@ -254,7 +258,7 @@ public class EconomyCommand extends HuffCommand
 			
 			if (targetPlayer == null)
 			{
-				sender.sendMessage(LibMessage.NOTFOUND.getMessage(new StringPair("user", targetPlayerName)));
+				sender.sendMessage(LibMessage.NOTFOUND.getValue(new StringPair("user", targetPlayerName)));
 				return;
 			}
 			sender.sendMessage(processUpdateValue(isBalance, isRemove, value, targetPlayer, targetPlayerName));
@@ -285,14 +289,14 @@ public class EconomyCommand extends HuffCommand
 			
 			if (parsedValue < 0)
 			{
-				sender.sendMessage(EconomyMessage.VALUE_NONEGATIVE.getMessage());
+				sender.sendMessage(EconomyMessage.VALUE_NONEGATIVE.getValue());
 				return -1;
 			}		
 			return parsedValue;
 		}
 		catch (NumberFormatException execption)
 		{
-			sender.sendMessage(EconomyMessage.VALUE_INVALIDVALUE.getMessage(new StringPair("text", input)));
+			sender.sendMessage(EconomyMessage.VALUE_INVALIDVALUE.getValue(new StringPair("text", input)));
 		}
 		return -1;
 	}
@@ -305,14 +309,14 @@ public class EconomyCommand extends HuffCommand
 		switch (code)
 		{
 		case Storage.CODE_NOUSER:
-			return selfPerform ? EconomyMessage.DONTEXIST_SELF.getMessage() : EconomyMessage.DONTEXIST_OTHER.getMessage(new StringPair("user", playerName));
+			return selfPerform ? EconomyMessage.DONTEXIST_SELF.getValue() : EconomyMessage.DONTEXIST_OTHER.getValue(new StringPair("user", playerName));
 		
 		case Storage.CODE_NOTENOUGHVALUE:
 			if (isBalance)
 			{
-				return selfPerform ? EconomyMessage.BALANCE_SELF_NOTENOUGH.getMessage() : EconomyMessage.BALANCE_OTHER_NOTENOUGH.getMessage(new StringPair("user", playerName));
+				return selfPerform ? EconomyMessage.BALANCE_SELF_NOTENOUGH.getValue() : EconomyMessage.BALANCE_OTHER_NOTENOUGH.getValue(new StringPair("user", playerName));
 			}
-			return selfPerform ? EconomyMessage.WALLET_SELF_NOTENOUGH.getMessage() : EconomyMessage.WALLET_OTHER_NOTENOUGH.getMessage(new StringPair("user", playerName));
+			return selfPerform ? EconomyMessage.WALLET_SELF_NOTENOUGH.getValue() : EconomyMessage.WALLET_OTHER_NOTENOUGH.getValue(new StringPair("user", playerName));
 		
 		case Storage.CODE_SUCCESS:
 			// B A L A N C E
@@ -321,8 +325,8 @@ public class EconomyCommand extends HuffCommand
 			{
 				if (override)
 				{
-					return selfPerform ? EconomyMessage.BALANCE_SELF_SET.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-					                   : EconomyMessage.BALANCE_OTHER_SET.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))); 
+					return selfPerform ? EconomyMessage.BALANCE_SELF_SET.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+					                   : EconomyMessage.BALANCE_OTHER_SET.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))); 
 				}
 				
 				if (updatedPerform)
@@ -331,28 +335,28 @@ public class EconomyCommand extends HuffCommand
 					
 					if (withRemove)
 					{
-						messageBuilder.append(selfPerform ? EconomyMessage.BALANCE_SELF_LESS.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-						                                  : EconomyMessage.BALANCE_OTHER_LESS.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+						messageBuilder.append(selfPerform ? EconomyMessage.BALANCE_SELF_LESS.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+						                                  : EconomyMessage.BALANCE_OTHER_LESS.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
 					}
 					else
 					{
-						messageBuilder.append(selfPerform ? EconomyMessage.BALANCE_SELF_MORE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-                                                          : EconomyMessage.BALANCE_OTHER_MORE.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+						messageBuilder.append(selfPerform ? EconomyMessage.BALANCE_SELF_MORE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+                                                          : EconomyMessage.BALANCE_OTHER_MORE.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
 					}
 					messageBuilder.append("\n");
-					messageBuilder.append(EconomyMessage.NEWVALUE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getBalance(playerUUID)))));
+					messageBuilder.append(EconomyMessage.NEWVALUE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getBalance(playerUUID)))));
 					return messageBuilder.toString();
 				}
-				return selfPerform ? EconomyMessage.BALANCE_SELF_SHOW.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-						           : EconomyMessage.BALANCE_OTHER_SHOW.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
+				return selfPerform ? EconomyMessage.BALANCE_SELF_SHOW.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+						           : EconomyMessage.BALANCE_OTHER_SHOW.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
 			}
 			
 			// W A L L E T
 			
 			if (override)
 			{
-				return selfPerform ? EconomyMessage.WALLET_SELF_SET.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-				                   : EconomyMessage.WALLET_OTHER_SET.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))); 
+				return selfPerform ? EconomyMessage.WALLET_SELF_SET.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+				                   : EconomyMessage.WALLET_OTHER_SET.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))); 
 			}
 			
 			if (updatedPerform)
@@ -361,30 +365,30 @@ public class EconomyCommand extends HuffCommand
 				
 				if (withRemove)
 				{
-					messageBuilder.append(selfPerform ? EconomyMessage.WALLET_SELF_LESS.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-					                                  : EconomyMessage.WALLET_OTHER_LESS.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+					messageBuilder.append(selfPerform ? EconomyMessage.WALLET_SELF_LESS.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+					                                  : EconomyMessage.WALLET_OTHER_LESS.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
 				}
 				else
 				{
-					messageBuilder.append(selfPerform ? EconomyMessage.WALLET_SELF_MORE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-                                                      : EconomyMessage.WALLET_OTHER_MORE.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
+					messageBuilder.append(selfPerform ? EconomyMessage.WALLET_SELF_MORE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+                                                      : EconomyMessage.WALLET_OTHER_MORE.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
 				}
 				messageBuilder.append("\n");
-				messageBuilder.append(EconomyMessage.NEWVALUE.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getWallet(playerUUID)))));
+				messageBuilder.append(EconomyMessage.NEWVALUE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getWallet(playerUUID)))));
 				return messageBuilder.toString();
 			}
-			return selfPerform ? EconomyMessage.WALLET_SELF_SHOW.getMessage(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
-					           : EconomyMessage.WALLET_OTHER_SHOW.getMessage(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
+			return selfPerform ? EconomyMessage.WALLET_SELF_SHOW.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
+					           : EconomyMessage.WALLET_OTHER_SHOW.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
 		
 		default:
-			return EconomyMessage.INVALIDFEEDBACK.getMessage(new StringPair("text", Integer.toString(code)));
+			return EconomyMessage.INVALIDFEEDBACK.getValue(new StringPair("text", Integer.toString(code)));
 		}
 	}
 
 	@NotNull
 	private String getInvalidSenderMessage()
 	{
-		return StringHelper.build(EconomyMessage.NOSELFEXECUTE.getMessage());
+		return StringHelper.build(EconomyMessage.NOSELFEXECUTE.getValue());
 	}
 	
 	// B A N K
@@ -395,7 +399,7 @@ public class EconomyCommand extends HuffCommand
 		
 		if (!action.equals("show") && !(sender instanceof Player))
 		{
-			sender.sendMessage(LibMessage.NOTINCONSOLE.getMessage());
+			sender.sendMessage(LibMessage.NOTINCONSOLE.getValue());
 			return true;
 		}
 		
@@ -437,7 +441,7 @@ public class EconomyCommand extends HuffCommand
 		{	
 			int position = 1;
 			
-			sender.sendMessage(EconomyMessage.BANK_HEADER.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue()), 
+			sender.sendMessage(EconomyMessage.BANK_HEADER.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue()), 
 					                                                 new StringPair("page", Integer.toString(page)), 
 					                                                 new StringPair("maxpage", Integer.toString(maxPage))));
 			sender.sendMessage("");		
@@ -463,7 +467,7 @@ public class EconomyCommand extends HuffCommand
 		}
 		else
 		{
-			sender.sendMessage(EconomyMessage.BANK_NODATA.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+			sender.sendMessage(EconomyMessage.BANK_NODATA.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 	}
 	
@@ -476,11 +480,11 @@ public class EconomyCommand extends HuffCommand
 		if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
 		{
 			economy.trySpawnBankEntity(bankLocation);
-			player.sendMessage(EconomyMessage.BANK_PLACE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+			player.sendMessage(EconomyMessage.BANK_PLACE.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 		else
 		{
-			player.sendMessage(EconomyMessage.BANK_TOCLOSE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+			player.sendMessage(EconomyMessage.BANK_TOCLOSE.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 	}
 	
@@ -489,18 +493,18 @@ public class EconomyCommand extends HuffCommand
 		if (economy.getBank().removeBank(player.getLocation()) == Bank.CODE_SUCCESS)
 		{
 			economy.tryRemoveBankEntity(player.getLocation());
-			player.sendMessage(EconomyMessage.BANK_REMOVE.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+			player.sendMessage(EconomyMessage.BANK_REMOVE.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}
 		else
 		{
-			player.sendMessage(EconomyMessage.BANK_NOTHINGNEAR.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
+			player.sendMessage(EconomyMessage.BANK_NOTHINGNEAR.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
 		}	
 	}
 	
 	private void executeBankItem(Player player)
 	{
 		player.getInventory().addItem(EconomyConfig.getBankItem());
-		player.sendMessage(EconomyMessage.BANK_ITEM.getMessage(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));		
+		player.sendMessage(EconomyMessage.BANK_ITEM.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));		
 	}
 
 	// T A B C O M P L E T E

@@ -18,6 +18,9 @@ import huff.lib.listener.EntityListener;
 import huff.lib.manager.RedisManager;
 import huff.lib.manager.delaymessage.DelayMessageManager;
 
+/**
+ * The economy module main class.
+ */
 public class EconomyModule
 {
 	private static final int BANKCHECK_PERIOD = 500;
