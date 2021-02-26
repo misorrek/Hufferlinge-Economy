@@ -6,30 +6,34 @@ import java.util.logging.Level;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.economy.EconomyConfig;
 import huff.lib.manager.RedisManager;
+import huff.lib.storage.RedisStorage;
 import redis.clients.jedis.Jedis;
 
 /**
  * A redis storage class that stores the signatures of withdrawn value items.
  */
-public class Signature
+public class Signature extends RedisStorage
 {
-	private static final String PATTERN_USER = "signature:";
+	private static final String PATTERN = "signature:";
 	
 	public Signature(@NotNull RedisManager redisManager)
 	{
-		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");	
-		
-		this.redisManager = redisManager;
+		super(redisManager, false);
 	}
 	
-	private final RedisManager redisManager;
+	@Override
+	protected @NotNull String getKeyPattern() 
+	{
+		return PATTERN;
+	}
+	
+	// S I G N A T U R E
 	
 	@NotNull
 	public List<String> createSignatureLore(int valueAmount)
@@ -55,7 +59,7 @@ public class Signature
 		{
 			return 0;
 		}
-		final String patternKey = getPatternKey(loreSignature);
+		final String patternKey = getCombinedKey(loreSignature);
 		int signatureValueAmount = 0;
 		
 		try (final Jedis jedis = redisManager.getJedis())
@@ -85,17 +89,11 @@ public class Signature
 	}
 	
 	@NotNull
-	private String getPatternKey(@NotNull String key)
-	{
-		return PATTERN_USER + key;
-	}
-	
-	@NotNull
 	private String createSignature(int valueAmount)
 	{
 		final String signatureId = RandomStringUtils.random(12, "0123456789ABCDEF");
 		
-		redisManager.setValue(getPatternKey(signatureId), Integer.toString(valueAmount));
+		redisManager.setValue(getCombinedKey(signatureId), Integer.toString(valueAmount));
 		
 		return signatureId;
 	}

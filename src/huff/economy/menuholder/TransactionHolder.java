@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
 import huff.economy.EconomyMessage;
-import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
@@ -328,7 +327,7 @@ public class TransactionHolder extends MenuHolder
 			return;
 		}
 		
-		if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true) == Storage.CODE_SUCCESS)
+		if (economy.getStorage().updateWallet(human.getUniqueId(), transactionValue, true).isSuccess())
 		{
 			int maxStackSize = valueItem.getMaxStackSize();
 			int openTransactionValue = (int) transactionValue;

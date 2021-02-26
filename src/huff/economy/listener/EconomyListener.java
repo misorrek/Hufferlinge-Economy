@@ -42,8 +42,6 @@ import huff.economy.menuholder.BankHolder;
 import huff.economy.menuholder.InteractionHolder;
 import huff.economy.menuholder.TradeHolder;
 import huff.economy.menuholder.WalletHolder;
-import huff.economy.storage.Bank;
-import huff.economy.storage.Storage;
 import huff.lib.helper.EntityHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.helper.MessageHelper;
@@ -123,7 +121,7 @@ public class EconomyListener implements Listener
 		{
 			int dropValueAmount = (int) (economy.getStorage().getWallet(event.getEntity().getUniqueId()) * 0.01);
 			
-			if (economy.getStorage().updateWallet(event.getEntity().getUniqueId(), dropValueAmount, true) == Storage.CODE_SUCCESS)
+			if (economy.getStorage().updateWallet(event.getEntity().getUniqueId(), dropValueAmount, true).isSuccess())
 			{
 				while (dropValueAmount > 0)
 				{
@@ -271,7 +269,7 @@ public class EconomyListener implements Listener
 			final Location bankLocation = new Location(blockLocation.getWorld(), blockLocation.getBlockX() + 0.5, blockLocation.getBlockY() + 1.0, blockLocation.getBlockZ() + 0.5,
 					                                   playerYaw <= 0 ? playerYaw + 180 : playerYaw - 180, 0);			
 			
-			if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
+			if (economy.getBank().addBank(bankLocation, player.getUniqueId()).isSuccess())
 			{
 				economy.trySpawnBankEntity(bankLocation);
 				player.getInventory().getItemInMainHand().setAmount(playerMainItem.getAmount() -1);

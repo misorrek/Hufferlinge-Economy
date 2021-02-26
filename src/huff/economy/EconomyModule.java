@@ -12,7 +12,7 @@ import huff.economy.listener.InventoryListener;
 import huff.economy.listener.JoinListener;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
-import huff.economy.storage.Storage;
+import huff.economy.storage.EconomyUser;
 import huff.lib.helper.SignHelper;
 import huff.lib.listener.EntityListener;
 import huff.lib.manager.RedisManager;
@@ -32,7 +32,7 @@ public class EconomyModule
 		
 		this.plugin = plugin;	
 		this.economy = new EconomyInterface(plugin, 
-				new Storage(redisManager), 
+				new EconomyUser(redisManager), 
 				new Signature(redisManager), 
 				new Bank(redisManager),
 				delayMessageManager);

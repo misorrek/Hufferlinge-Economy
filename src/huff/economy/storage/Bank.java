@@ -2,48 +2,45 @@ package huff.economy.storage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import huff.lib.helper.DataHelper;
-import huff.lib.helper.StringHelper;
 import huff.lib.manager.RedisManager;
-import redis.clients.jedis.Jedis;
+import huff.lib.storage.RedisFeedback;
+import huff.lib.storage.RedisStorage;
 
 /**
  * A redis storage class that stores the locations of banks.
  */
-public class Bank
+public class Bank extends RedisStorage
 {
-	public static final int CODE_SUCCESS = 0;
-	public static final int CODE_NOBANK = -1;
-	public static final int CODE_DUPLICATE = -2;
-	public static final int CODE_NOSPACE = -3;
 	public static final double BANK_TOLERANCE = 2;
 	
-	private static final String PATTERN_BANK = "bank:";	
+	private static final String PATTERN= "bank:";	
 	private static final String FIELD_LOCATION = "location";
 	private static final String FIELD_OWNER = "owner";
+	
 	private static final double REMOVE_DISTANCE = 10;
 	
 	public Bank(@NotNull RedisManager redisManager)
 	{
-		Validate.notNull((Object) redisManager, "The redis-manager cannot be null.");	
-		
-		this.redisManager = redisManager;
+		super(redisManager, false);
 	}
 	
-	private final RedisManager redisManager;
+	@Override
+	protected @NotNull String getKeyPattern() 
+	{
+		return PATTERN;
+	}
+	
+	// B A N K
 		
 	public boolean isBankAtLocation(@NotNull Location location, double tolerance)
 	{
@@ -60,7 +57,7 @@ public class Bank
 		String nearestBankKey = null;
 		double nearestBankDistance = tolerance;	
 		
-		for (String key : getKeys())
+		for (String key : getCombinedKeys())
 		{
 			final Location bankLocaction = DataHelper.convertStringtoLocation(redisManager.getFieldValue(key, FIELD_LOCATION));	
 			
@@ -77,11 +74,6 @@ public class Bank
 		}
 		return nearestBankKey;
 	} 
-	
-	public int getBankCount()
-	{
-		return getKeys().size();
-	}
 	
 	public boolean isOwner(@NotNull UUID uuid, @NotNull Location location)
 	{
@@ -101,7 +93,7 @@ public class Bank
 	{
 		List<Location> bankLocations = new ArrayList<>();
 		
-		for (String key : getKeys())
+		for (String key : getCombinedKeys())
 		{
 			final Location bankLocaction = DataHelper.convertStringtoLocation(redisManager.getFieldValue(key, FIELD_LOCATION));
 			
@@ -113,20 +105,25 @@ public class Bank
 		return bankLocations;
 	}
 	
-	public int addBank(@NotNull Location location, @Nullable UUID ownerUUID)
+	public RedisFeedback addBank(@NotNull Location location, @Nullable UUID ownerUuid)
 	{
 		Validate.notNull((Object) location, "The bank location cannot be null.");	
 		
 		if (isBankAtLocation(location, BANK_TOLERANCE))
 		{
-			return CODE_DUPLICATE;
+			return RedisFeedback.DUPLICATE;
 		}
-		redisManager.addMap(getNewPatternKey(), getFieldValuePairs(location, ownerUUID));
+		final Map<String, String> resultMap = new HashMap<>();
 		
-		return CODE_SUCCESS;
+		resultMap.put(FIELD_LOCATION, DataHelper.convertLocationToString(location));
+		resultMap.put(FIELD_OWNER, ownerUuid == null ? "" : ownerUuid.toString());
+		
+		redisManager.addMap(getAutoCombinedKey(), resultMap);
+		
+		return RedisFeedback.SUCCESS;
 	}
 	
-	public int removeBank(@NotNull Location location)
+	public RedisFeedback removeBank(@NotNull Location location)
 	{
 		Validate.notNull((Object) location, "The bank location cannot be null.");	
 		
@@ -136,45 +133,8 @@ public class Bank
 		{
 			redisManager.deleteKey(bankKey);
 	
-			return CODE_SUCCESS;
+			return RedisFeedback.SUCCESS;
 		}
-		return CODE_NOBANK;
-	}
-	
-	@NotNull
-	private Set<String> getKeys()
-	{
-		try (final Jedis jedis = redisManager.getJedis())
-		{
-			return jedis.keys(StringHelper.build('*', PATTERN_BANK, '*'));
-		}
-		catch (Exception exception) 
-		{
-			Bukkit.getLogger().log(Level.SEVERE	, "Redis statement cannot be executed.", exception);
-		}
-		return new HashSet<>();
-	}
-	
-	@NotNull
-	private String getPatternKey(@NotNull String key)
-	{
-		return PATTERN_BANK + key;
-	}
-	
-	@NotNull
-	private String getNewPatternKey()
-	{
-		return PATTERN_BANK + getKeys().size();
-	}
-	
-	@NotNull
-	private Map<String, String> getFieldValuePairs(@NotNull Location location, @Nullable UUID owenerUUID)
-	{
-		final Map<String, String> resultMap = new HashMap<>();
-		
-		resultMap.put(FIELD_LOCATION, DataHelper.convertLocationToString(location));
-		resultMap.put(FIELD_OWNER, owenerUUID == null ? "" : owenerUUID.toString());
-		
-		return resultMap; 
+		return RedisFeedback.NOENTRY;
 	}
 }

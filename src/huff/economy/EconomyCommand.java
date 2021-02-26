@@ -20,11 +20,10 @@ import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 
-import huff.economy.storage.Bank;
-import huff.economy.storage.Storage;
 import huff.lib.helper.PermissionHelper;
 import huff.lib.helper.StringHelper;
 import huff.lib.helper.UserHelper;
+import huff.lib.storage.RedisFeedback;
 import huff.lib.various.HuffCommand;
 import huff.lib.various.LibMessage;
 import huff.lib.various.structures.StringPair;
@@ -95,7 +94,7 @@ public class EconomyCommand extends HuffCommand
 	
 	private void executeList(CommandSender sender, String[] args)
 	{
-		final int maxPage = getListPageCount(economy.getStorage().getUserCount());
+		final int maxPage = getListPageCount(economy.getStorage().getEntryCount());
 		final int page = getListPage(sender, args[1], maxPage);
 		
 		if (page == -1)
@@ -198,9 +197,8 @@ public class EconomyCommand extends HuffCommand
 	private String processGetValue(boolean isBalance, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
 		final double value = isBalance ? economy.getStorage().getBalance(targetUUID) : economy.getStorage().getWallet(targetUUID);
-		final int feedbackCode = value >= 0 ? Storage.CODE_SUCCESS : Storage.CODE_NOUSER;
 		
-		return processFeedbackCode(feedbackCode, value, isBalance, false, false, targetName, null);
+		return processFeedbackCode(RedisFeedback.fromValue(value), value, isBalance, false, false, targetName, null);
 	}
 	
 	private void executeValueSet(CommandSender sender, String[] args, boolean isBalance)
@@ -237,9 +235,15 @@ public class EconomyCommand extends HuffCommand
 	@NotNull
 	private String procesSetValue(boolean isBalance, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = isBalance ? economy.getStorage().setBalance(targetUUID, value) : economy.getStorage().setWallet(targetUUID, value);
-		
-		return processFeedbackCode(feedbackCode, value, isBalance, false, true, targetName, targetUUID); 
+		if (isBalance) 
+		{
+			economy.getStorage().setBalance(targetUUID, value);
+		}
+		else
+		{
+			 economy.getStorage().setWallet(targetUUID, value);
+		}
+		return processFeedbackCode(RedisFeedback.SUCCESS, value, isBalance, false, true, targetName, targetUUID); 
 	}
 	
 	private void executeValueUpdate(CommandSender sender, String[] args, boolean isBalance, boolean isRemove) 
@@ -276,9 +280,9 @@ public class EconomyCommand extends HuffCommand
 	@NotNull
 	private String processUpdateValue(boolean isBalance, boolean isRemove, double value, @NotNull UUID targetUUID, @Nullable String targetName)
 	{
-		final int feedbackCode = (economy.getStorage().updateValue(targetUUID, value, isRemove, isBalance));
+		economy.getStorage().updateValue(targetUUID, value, isRemove, isBalance);
 		
-		return processFeedbackCode(feedbackCode, value, isBalance, isRemove, false, targetName, targetUUID);
+		return processFeedbackCode(RedisFeedback.SUCCESS, value, isBalance, isRemove, false, targetName, targetUUID);
 	}
 	
 	private double parseDoubleInput(CommandSender sender, String input)
@@ -301,24 +305,24 @@ public class EconomyCommand extends HuffCommand
 		return -1;
 	}
 	
-	private String processFeedbackCode(int code, double value, boolean isBalance, boolean withRemove, boolean override, String playerName, UUID playerUUID)
+	private String processFeedbackCode(RedisFeedback feedback, double value, boolean isBalance, boolean withRemove, boolean override, String playerName, UUID playerUUID)
 	{
 		final boolean selfPerform = StringUtils.isEmpty(playerName);
 		final boolean updatedPerform = playerUUID != null;
 		
-		switch (code)
+		switch (feedback)
 		{
-		case Storage.CODE_NOUSER:
+		case NOENTRY:
 			return selfPerform ? EconomyMessage.DONTEXIST_SELF.getValue() : EconomyMessage.DONTEXIST_OTHER.getValue(new StringPair("user", playerName));
 		
-		case Storage.CODE_NOTENOUGHVALUE:
+		case NOCORRECTVALUE:
 			if (isBalance)
 			{
 				return selfPerform ? EconomyMessage.BALANCE_SELF_NOTENOUGH.getValue() : EconomyMessage.BALANCE_OTHER_NOTENOUGH.getValue(new StringPair("user", playerName));
 			}
 			return selfPerform ? EconomyMessage.WALLET_SELF_NOTENOUGH.getValue() : EconomyMessage.WALLET_OTHER_NOTENOUGH.getValue(new StringPair("user", playerName));
 		
-		case Storage.CODE_SUCCESS:
+		case SUCCESS:
 			// B A L A N C E
 			
 			if (isBalance)
@@ -381,7 +385,7 @@ public class EconomyCommand extends HuffCommand
 					           : EconomyMessage.WALLET_OTHER_SHOW.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
 		
 		default:
-			return EconomyMessage.INVALIDFEEDBACK.getValue(new StringPair("text", Integer.toString(code)));
+			return EconomyMessage.INVALIDFEEDBACK.getValue(new StringPair("text", feedback.toString()));
 		}
 	}
 
@@ -428,7 +432,7 @@ public class EconomyCommand extends HuffCommand
 	
 	private void executeBankShow(CommandSender sender, String[] args)
 	{	
-		final int maxPage = getListPageCount(economy.getBank().getBankCount());
+		final int maxPage = getListPageCount(economy.getBank().getEntryCount());
 		final int page = getListPage(sender, args[2], maxPage);
 		
 		if (page == -1)
@@ -477,7 +481,7 @@ public class EconomyCommand extends HuffCommand
 		final Location bankLocation = new Location(playerLocation.getWorld(), playerLocation.getBlockX() + 0.5, playerLocation.getBlockY(), playerLocation.getBlockZ() + 0.5,
 				                                   playerLocation.getYaw(), 0);		
 		
-		if (economy.getBank().addBank(bankLocation, player.getUniqueId()) == Bank.CODE_SUCCESS)
+		if (economy.getBank().addBank(bankLocation, player.getUniqueId()).isSuccess())
 		{
 			economy.trySpawnBankEntity(bankLocation);
 			player.sendMessage(EconomyMessage.BANK_PLACE.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
@@ -490,7 +494,7 @@ public class EconomyCommand extends HuffCommand
 	
 	private void executeBankRemove(Player player)
 	{
-		if (economy.getBank().removeBank(player.getLocation()) == Bank.CODE_SUCCESS)
+		if (economy.getBank().removeBank(player.getLocation()).isSuccess())
 		{
 			economy.tryRemoveBankEntity(player.getLocation());
 			player.sendMessage(EconomyMessage.BANK_REMOVE.getValue(new StringPair("bankname", EconomyConfig.BANK_NAME.getValue())));
@@ -521,11 +525,11 @@ public class EconomyCommand extends HuffCommand
 				0, Stream.of("bank").collect(Collectors.toList()), 
 				1, Stream.of("show").collect(Collectors.toList()));
 		final String[] listPages = Stream.iterate(1, x -> x + 1)
-				.limit(getListPageCount(economy.getStorage().getUserCount()))
+				.limit(getListPageCount(economy.getStorage().getEntryCount()))
 				.map(x -> Integer.toString(x))
 				.toArray(String[]::new);
 		final String[] bankPages = Stream.iterate(1, x -> x + 1)
-				.limit(getListPageCount(economy.getBank().getBankCount()))
+				.limit(getListPageCount(economy.getBank().getEntryCount()))
 				.map(x -> Integer.toString(x))
 				.toArray(String[]::new);
 		final String[] players = Stream.of(Bukkit.getOfflinePlayers())

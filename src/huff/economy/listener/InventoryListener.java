@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import huff.economy.EconomyConfig;
 import huff.economy.EconomyInterface;
 import huff.economy.EconomyMessage;
-import huff.economy.storage.Storage;
 import huff.lib.helper.InventoryHelper;
 import huff.lib.helper.ItemHelper;
 import huff.lib.various.structures.StringPair;
@@ -244,7 +243,7 @@ public class InventoryListener implements Listener
 				valueAmount = signatureValueAmount;
 			}							
 			
-			if (economy.getStorage().updateWallet(human.getUniqueId(), valueAmount, false) == Storage.CODE_SUCCESS)
+			if (economy.getStorage().updateWallet(human.getUniqueId(), valueAmount, false).isSuccess())
 			{		
 				if (withSoundFeedback)
 				{					

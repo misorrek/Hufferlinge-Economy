@@ -29,7 +29,8 @@ public class EconomyConfig
 	public static final ConfigPair<String> WALLET_INVNAME = new ConfigPair<>("economy.wallet.inventory_name", "§7» §6" + WALLET_NAME.getKeyLink(), String.class);
 	public static final ConfigPair<Material> WALLET_MATERIAL = new ConfigPair<>("economy.wallet.material", Material.BROWN_SHULKER_BOX, Material.class);
 	public static final ConfigPair<Integer> WALLET_DEFAULTSLOT = new ConfigPair<>("economy.wallet.default_slot", 8, Integer.class);
-	
+	public static final ConfigPair<Integer> WALLET_STARTBALANCE = new ConfigPair<>("economy.wallet.start_balance", 0, Integer.class);
+
 	public static final ConfigPair<String> BANK_NAME = new ConfigPair<>("economy.bank.name", "Bänker", String.class);
 	public static final ConfigPair<String> BANK_ITEMNAME = new ConfigPair<>("economy.bank.item_name", "§e§l" + BANK_NAME.getKeyLink(), String.class);
 	public static final ConfigPair<String> BANK_INVNAME = new ConfigPair<>("economy.bank.inventory_name", "§7» §e" + BANK_NAME.getKeyLink(), String.class);
@@ -74,6 +75,7 @@ public class EconomyConfig
 		config.set(WALLET_INVNAME);
 		config.set(WALLET_MATERIAL);
 		config.set(WALLET_DEFAULTSLOT);
+		config.set(WALLET_STARTBALANCE);
 		
 		config.set(BANK_NAME);
 		config.set(BANK_ITEMNAME);

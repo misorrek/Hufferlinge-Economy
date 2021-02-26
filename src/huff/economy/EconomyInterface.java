@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
-import huff.economy.storage.Storage;
+import huff.economy.storage.EconomyUser;
 import huff.lib.helper.EntityHelper;
 import huff.lib.manager.delaymessage.DelayMessageManager;
 
@@ -27,7 +27,7 @@ public class EconomyInterface
 	public static final String ENTITYKEY_BANK = "bank";
 	public static final String ENTITYKEY_BANKCLOSED = "bank_closed";
 	
-	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull Storage storage, @NotNull Signature signature, 
+	public EconomyInterface(@NotNull JavaPlugin plugin, @NotNull EconomyUser storage, @NotNull Signature signature, 
 			                @NotNull Bank bank, @NotNull DelayMessageManager delayMessageManager)
 	{
 		Validate.notNull((Object) plugin, "The plugin instance cannot be null.");
@@ -44,7 +44,7 @@ public class EconomyInterface
 	}
 	
 	private final JavaPlugin plugin;
-	private final Storage storage;
+	private final EconomyUser storage;
 	private final Signature signature;
 	private final Bank bank;
 	private final DelayMessageManager delayMessageManager;
@@ -56,7 +56,7 @@ public class EconomyInterface
 	}
 	
 	@NotNull
-	public Storage getStorage()
+	public EconomyUser getStorage()
 	{
 		return storage;
 	}

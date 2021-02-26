@@ -48,7 +48,9 @@ public class JoinListener implements Listener
 		
 		if (!economy.getStorage().existUser(player.getUniqueId()))
 		{
-			economy.getStorage().addUser(player.getUniqueId(), EconomyConfig.BANK_STARTBALANCE.getValue());
+			economy.getStorage().setDefaultFieldValues(player.getUniqueId(), 
+					EconomyConfig.BANK_STARTBALANCE.getValue(),
+					EconomyConfig.WALLET_STARTBALANCE.getValue());
 		}
 		economy.getDelayMessageManager().sendDelayMessages(player, DelayType.NEXTJOIN);
 	}
