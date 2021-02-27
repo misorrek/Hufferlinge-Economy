@@ -129,14 +129,14 @@ public class EconomyCommand extends HuffCommand
 			
 			if (page < 1 || page > maxPage)
 			{
-				sender.sendMessage(EconomyMessage.INVALIDPAGE.getValue(new StringPair("maxpage", Integer.toString(maxPage))));
+				sender.sendMessage(LibMessage.INVALIDPAGE.getValue(new StringPair("maxpage", Integer.toString(maxPage))));
 				return -1;
 			}
 			return page;
 		}
 		catch (NumberFormatException exception)
 		{
-			sender.sendMessage(EconomyMessage.INVALIDNUMBER.getValue(new StringPair("text", input)));
+			sender.sendMessage(LibMessage.INVALIDNUMBER.getValue(new StringPair("text", input)));
 		}	
 		return -1;
 	}
@@ -348,7 +348,7 @@ public class EconomyCommand extends HuffCommand
                                                           : EconomyMessage.BALANCE_OTHER_MORE.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
 					}
 					messageBuilder.append("\n");
-					messageBuilder.append(EconomyMessage.NEWVALUE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getBalance(playerUUID)))));
+					messageBuilder.append(LibMessage.NEWVALUE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getBalance(playerUUID)))));
 					return messageBuilder.toString();
 				}
 				return selfPerform ? EconomyMessage.BALANCE_SELF_SHOW.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
@@ -378,21 +378,21 @@ public class EconomyCommand extends HuffCommand
                                                       : EconomyMessage.WALLET_OTHER_MORE.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value))));
 				}
 				messageBuilder.append("\n");
-				messageBuilder.append(EconomyMessage.NEWVALUE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getWallet(playerUUID)))));
+				messageBuilder.append(LibMessage.NEWVALUE.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(economy.getStorage().getWallet(playerUUID)))));
 				return messageBuilder.toString();
 			}
 			return selfPerform ? EconomyMessage.WALLET_SELF_SHOW.getValue(new StringPair("amount", EconomyConfig.getValueFormatted(value))) 
 					           : EconomyMessage.WALLET_OTHER_SHOW.getValue(new StringPair("user", playerName), new StringPair("amount", EconomyConfig.getValueFormatted(value)));
 		
 		default:
-			return EconomyMessage.INVALIDFEEDBACK.getValue(new StringPair("text", feedback.toString()));
+			return LibMessage.INVALIDFEEDBACK.getValue(new StringPair("text", feedback.toString()));
 		}
 	}
 
 	@NotNull
 	private String getInvalidSenderMessage()
 	{
-		return StringHelper.build(EconomyMessage.NOSELFEXECUTE.getValue());
+		return StringHelper.build(LibMessage.NOSELFEXECUTE.getValue());
 	}
 	
 	// B A N K

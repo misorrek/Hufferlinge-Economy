@@ -131,25 +131,10 @@ public class EconomyInterface
 		{
 			return;
 		}
-		final ArmorStand closedEntity = (ArmorStand) location.getWorld().spawnEntity(location.clone().add(0, 0.5, 0), EntityType.ARMOR_STAND);
-		final ArmorStand closedEntity2 = (ArmorStand) location.getWorld().spawnEntity(location.clone().add(0, 0.2, 0), EntityType.ARMOR_STAND);
+		final Entity closedEntity = EntityHelper.createHovertextEntity(location, EconomyConfig.BANK_ENTITYNAME.getValue(), 1);
+		final Entity closedEntity2 = EntityHelper.createHovertextEntity(location, EconomyConfig.BANK_CLOSEDNAME.getValue(), 2);
 		
-		closedEntity.setSmall(true);
-		closedEntity.setVisible(false);
-		closedEntity.setGravity(false);
-		closedEntity.setInvulnerable(true);
-		closedEntity.setCollidable(false);
-		closedEntity.setCustomNameVisible(true);
-		closedEntity.setCustomName(EconomyConfig.BANK_ENTITYNAME.getValue());
 		EntityHelper.setTag(closedEntity, plugin, ENTITYKEY_BANKCLOSED);
-		
-		closedEntity2.setSmall(true);
-		closedEntity2.setVisible(false);
-		closedEntity2.setGravity(false);
-		closedEntity2.setInvulnerable(true);
-		closedEntity2.setCollidable(false);
-		closedEntity2.setCustomNameVisible(true);
-		closedEntity2.setCustomName(EconomyConfig.BANK_CLOSEDNAME.getValue());
 		EntityHelper.setTag(closedEntity2, plugin, ENTITYKEY_BANKCLOSED);
 	}
 	

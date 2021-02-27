@@ -32,6 +32,7 @@ import huff.lib.menuholder.MenuExitType;
 import huff.lib.menuholder.MenuHolder;
 import huff.lib.menuholder.PlayerChooserHolder;
 import huff.lib.various.Action;
+import huff.lib.various.LibConfig;
 import huff.lib.various.LibMessage;
 import huff.lib.various.structures.StringPair;
 
@@ -142,7 +143,7 @@ public class TransactionHolder extends MenuHolder
 		{					
 			handleTransactionValueChange(Integer.parseInt(amountValue), (Player) human);
 		}
-		else if (currentItemName.equals(EconomyConfig.TRANSACTION_SIGNINPUTNAME.getValue()))
+		else if (currentItemName.equals(LibConfig.GUI_SIGNINPUTNAME.getValue()))
 		{
 			super.openSign(human, SignHelper.getInputLines("Betrag eingeben", "---"));
 		}
@@ -193,7 +194,7 @@ public class TransactionHolder extends MenuHolder
 		}
 		catch (NumberFormatException exception)
 		{
-			player.sendMessage(EconomyMessage.INVALIDAMOUNT.getValue(new StringPair("text", inputValue)));
+			player.sendMessage(LibMessage.INVALIDAMOUNT.getValue(new StringPair("text", inputValue)));
 			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 1, 2);
 		}
 	}
@@ -227,9 +228,9 @@ public class TransactionHolder extends MenuHolder
 		
 		InventoryHelper.setItem(super.getInventory(), 4, 1, ItemHelper.getItemWithMeta(Material.LIME_STAINED_GLASS_PANE, getPerformItemName()));
 		
-		if (EconomyConfig.TRANSACTION_SIGNINPUT.getValue())
+		if (LibConfig.GUI_SIGNINPUT.getValue())
 		{
-			InventoryHelper.setItem(super.getInventory(), 4, 5, ItemHelper.getItemWithMeta(Material.JUNGLE_SIGN, EconomyConfig.TRANSACTION_SIGNINPUTNAME.getValue()));	
+			InventoryHelper.setItem(super.getInventory(), 4, 5, ItemHelper.getItemWithMeta(Material.JUNGLE_SIGN, LibConfig.GUI_SIGNINPUTNAME.getValue()));	
 		}
 		super.setMenuExitItem();
 	}
