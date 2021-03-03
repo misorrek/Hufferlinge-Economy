@@ -289,7 +289,7 @@ public class TransactionHolder extends MenuHolder
 			MenuHolder.close(human);
 			human.sendMessage(EconomyMessage.TRANSACTION_SENT.getValue(new StringPair("amount", formattedValueAmount), new StringPair("user", targetPlayer.getName())));
 			
-			final String otherMessage = EconomyMessage.TRANSACTION_SENT.getValue(new StringPair("amount", formattedValueAmount), new StringPair("user", human.getName()));
+			final String otherMessage = EconomyMessage.TRANSACTION_RECEIVED.getValue(new StringPair("amount", formattedValueAmount), new StringPair("user", human.getName()));
 			
 			if (targetPlayer.isOnline())
 			{

@@ -31,7 +31,7 @@ public class Bank extends RedisStorage
 	
 	public Bank(@NotNull RedisManager redisManager)
 	{
-		super(redisManager, false);
+		super(redisManager, true);
 	}
 	
 	@Override

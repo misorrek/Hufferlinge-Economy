@@ -13,7 +13,6 @@ import huff.economy.listener.JoinListener;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
 import huff.economy.storage.EconomyUser;
-import huff.lib.helper.SignHelper;
 import huff.lib.listener.EntityListener;
 import huff.lib.manager.RedisManager;
 import huff.lib.manager.delaymessage.DelayMessageManager;
@@ -46,7 +45,6 @@ public class EconomyModule
 	{
 		registerCommands();
 		registerListener();
-		SignHelper.registerSignUpdateListener(plugin);
 	}
 	
 	public void handleBankSpawning(long worldTime)

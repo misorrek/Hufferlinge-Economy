@@ -54,8 +54,8 @@ public class Signature extends RedisStorage
 			return 0;
 		}
 		final String loreSignature = signatureLore.get(1).substring(2);
-		
-		if (StringUtils.isNotEmpty(loreSignature))
+
+		if (StringUtils.isEmpty(loreSignature))
 		{
 			return 0;
 		}
@@ -66,7 +66,7 @@ public class Signature extends RedisStorage
 		{
 			final String storedValue = jedis.get(patternKey);
 			
-			if (StringUtils.isNotEmpty(storedValue))
+			if (StringUtils.isEmpty(storedValue))
 			{
 				return 0;
 			}		

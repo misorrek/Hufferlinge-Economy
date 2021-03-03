@@ -3,7 +3,6 @@ package huff.economy;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Villager;
@@ -16,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import huff.economy.storage.Bank;
 import huff.economy.storage.Signature;
 import huff.economy.storage.EconomyUser;
+import huff.lib.helper.DataHelper;
 import huff.lib.helper.EntityHelper;
 import huff.lib.manager.delaymessage.DelayMessageManager;
 
@@ -90,25 +90,25 @@ public class EconomyInterface
 		
 		if (world.getTime() >= EconomyConfig.BANK_OPEN.getValue() && world.getTime() < EconomyConfig.BANK_CLOSE.getValue())
 		{
+			checkBankEnties(location, ENTITYKEY_BANKCLOSED, true);
 			spawnBankEntity(location);
-			checkClosedEntitySpawn(location, true);
 		}
 		else
 		{
-			spawnClosedEntity(location);
-			checkBankEntitySpawn(location, true);
+			checkBankEnties(location, ENTITYKEY_BANK, true);
+			spawnClosedEntity(location);	
 		}
 	}
 	
 	public void tryRemoveBankEntity(@NotNull Location location)
 	{
-		checkBankEntitySpawn(location, true);
-		checkClosedEntitySpawn(location, true);
+		checkBankEnties(location, ENTITYKEY_BANK, true);
+		checkBankEnties(location, ENTITYKEY_BANKCLOSED, true);
 	}
 	
 	private void spawnBankEntity(@Nullable Location location)
 	{
-		if (location == null || checkBankEntitySpawn(location, false))
+		if (location == null || checkBankEnties(location, ENTITYKEY_BANK, false))
 		{
 			return;
 		}
@@ -122,12 +122,12 @@ public class EconomyInterface
 		bankEntity.setProfession(Profession.CARTOGRAPHER);
 		bankEntity.setCustomName(EconomyConfig.BANK_ENTITYNAME.getValue());
 		EntityHelper.setTag(bankEntity, plugin, ENTITYKEY_BANK);
-		EntityHelper.setTag(bankEntity, plugin, EntityHelper.ENTITYKEY_FOLLOWLOOK);
+		EntityHelper.setTag(bankEntity, plugin, EntityHelper.ENTITYKEY_FOLLOWLOOK, DataHelper.convertLocationToString(location));
 	}
 	
 	private void spawnClosedEntity(@Nullable Location location)
 	{
-		if (location == null || checkClosedEntitySpawn(location, false))
+		if (location == null || checkBankEnties(location, ENTITYKEY_BANKCLOSED, false))
 		{
 			return;
 		}
@@ -138,39 +138,29 @@ public class EconomyInterface
 		EntityHelper.setTag(closedEntity2, plugin, ENTITYKEY_BANKCLOSED);
 	}
 	
-	private boolean checkBankEntitySpawn(@NotNull Location location, boolean withRemove)
+	private boolean checkBankEnties(@NotNull Location location, @NotNull String entityKey, boolean withRemove)
 	{
-		Validate.notNull((Object) location, "The bank entity location cannot be null");
+		boolean entityFound = false;
 		
 		for (Entity entity : location.getWorld().getNearbyEntities(location, Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE))
 		{
-			if (entity instanceof Villager && EntityHelper.hasTag(entity, plugin, ENTITYKEY_BANK))
+			if (EntityHelper.hasTag(entity, plugin, entityKey))
 			{
+				if (!entityFound)
+				{
+					entityFound = true;
+				}
+				
 				if (withRemove)
 				{
 					entity.remove();
 				}
-				return true;	
-			}
-		}
-		return false;
-	}
-	
-	private boolean checkClosedEntitySpawn(@NotNull Location location, boolean withRemove)
-	{
-		Validate.notNull((Object) location, "The bank entity location cannot be null");
-		
-		for (Entity entity : location.getWorld().getNearbyEntities(location.clone().add(0, 0.35, 0), Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE, Bank.BANK_TOLERANCE))
-		{
-			if (entity instanceof ArmorStand && EntityHelper.hasTag(entity, plugin, ENTITYKEY_BANKCLOSED))
-			{
-				if (withRemove)
+				else
 				{
-					entity.remove();
+					return entityFound;
 				}
-				return true;	
 			}
 		}
-		return false;
+		return entityFound;
 	}
 }

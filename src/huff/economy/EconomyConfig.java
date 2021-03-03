@@ -86,6 +86,7 @@ public class EconomyConfig
 		config.set(BANK_STARTBALANCE);
 		
 		config.set(TRANSACTION_FEEDBACK);
+		config.addContextLine(TRANSACTION_RECEIVER.getKey(), "user");
 		config.set(TRANSACTION_RECEIVER);
 		
 		config.set(TRADE_NAME);
@@ -115,7 +116,7 @@ public class EconomyConfig
 	
 	public static boolean equalsValueItem(@Nullable ItemStack item) //TODO CHECK
 	{
-		return item != null && item.isSimilar(VALUE_ITEM);
+		return item != null && ItemHelper.hasMeta(item) && item.getType() == VALUE_ITEM.getType() && item.getItemMeta().getDisplayName().equals(VALUE_ITEM.getItemMeta().getDisplayName());
 	}
 	
 	public static @NotNull List<String> getCurrentValueLore(TransactionKind transactionKind, double currentValue)
